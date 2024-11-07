@@ -9,7 +9,7 @@ def create_navigation(root, show_main_page, show_products_page, show_gui_page, s
     
     tk.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT)
     tk.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT)
-    tk.Button(nav_frame, text="GUI Страница", command=show_gui_page).pack(side=tk.LEFT)
+    tk.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT)
     tk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT)  # Кнопка для кабин
 
 def main():
@@ -33,7 +33,7 @@ def main():
         frame_products.pack_forget()
         frame_cabin.pack_forget()
         frame_gui.pack()
-
+        
     def show_cabin_page():
         welcome_label.pack_forget()
         frame_products.pack_forget()

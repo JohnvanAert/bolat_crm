@@ -98,10 +98,28 @@ def add_cabin(name, price):
     cursor.close()
     conn.close()
 
-def update_cabin(cabin_id, new_price):
+def update_cabin(cabin_id, new_name, new_price):
     conn = connect()
     cursor = conn.cursor()
-    cursor.execute("UPDATE cabins SET price = %s WHERE id = %s", (new_price, cabin_id))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute("UPDATE cabins SET name = %s, price = %s WHERE id = %s", (new_name, new_price, cabin_id))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при обновлении кабинки: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+def delete_cabin(cabin_id):
+    conn = connect()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM cabins WHERE id = %s", (cabin_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при удалении кабинки: {e}")
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()

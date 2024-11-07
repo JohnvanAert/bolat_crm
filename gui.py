@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from database import insert_sales_data, fetch_sales_data, get_cabins
+from cabin_data import add_observer, get_cabins_data
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -12,14 +13,11 @@ def create_gui_page(root):
     tk.Label(frame, text="Номер").grid(row=3, column=0)
     entry_number = tk.Entry(frame)
     entry_number.grid(row=3, column=1)
-    
-    # Загрузка данных кабинок
-    cabins_data = get_cabins()
-    cabins_combo_values = [f"{cabins_data[cabin_id]['name']} - {cabins_data[cabin_id]['price']} $" for cabin_id in cabins_data]
-    selected_cabin_id = tk.StringVar()
 
+    # Создаем комбобокс для выбора кабины
+    selected_cabin_id = tk.StringVar()
     tk.Label(frame, text="Выберите кабинку").grid(row=0, column=0)
-    cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, values=cabins_combo_values)
+    cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, state="readonly")
     cabins_combo.grid(row=0, column=1)
 
     # Поле "Общая продажа" обновляется автоматически
@@ -27,14 +25,27 @@ def create_gui_page(root):
     entry_sales = tk.Entry(frame, state='readonly')
     entry_sales.grid(row=1, column=1)
 
+    # Функция для обновления выпадающего списка кабинок
+    def update_cabins_combo():
+        cabins_data = get_cabins_data()  # Получаем актуальные данные по кабинкам
+        cabins_combo_values = [f"{cabin['name']} - {cabin['price']} $" for cabin in cabins_data]
+        cabins_combo['values'] = cabins_combo_values  # Обновляем значения комбобокса
+
+    # Изначально загружаем данные кабинок
+    update_cabins_combo()
+
+    # Подписываем update_cabins_combo на обновления данных о кабинках
+    add_observer(update_cabins_combo)
+
     # Обновление значения "Общая продажа" при выборе кабинки
     def update_sales_price(event):
         selected = cabins_combo.get().split(" - ")[0]  # Получаем название кабинки
-        for cabin_id, cabin_info in cabins_data.items():
-            if cabin_info['name'] == selected:
+        cabins_data = get_cabins_data()
+        for cabin in cabins_data:
+            if cabin['name'] == selected:
                 entry_sales.config(state='normal')
                 entry_sales.delete(0, tk.END)
-                entry_sales.insert(0, cabin_info['price'])
+                entry_sales.insert(0, cabin['price'])
                 entry_sales.config(state='readonly')
                 break
 
@@ -46,12 +57,13 @@ def create_gui_page(root):
             name = entry_name.get()
             number = entry_number.get()
             selected_cabin = cabins_combo.get().split(" - ")[0]
-            selected_cabin_id = next((id for id, cabin in cabins_data.items() if cabin['name'] == selected_cabin), None)
-            cabin_price = cabins_data[selected_cabin_id]['price']  # Получаем цену выбранной кабинки
+            cabins_data = get_cabins_data()
+            selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
+            cabin_price = next((cabin['price'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
 
             insert_sales_data(name, number, selected_cabin_id, cabin_price)
             messagebox.showinfo("Успех", "Данные успешно добавлены!")
-            display_sales_data()
+            display_sales_data()  # Обновляем данные в таблице и комбобоксе
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
@@ -69,10 +81,16 @@ def create_gui_page(root):
 
     # Функция для отображения данных в таблице
     def display_sales_data():
+        # Очищаем таблицу
         for item in tree.get_children():
             tree.delete(item)
+        
+        # Загружаем и отображаем актуальные данные о продажах
         for row in fetch_sales_data():
             tree.insert("", tk.END, values=row)
+        
+        # Обновляем список кабинок
+        update_cabins_combo()
 
     display_sales_data()
     return frame
