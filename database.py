@@ -85,19 +85,47 @@ def insert_product(name, price, quantity, image_path):
     except Exception as e:
         print("Ошибка при вставке данных о продуктах:", e)
 
+# Function to update product data
+def update_product(product_id, name, price, quantity, image_path):
+    conn = connect()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            UPDATE products
+            SET name = %s, price = %s, quantity = %s, image_path = %s
+            WHERE id = %s
+            """,
+            (name, price, quantity, image_path, product_id)
+        )
+        conn.commit()
+    except Exception as e:
+        print("Ошибка при обновлении данных о продукте:", e)
+        conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
 # Функция для извлечения данных о продуктах
 def fetch_products():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products ORDER BY id")
+        cursor.execute("SELECT id, name, price, quantity, image_path FROM products ORDER BY id")
         products = cursor.fetchall()
         cursor.close()
         conn.close()
-        return products
+        
+        # Преобразуем результаты в список словарей
+        return [
+            {"id": row[0], "name": row[1], "price": row[2], "quantity": row[3], "image_path": row[4]}
+            for row in products
+        ]
     except Exception as e:
         print("Ошибка при извлечении данных о продуктах:", e)
         return []
+
+
 
 # database.py
 
