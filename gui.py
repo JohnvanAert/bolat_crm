@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins
+from tkinter import messagebox, ttk, simpledialog
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data
 from cabin_data import add_observer, get_cabins_data
 
 def create_gui_page(root):
@@ -14,32 +14,25 @@ def create_gui_page(root):
     entry_number = tk.Entry(frame)
     entry_number.grid(row=3, column=1)
 
-    # Создаем комбобокс для выбора кабины
     selected_cabin_id = tk.StringVar()
     tk.Label(frame, text="Выберите кабинку").grid(row=0, column=0)
     cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, state="readonly")
     cabins_combo.grid(row=0, column=1)
 
-    # Поле "Общая продажа" обновляется автоматически
     tk.Label(frame, text="Общая продажа").grid(row=1, column=0)
     entry_sales = tk.Entry(frame, state='readonly')
     entry_sales.grid(row=1, column=1)
 
-    # Функция для обновления выпадающего списка кабинок
     def update_cabins_combo():
-        cabins_data = get_cabins_data()  # Получаем актуальные данные по кабинкам
+        cabins_data = get_cabins_data()
         cabins_combo_values = [f"{cabin['name']} - {cabin['price']} $" for cabin in cabins_data]
-        cabins_combo['values'] = cabins_combo_values  # Обновляем значения комбобокса
+        cabins_combo['values'] = cabins_combo_values
 
-    # Изначально загружаем данные кабинок
     update_cabins_combo()
-
-    # Подписываем update_cabins_combo на обновления данных о кабинках
     add_observer(update_cabins_combo)
 
-    # Обновление значения "Общая продажа" при выборе кабинки
     def update_sales_price(event):
-        selected = cabins_combo.get().split(" - ")[0]  # Получаем название кабинки
+        selected = cabins_combo.get().split(" - ")[0]
         cabins_data = get_cabins_data()
         for cabin in cabins_data:
             if cabin['name'] == selected:
@@ -51,7 +44,6 @@ def create_gui_page(root):
 
     cabins_combo.bind("<<ComboboxSelected>>", update_sales_price)
 
-    # Функция для отправки данных в базу
     def submit_data():
         try:
             name = entry_name.get()
@@ -63,13 +55,12 @@ def create_gui_page(root):
 
             insert_sales_data(name, number, selected_cabin_id, cabin_price)
             messagebox.showinfo("Успех", "Данные успешно добавлены!")
-            display_sales_data()  # Обновляем данные в таблице и комбобоксе
+            display_sales_data()
         except Exception as e:
             messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
     tk.Button(frame, text="Добавить", command=submit_data).grid(row=4, columnspan=2)
-    
-    # Таблица для отображения данных
+
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date"), show="headings")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Выбранная кабинка")
@@ -79,18 +70,50 @@ def create_gui_page(root):
     tree.heading("date", text="Дата и Время")
     tree.grid(row=5, column=0, columnspan=2)
 
-    # Функция для отображения данных в таблице
     def display_sales_data():
-        # Очищаем таблицу
         for item in tree.get_children():
             tree.delete(item)
-        
-        # Загружаем и отображаем актуальные данные о продажах
         for row in fetch_sales_data():
             tree.insert("", tk.END, values=row)
-        
-        # Обновляем список кабинок
         update_cabins_combo()
 
+    def on_item_double_click(event):
+        item = tree.selection()[0]
+        selected_data = tree.item(item, "values")
+
+        edit_window = tk.Toplevel(root)
+        edit_window.title("Редактирование заказа")
+
+        tk.Label(edit_window, text="Имя").grid(row=0, column=0)
+        edit_name_entry = tk.Entry(edit_window)
+        edit_name_entry.grid(row=0, column=1)
+        edit_name_entry.insert(0, selected_data[1])
+
+        tk.Label(edit_window, text="Номер").grid(row=1, column=0)
+        edit_number_entry = tk.Entry(edit_window)
+        edit_number_entry.grid(row=1, column=1)
+        edit_number_entry.insert(0, selected_data[2])
+
+        tk.Label(edit_window, text="Выберите кабинку").grid(row=2, column=0)
+        edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
+        edit_cabins_combo.grid(row=2, column=1)
+        edit_cabins_combo['values'] = cabins_combo['values']
+        edit_cabins_combo.set(selected_data[3])
+
+        def save_changes():
+            new_name = edit_name_entry.get()
+            new_number = edit_number_entry.get()
+            new_cabin = edit_cabins_combo.get().split(" - ")[0]
+            selected_cabin_id = next((cabin['id'] for cabin in get_cabins_data() if cabin['name'] == new_cabin), None)
+            cabin_price = next((cabin['price'] for cabin in get_cabins_data() if cabin['name'] == new_cabin), None)
+
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, cabin_price)
+            messagebox.showinfo("Успех", "Данные успешно обновлены!")
+            display_sales_data()
+            edit_window.destroy()
+
+        tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=3, columnspan=2)
+
+    tree.bind("<Double-1>", on_item_double_click)
     display_sales_data()
     return frame
