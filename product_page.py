@@ -148,11 +148,18 @@ def create_product_page(root):
             new_quantity = quantity_var.get()
             new_image_path = image_path_var.get()
 
-            if not (new_name and new_price.isdigit() and new_quantity.isdigit() and new_image_path):
-                messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля правильно.")
+            # Проверяем только измененные поля
+            if not (new_name or new_price.isdigit() or new_quantity.isdigit() or new_image_path):
+                messagebox.showerror("Ошибка", "Пожалуйста, заполните хотя бы одно поле.")
                 return
 
-            update_product(product['id'], new_name, float(new_price), int(new_quantity), new_image_path)
+            # Используем старые значения, если поле не изменено
+            final_name = new_name if new_name else product['name']
+            final_price = float(new_price) if new_price.isdigit() else product['price']
+            final_quantity = int(new_quantity) if new_quantity.isdigit() else product['quantity']
+            final_image_path = new_image_path if new_image_path else product['image_path']
+
+            update_product(product['id'], final_name, final_price, final_quantity, final_image_path)
             messagebox.showinfo("Успех", "Продукт обновлен!")
             modal.destroy()
             display_products()
