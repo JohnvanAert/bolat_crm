@@ -68,14 +68,56 @@ def create_gui_page(root):
     tree.heading("name", text="Имя")
     tree.heading("number", text="Номер")
     tree.heading("date", text="Дата и Время")
-    tree.grid(row=5, column=0, columnspan=2)
+    tree.grid(row=6, column=0, columnspan=2)
+
+    # Переменные для пагинации
+    current_page = tk.IntVar(value=1)
+    records_per_page = tk.IntVar(value=10)
+
+    tk.Label(frame, text="Записей на странице:").grid(row=5, column=0)
+    records_per_page_combobox = ttk.Combobox(frame, textvariable=records_per_page, state="readonly", values=[10, 25, 50, 100])
+    records_per_page_combobox.grid(row=5, column=1)
+
+    pagination_frame = tk.Frame(frame)
+    pagination_frame.grid(row=7, column=0, columnspan=2)
 
     def display_sales_data():
         for item in tree.get_children():
             tree.delete(item)
-        for row in fetch_sales_data():
+        all_data = fetch_sales_data()
+        total_pages = (len(all_data) - 1) // records_per_page.get() + 1
+
+        if current_page.get() > total_pages:
+            current_page.set(total_pages)
+        elif current_page.get() < 1:
+            current_page.set(1)
+
+        start_index = (current_page.get() - 1) * records_per_page.get()
+        end_index = start_index + records_per_page.get()
+        paginated_data = all_data[start_index:end_index]
+
+        for row in paginated_data:
             tree.insert("", tk.END, values=row)
+        
         update_cabins_combo()
+        update_pagination_buttons(total_pages)
+
+    def update_pagination_buttons(total_pages):
+        for widget in pagination_frame.winfo_children():
+            widget.destroy()
+
+        if total_pages > 1:
+            for i in range(1, total_pages + 1):
+                button = tk.Button(pagination_frame, text=str(i), command=lambda i=i: go_to_page(i))
+                button.grid(row=0, column=i-1)
+                if i == current_page.get():
+                    button.config(state="disabled")
+
+    def go_to_page(page_number):
+        current_page.set(page_number)
+        display_sales_data()
+
+    records_per_page_combobox.bind("<<ComboboxSelected>>", lambda event: display_sales_data())
 
     def on_item_double_click(event):
         item = tree.selection()[0]
