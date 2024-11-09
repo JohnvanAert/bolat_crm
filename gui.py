@@ -42,7 +42,20 @@ def create_gui_page(root):
     def display_sales_data():
         for item in tree.get_children():
             tree.delete(item)
+        
         all_data = fetch_sales_data()
+
+        # Получение выбранного имени кабинки для фильтрации
+        selected_cabin = selected_cabin_id.get().split(" - ")[0] if selected_cabin_id.get() else None
+        
+        if selected_cabin:
+            cabins_data = get_cabins_data()
+            selected_cabin_id_value = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
+            
+            if selected_cabin_id_value is not None:
+                # Фильтрация данных по ID кабинки
+                all_data = [row for row in all_data if row[3] == selected_cabin_id_value]  # row[3] должен содержать ID кабинки
+        
         total_pages = (len(all_data) - 1) // records_per_page.get() + 1
 
         if current_page.get() > total_pages:
@@ -56,9 +69,9 @@ def create_gui_page(root):
 
         for row in paginated_data:
             tree.insert("", tk.END, values=row)
-        
-        update_cabins_combo()
+
         update_pagination_buttons(total_pages)
+
 
     def update_pagination_buttons(total_pages):
         for widget in pagination_frame.winfo_children():
@@ -76,6 +89,9 @@ def create_gui_page(root):
         display_sales_data()
 
     records_per_page_combobox.bind("<<ComboboxSelected>>", lambda event: display_sales_data())
+    selected_cabin_id.trace("w", lambda *args: display_sales_data())  # Обработчик для обновления данных при выборе кабинки
+
+    display_sales_data()
 
     def on_item_double_click(event):
         item = tree.selection()[0]
@@ -193,5 +209,13 @@ def create_gui_page(root):
         tk.Button(add_window, text="Добавить", command=submit_data).grid(row=4, columnspan=2)
 
     tk.Button(frame, text="Добавить запись", command=open_add_modal).grid(row=8, columnspan=2)
+
+    # Добавление кнопки "Очистить фильтр"
+    def clear_filter():
+        selected_cabin_id.set('')  # Очистка выбора в комбобоксе
+        display_sales_data()       # Отображение всех записей
+
+    tk.Button(frame, text="Очистить фильтр", command=clear_filter).grid(row=9, columnspan=2)
+
 
     return frame
