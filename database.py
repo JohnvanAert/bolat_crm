@@ -27,7 +27,7 @@ def insert_sales_data(name, number, cabins_count, total_sales):
         cursor = conn.cursor()
         query = """
         INSERT INTO sales (name, number, cabins_count, total_sales, date)
-        VALUES (%s, %s, %s, %s, NOW())
+        VALUES (%s, %s, %s, %s, NOW()::timestamp(0))
         """
         cursor.execute(query, (name, number, cabins_count, total_sales))
         conn.commit()
