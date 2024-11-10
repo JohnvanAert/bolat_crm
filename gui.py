@@ -1,7 +1,10 @@
 import tkinter as tk
+from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
 from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data
 from cabin_data import add_observer, get_cabins_data
+import datetime
+from tkcalendar import Calendar
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -10,6 +13,25 @@ def create_gui_page(root):
     tk.Label(frame, text="Выберите кабинку").grid(row=0, column=0)
     cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, state="readonly")
     cabins_combo.grid(row=0, column=1)
+    # Поля для поиска
+    tk.Label(frame, text="Поиск по имени").grid(row=1, column=0)
+    search_name_entry = tk.Entry(frame)
+    search_name_entry.grid(row=1, column=1)
+
+    tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0)
+    search_number_entry = tk.Entry(frame)
+    search_number_entry.grid(row=2, column=1)
+
+    # Поля для выбора диапазона дат
+    tk.Label(frame, text="Дата с").grid(row=3, column=0)
+    start_date_entry = DateEntry(frame, width=12, background='white', foreground='white', borderwidth=2)
+    start_date_entry.grid(row=3, column=1)
+    start_date_entry.focus_set()  # Устанавливаем фокус на поле выбора даты
+    
+    tk.Label(frame, text="Дата по").grid(row=4, column=0)
+    end_date_entry = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
+    end_date_entry.grid(row=4, column=1)
+
 
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date"), show="headings")
     tree.heading("id", text="ID")
@@ -18,7 +40,8 @@ def create_gui_page(root):
     tree.heading("name", text="Имя")
     tree.heading("number", text="Номер")
     tree.heading("date", text="Дата и Время")
-    tree.grid(row=6, column=0, columnspan=2)
+    tree.grid(row=7, column=0, columnspan=2)
+    
 
     # Переменные для пагинации
     current_page = tk.IntVar(value=1)
@@ -56,6 +79,24 @@ def create_gui_page(root):
                 # Фильтрация данных по ID кабинки
                 all_data = [row for row in all_data if row[3] == selected_cabin_id_value]  # row[3] должен содержать ID кабинки
         
+         # Фильтрация по диапазону дат
+        start_date = start_date_entry.get_date()
+        end_date = end_date_entry.get_date()
+        all_data = [row for row in all_data if start_date <= row[5].date() <= end_date]
+
+
+            # Фильтрация данных по имени и номеру
+        search_name = search_name_entry.get().lower()
+        search_number = search_number_entry.get()
+
+
+        if search_name:
+            all_data = [row for row in all_data if row[1] and search_name in row[1].lower()]
+
+        if search_number:
+            all_data = [row for row in all_data if row[2] and search_number in row[2]]
+
+        
         total_pages = (len(all_data) - 1) // records_per_page.get() + 1
 
         if current_page.get() > total_pages:
@@ -70,8 +111,23 @@ def create_gui_page(root):
         for row in paginated_data:
             tree.insert("", tk.END, values=row)
 
-        update_pagination_buttons(total_pages)
 
+        update_pagination_buttons(total_pages)
+    # Кнопка для поиска
+        tk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2)
+
+        # Кнопка для очистки полей поиска и фильтров
+        def clear_filters():
+            search_name_entry.delete(0, tk.END)
+            search_number_entry.delete(0, tk.END)
+            selected_cabin_id.set("не выбрано")
+            start_date_entry.set_date(datetime.date.today())
+            end_date_entry.set_date(datetime.date.today())
+            display_sales_data()
+
+        tk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2)
+
+    
 
     def update_pagination_buttons(total_pages):
         for widget in pagination_frame.winfo_children():
@@ -209,13 +265,6 @@ def create_gui_page(root):
         tk.Button(add_window, text="Добавить", command=submit_data).grid(row=4, columnspan=2)
 
     tk.Button(frame, text="Добавить запись", command=open_add_modal).grid(row=8, columnspan=2)
-
-    # Добавление кнопки "Очистить фильтр"
-    def clear_filter():
-        selected_cabin_id.set('')  # Очистка выбора в комбобоксе
-        display_sales_data()       # Отображение всех записей
-
-    tk.Button(frame, text="Очистить фильтр", command=clear_filter).grid(row=9, columnspan=2)
 
 
     return frame
