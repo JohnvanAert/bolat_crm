@@ -4,7 +4,6 @@ from tkinter import messagebox, ttk
 from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data
 from cabin_data import add_observer, get_cabins_data
 import datetime
-from tkcalendar import Calendar
 
 def create_gui_page(root):
     frame = tk.Frame(root)
