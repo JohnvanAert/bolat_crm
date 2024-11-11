@@ -1,6 +1,7 @@
 import psycopg2
 from dotenv import load_dotenv
 import os
+from datetime import datetime
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
@@ -171,3 +172,48 @@ def delete_cabin(cabin_id):
     finally:
         cursor.close()
         conn.close()
+
+
+# Function to fetch expenses data with optional filters
+def fetch_expenses_data(name=None, min_amount=None, max_amount=None, start_date=None, end_date=None):
+    query = "SELECT id, name, amount, date FROM expenses WHERE 1=1"
+    params = []
+
+    if name:
+        query += " AND name ILIKE %s"
+        params.append(f"%{name}%")
+    if min_amount:
+        query += " AND amount >= %s"
+        params.append(min_amount)
+    if max_amount:
+        query += " AND amount <= %s"
+        params.append(max_amount)
+    if start_date:
+        query += " AND date >= %s"
+        params.append(start_date)
+    if end_date:
+        query += " AND date <= %s"
+        params.append(end_date)
+
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+
+# Function to add an expense entry
+def add_expense(name, amount, date=None):
+    if not date:
+        date = datetime.now().date()
+
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO expenses (name, amount, date) VALUES (%s, %s, %s)",
+        (name, amount, date)
+    )
+    conn.commit()
+    cur.close()
+    conn.close()
