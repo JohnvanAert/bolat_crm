@@ -206,7 +206,7 @@ def fetch_expenses_data(name=None, min_amount=None, max_amount=None, start_date=
 # Function to add an expense entry
 def add_expense(name, amount, date=None):
     if not date:
-        date = datetime.now().date()
+        date = datetime.now()  # Получаем текущую дату и время
 
     conn = connect()
     cur = conn.cursor()
@@ -217,3 +217,27 @@ def add_expense(name, amount, date=None):
     conn.commit()
     cur.close()
     conn.close()
+
+
+def update_expense(expense_id, new_name, new_amount, new_date):
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        
+        # SQL-запрос для обновления записи
+        query = """
+        UPDATE expenses
+        SET name = %s, amount = %s, date = %s
+        WHERE id = %s
+        """
+        
+        # Выполнение запроса с новыми данными
+        cursor.execute(query, (new_name, new_amount, new_date, expense_id))
+        conn.commit()
+        
+        print("Запись успешно обновлена.")
+    except Exception as e:
+        print(f"Ошибка при обновлении записи: {e}")
+    finally:
+        cursor.close()
+        conn.close()
