@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import ttk, messagebox
-from database import fetch_expenses_data, add_expense, update_expense
+from database import fetch_expenses_data, add_expense, update_expense, remove_expense
 from expenses_data import add_observer, update_expenses_data, get_expenses_data
 from datetime import datetime
 
@@ -87,8 +87,16 @@ def create_expenses_page(root):
             except ValueError:
                 messagebox.showerror("Некорректно", "Введите корректную дату и время в формате гггг-мм-дд чч:мм:сс, и сумма должна быть числом.")
 
-        tk.Button(edit_expense_modal, text="Сохранить", command=save_edits).pack()
+        def delete_expense():
+            response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить этот расход?")
+            if response:
+                remove_expense(item_id)
+                messagebox.showinfo("Успех", "Расход удален успешно.")
+                edit_expense_modal.destroy()
+                display_expenses_data()
 
+        tk.Button(edit_expense_modal, text="Сохранить", command=save_edits).pack()
+        tk.Button(edit_expense_modal, text="Удалить", command=delete_expense, fg="red").pack()
     # Event for double-click to edit
     def on_double_click(event):
         selected_item = tree.selection()

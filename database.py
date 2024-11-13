@@ -71,6 +71,19 @@ def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sal
         cursor.close()
         conn.close()
 
+def remove_sales_data(sale_id):
+    """Функция для удаления записи о продаже по ID."""
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM sales WHERE id = %s", (sale_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Ошибка при удалении записи о продаже: {e}")
+
+
 # Функция для вставки данных о продуктах
 def insert_product(name, price, quantity, image_path):
     try:
@@ -241,3 +254,12 @@ def update_expense(expense_id, new_name, new_amount, new_date):
     finally:
         cursor.close()
         conn.close()
+
+# Function to delete an expense entry by ID
+def remove_expense(expense_id):
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM expenses WHERE id = %s", (expense_id,))
+    conn.commit()
+    cur.close()
+    conn.close()

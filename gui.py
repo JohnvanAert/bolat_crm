@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data
 from cabin_data import add_observer, get_cabins_data
 import datetime
 
@@ -51,7 +51,7 @@ def create_gui_page(root):
     records_per_page_combobox.grid(row=5, column=1)
 
     pagination_frame = tk.Frame(frame)
-    pagination_frame.grid(row=7, column=0, columnspan=2)
+    pagination_frame.grid(row=11, column=0, columnspan=2)
 
     def update_cabins_combo():
         cabins_data = get_cabins_data()
@@ -204,7 +204,17 @@ def create_gui_page(root):
             # Закрыть окно редактирования
             edit_window.destroy()
 
+        def delete_sale():
+            response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту запись?")
+            if response:
+                remove_sales_data(selected_data[0])  # Call to delete the record from database
+                messagebox.showinfo("Успех", "Запись успешно удалена!")
+                display_sales_data()  # Refresh the data displayed in the table
+                edit_window.destroy()
+
+
         tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=3, columnspan=2)
+        tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=4, columnspan=2)
 
     tree.bind("<Double-1>", on_item_double_click)
 
