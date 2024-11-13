@@ -35,7 +35,7 @@ def create_expenses_page(root):
     tree.pack()
 
     # Function for opening the edit expense modal
-    def open_edit_expense_modal(item_id, current_name, current_amount, current_date_time):
+    def open_edit_expense_modal(item_id, current_name, current_amount, current_datetime):
         edit_expense_modal = tk.Toplevel(frame)
         edit_expense_modal.title("Редактировать расход")
 
@@ -49,28 +49,36 @@ def create_expenses_page(root):
         amount_entry.pack()
         amount_entry.insert(0, current_amount)
 
-        tk.Label(edit_expense_modal, text="Дата и время (гггг-мм-дд чч:мм:сс):").pack()
-        datetime_entry = tk.Entry(edit_expense_modal)
-        datetime_entry.pack()
+            # Поле для редактирования даты
+        tk.Label(edit_expense_modal, text="Дата (гггг-мм-дд):").pack()
+        date_entry = tk.Entry(edit_expense_modal)
+        date_entry.pack()
 
-        # Предзаполнение поля текущими данными
+        # Поле для редактирования времени
+        tk.Label(edit_expense_modal, text="Время (чч:мм:сс):").pack()
+        time_entry = tk.Entry(edit_expense_modal)
+        time_entry.pack()
+
+        # Предзаполнение полей текущими данными
         if isinstance(current_datetime, str):
             current_datetime = datetime.strptime(current_datetime, '%Y-%m-%d %H:%M:%S')
-        datetime_entry.insert(0, current_datetime.strftime("%Y-%m-%d %H:%M:%S"))
 
-
+        date_entry.insert(0, current_datetime.strftime("%Y-%m-%d"))
+        time_entry.insert(0, current_datetime.strftime("%H:%M:%S"))
 
         def save_edits():
             new_name = name_entry.get()
             new_amount = amount_entry.get()
-            new_datetime_str = datetime_entry.get()
+            new_date_str = date_entry.get()
+            new_time_str = time_entry.get()
 
-            if not new_name or not new_amount or not new_datetime_str:
+            if not new_name or not new_amount or not new_date_str or not new_time_str:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля.")
                 return
 
             try:
                 new_amount = float(new_amount)
+                new_datetime_str = f"{new_date_str} {new_time_str}"
                 new_datetime = datetime.strptime(new_datetime_str, "%Y-%m-%d %H:%M:%S")
                 update_expense(item_id, new_name, new_amount, new_datetime)
                 messagebox.showinfo("Успех", "Расход обновлен успешно.")
@@ -88,12 +96,13 @@ def create_expenses_page(root):
             item_id = tree.item(selected_item, "values")[0]
             current_name = tree.item(selected_item, "values")[1]
             current_amount = tree.item(selected_item, "values")[2]
-            current_date = tree.item(selected_item, "values")[3]
+            current_datetime = tree.item(selected_item, "values")[3]
 
-            if isinstance(current_date, str):
-                current_date = datetime.strptime(current_date, '%Y-%m-%d').date()
+            if isinstance(current_datetime, str):
+                current_datetime = datetime.strptime(current_datetime, '%Y-%m-%d %H:%M:%S')
 
-            open_edit_expense_modal(item_id, current_name, current_amount, current_date)
+
+            open_edit_expense_modal(item_id, current_name, current_amount, current_datetime)
 
     tree.bind("<Double-1>", on_double_click)
 
@@ -130,8 +139,8 @@ def create_expenses_page(root):
                 return
 
         # Filter by date range
-        start_date = start_date_entry.get_date()
-        end_date = end_date_entry.get_date()
+        start_date = datetime.combine(start_date_entry.get_date(), datetime.min.time())
+        end_date = datetime.combine(end_date_entry.get_date(), datetime.max.time())
         all_data = [row for row in all_data if start_date <= row[3] <= end_date]
 
         # Pagination logic
@@ -180,23 +189,30 @@ def create_expenses_page(root):
         date_entry.pack()
         date_entry.set_date(datetime.today().date())
 
+        tk.Label(add_expense_modal, text="Время (чч:мм:сс):").pack()
+        time_entry = tk.Entry(add_expense_modal)
+        time_entry.pack()
+        time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
+
         def save_expense():
             name = name_entry.get()
             amount = amount_entry.get()
             date = date_entry.get_date()
+            time = time_entry.get()
 
-            if not name or not amount:
+            if not name or not amount or not time:
                 messagebox.showerror("Ошибка", "Пожалуйста, заполните все поля.")
                 return
 
             try:
                 amount = float(amount)
-                add_expense(name, amount, date)
+                datetime_combined = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M:%S")
+                add_expense(name, amount, datetime_combined)
                 messagebox.showinfo("Успех", "Расход добавлен успешно.")
                 add_expense_modal.destroy()
                 display_expenses_data()
             except ValueError:
-                messagebox.showerror("Некорректно", "Сумма должна быть числом.")
+                messagebox.showerror("Некорректно", "Введите корректные дату и время, и сумма должна быть числом.")
 
         tk.Button(add_expense_modal, text="Сохранить", command=save_expense).pack()
 
