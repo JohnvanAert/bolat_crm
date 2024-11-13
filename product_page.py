@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, Toplevel, ttk
 from PIL import Image, ImageTk
-from database import insert_product, fetch_products, update_product
+from database import insert_product, fetch_products, update_product, delete_product
 
 def create_product_page(root):
     frame = tk.Frame(root)
@@ -216,7 +216,16 @@ def create_product_page(root):
             modal.destroy()
             display_products()
 
+        def delete_products():
+            response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить этот продукт?")
+            if response:
+                delete_product(product['id'])
+                messagebox.showinfo("Успех", "Продукт успешно удален!")
+                modal.destroy()
+                display_products()
+
         tk.Button(modal, text="Сохранить изменения", command=save_changes).grid(row=5, columnspan=2, pady=10)
+        tk.Button(modal, text="Удалить продукт", command=delete_products, fg="red").grid(row=6, columnspan=2, pady=10)
 
     display_products()
     return frame

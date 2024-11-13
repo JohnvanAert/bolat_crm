@@ -120,6 +120,16 @@ def update_product(product_id, name, price, quantity, image_path):
         cursor.close()
         conn.close()
 
+
+# Function to delete an expense entry by ID
+def delete_product(product_id):
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM products WHERE id = %s", (product_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 # Функция для извлечения данных о продуктах
 def fetch_products():
     try:
