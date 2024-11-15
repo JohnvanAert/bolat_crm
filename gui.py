@@ -131,13 +131,28 @@ def create_gui_page(root):
     def update_pagination_buttons(total_pages):
         for widget in pagination_frame.winfo_children():
             widget.destroy()
+        
+        max_buttons_to_display = 5
+        current = current_page.get()
+        
+        start_page = max(1, current - max_buttons_to_display // 2)
+        end_page = min(total_pages, start_page + max_buttons_to_display - 1)
+        
+        if start_page > 1:
+            tk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).grid(row=0, column=0)
+            tk.Button(pagination_frame, text="<", command=lambda: go_to_page(current - 1)).grid(row=0, column=1)
+        
+        col = 2
+        for page in range(start_page, end_page + 1):
+            button = tk.Button(pagination_frame, text=str(page), command=lambda page=page: go_to_page(page))
+            button.grid(row=0, column=col)
+            if page == current:
+                button.config(state="disabled")
+            col += 1
 
-        if total_pages > 1:
-            for i in range(1, total_pages + 1):
-                button = tk.Button(pagination_frame, text=str(i), command=lambda i=i: go_to_page(i))
-                button.grid(row=0, column=i-1)
-                if i == current_page.get():
-                    button.config(state="disabled")
+        if end_page < total_pages:
+            tk.Button(pagination_frame, text=">", command=lambda: go_to_page(current + 1)).grid(row=0, column=col)
+            tk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
 
     def go_to_page(page_number):
         current_page.set(page_number)
