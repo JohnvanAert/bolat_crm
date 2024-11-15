@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, Toplevel, ttk
 from PIL import Image, ImageTk
-from database import insert_product, fetch_products, update_product, delete_product
+from database import insert_product, fetch_products, update_product, delete_product, insert_expense
+from datetime import datetime
 
 def create_product_page(root):
     frame = tk.Frame(root)
@@ -30,8 +31,31 @@ def create_product_page(root):
 
         tk.Label(modal, text="Изображение").grid(row=3, column=0)
         img_path_var = tk.StringVar()
+        # Frame to hold the image preview and the close button
+        img_frame = tk.Frame(modal)
+        img_frame.grid(row=3, column=1, sticky="w")
         img_preview_label = tk.Label(modal, text="No Image", width=20, height=10)
         img_preview_label.grid(row=3, column=1)
+
+            # Checkbox for expense
+        is_expense = tk.BooleanVar()
+        expense_checkbox = tk.Checkbutton(modal, text="Добавить как расход", variable=is_expense, command=lambda: toggle_expense_field())
+        expense_checkbox.grid(row=7, column=0, columnspan=2)
+
+        # Expense amount entry (initially disabled)
+        tk.Label(modal, text="Сумма расхода").grid(row=5, column=0)
+        entry_expense_amount = tk.Entry(modal, state="disabled")
+        entry_expense_amount.grid(row=5, column=1)
+
+
+        def remove_image():
+            img_preview_label.config(image="", text="No Image")
+            img_preview_label.image = None
+            img_path_var.set("")
+
+        close_button = tk.Button(img_frame, text="X", command=remove_image, width=2, height=1)
+        close_button.grid(row=0, column=1, sticky="ne", padx=2, pady=2)
+
 
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
@@ -42,7 +66,7 @@ def create_product_page(root):
         def load_image_preview(file_path):
             try:
                 img = Image.open(file_path)
-                img = img.resize((100, 100), Image.LANCZOS)
+                img = img.resize((150, 100), Image.LANCZOS)
                 img_tk = ImageTk.PhotoImage(img)
                 img_preview_label.configure(image=img_tk, text="")
                 img_preview_label.image = img_tk
@@ -51,6 +75,14 @@ def create_product_page(root):
 
         select_img_button = tk.Button(modal, text="Выбрать изображение", command=select_image)
         select_img_button.grid(row=4, column=0, columnspan=2)
+
+            # Toggle expense field based on checkbox
+        def toggle_expense_field():
+            if is_expense.get():
+                entry_expense_amount.config(state="normal")
+            else:
+                entry_expense_amount.delete(0, tk.END)
+                entry_expense_amount.config(state="disabled")
 
         def add_product():
             name = entry_name.get()
@@ -68,11 +100,25 @@ def create_product_page(root):
                 return
 
             insert_product(name, price, quantity, image_path)
+
+             # If expense checkbox is checked, add to expenses table
+            if is_expense.get():
+                try:
+                    expense_amount = float(entry_expense_amount.get())
+                except ValueError:
+                    messagebox.showerror("Ошибка", "Сумма расхода должна быть числом.")
+                    return
+                expense_name = f"Закуп {name}"
+                expense_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                insert_expense(expense_name, expense_amount, expense_date)
+
             messagebox.showinfo("Успех", "Продукт добавлен!")
             modal.destroy()
             display_products()
 
-        tk.Button(modal, text="Добавить продукт", command=add_product).grid(row=5, columnspan=2, pady=10)
+        tk.Button(modal, text="Добавить продукт", command=add_product).grid(row=9, columnspan=2, pady=10)
+        
+
 
     add_product_button = tk.Button(frame, text="Добавить продукт", command=open_add_product_modal)
     add_product_button.grid(row=0, column=0, pady=10)
@@ -149,7 +195,7 @@ def create_product_page(root):
         card = tk.Frame(product_container, borderwidth=2, relief="groove", padx=10, pady=10)
         try:
             img = Image.open(product["image_path"])
-            img = img.resize((80, 80), Image.LANCZOS)
+            img = img.resize((150, 100), Image.LANCZOS)
             img_tk = ImageTk.PhotoImage(img)
             img_label = tk.Label(card, image=img_tk)
             img_label.image = img_tk
@@ -190,6 +236,7 @@ def create_product_page(root):
         img_preview_label = tk.Label(modal, text="No Image", width=20, height=10)
         img_preview_label.grid(row=3, column=1)
 
+
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
             if file_path:
@@ -199,7 +246,7 @@ def create_product_page(root):
         def load_image_preview(file_path):
             try:
                 img = Image.open(file_path)
-                img = img.resize((100, 100), Image.LANCZOS)
+                img = img.resize((100, 80), Image.LANCZOS)
                 img_tk = ImageTk.PhotoImage(img)
                 img_preview_label.configure(image=img_tk, text="")
                 img_preview_label.image = img_tk

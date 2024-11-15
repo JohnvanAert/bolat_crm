@@ -273,3 +273,27 @@ def remove_expense(expense_id):
     conn.commit()
     cur.close()
     conn.close()
+
+
+# Function to insert an expense
+def insert_expense(expense_name, expense_amount, expense_date=None):
+    if expense_date is None:
+        expense_date = datetime.now()  # Default to current date and time
+
+    try:
+        connection = connect()
+        cursor = connection.cursor()
+
+        # Insert expense data into the expenses table
+        cursor.execute(
+            """
+            INSERT INTO expenses (name, amount, date)
+            VALUES (%s, %s, %s)
+            """,
+            (expense_name, expense_amount, expense_date)
+        )
+        connection.commit()
+        cursor.close()
+        connection.close()
+    except Exception as e:
+        print("Error inserting expense:", e)
