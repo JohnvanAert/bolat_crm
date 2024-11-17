@@ -312,3 +312,13 @@ def update_product_stock(product_id, quantity_sold):
         conn.close()
     except Exception as e:
         print("Ошибка при обновлении количества продукта:", e)
+
+def insert_order_product(sale_id, product_id, quantity, price):
+    conn = connect()
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO sales_products (sale_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
+                (sale_id, product_id, quantity, price)
+            )
+    conn.close()

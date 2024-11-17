@@ -1,9 +1,10 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product
 from cabin_data import add_observer, get_cabins_data
 import datetime
+from decimal import Decimal
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -331,11 +332,15 @@ def create_gui_page(root):
 
             def update_total_price():
                 nonlocal total_product_price
+                selected_cabin_price = float(entry_sales.get()) if entry_sales.get() else 0
                 total_product_price = sum(float(product['price']) * product['quantity'] for product in selected_products.values())
+                total_price = selected_cabin_price + total_product_price
+                
                 entry_sales.config(state='normal')
                 entry_sales.delete(0, tk.END)
-                entry_sales.insert(0, total_product_price)
+                entry_sales.insert(0, total_price)
                 entry_sales.config(state='readonly')
+
 
             tk.Button(product_window, text="+ Добавить", command=add_product_to_order).pack(side="left")
             tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
@@ -347,13 +352,20 @@ def create_gui_page(root):
         def update_sales_price(event):
             selected = cabins_combo_modal.get().split(" - ")[0]
             cabins_data = get_cabins_data()
+            cabin_price = Decimal(0)
             for cabin in cabins_data:
                 if cabin['name'] == selected:
+                    cabin_price = Decimal(cabin['price'])
                     entry_sales.config(state='normal')
                     entry_sales.delete(0, tk.END)
-                    entry_sales.insert(0, cabin['price'])
+                    total_product_price_decimal = Decimal(total_product_price)
+
+                    # Обновляем общую сумму (включая продукты)
+                    total_price = cabin_price + total_product_price_decimal
+                    entry_sales.insert(0, total_price)
                     entry_sales.config(state='readonly')
                     break
+
 
         cabins_combo_modal.bind("<<ComboboxSelected>>", update_sales_price)
 
@@ -364,14 +376,25 @@ def create_gui_page(root):
                 selected_cabin = cabins_combo_modal.get().split(" - ")[0]
                 cabins_data = get_cabins_data()
                 selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
-                cabin_price = next((cabin['price'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
+                cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'] == selected_cabin), None)
 
-                total_price = cabin_price + total_product_price
-                insert_sales_data(name, number, selected_cabin_id, total_price)
+                # Преобразуем total_product_price в Decimal
+                total_product_price_decimal = Decimal(total_product_price)
+
+                # Общая сумма заказа
+                total_price = cabin_price + total_product_price_decimal
+
+                # Сохраняем продажу и получаем ID
+                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price)
+
+                # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
+                for product_id, product_info in selected_products.items():
+                    insert_order_product(sale_id, product_id, product_info['quantity'], product_info['price'])
 
                 # Обновление количества на складе
                 for product_id, product_info in selected_products.items():
                     update_product_stock(product_id, product_info['quantity'])
+
                 messagebox.showinfo("Успех", "Данные успешно добавлены!")
                 display_sales_data()
                 add_window.destroy()
