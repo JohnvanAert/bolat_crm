@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock
 from cabin_data import add_observer, get_cabins_data
 import datetime
 
@@ -257,6 +257,93 @@ def create_gui_page(root):
         entry_sales = tk.Entry(add_window, state='readonly')
         entry_sales.grid(row=3, column=1)
 
+        selected_products = {}
+        total_product_price = 0
+
+        selected_products_tree = ttk.Treeview(add_window, columns=("product_name", "price", "quantity"), show="headings")
+        selected_products_tree.heading("product_name", text="Название")
+        selected_products_tree.heading("price", text="Цена")
+        selected_products_tree.heading("quantity", text="Количество")
+        selected_products_tree.grid(row=6, column=0, columnspan=2)
+
+        def open_product_list():
+            nonlocal total_product_price
+
+            product_window = tk.Toplevel(add_window)
+            product_window.title("Выбор продуктов")
+
+            product_tree = ttk.Treeview(product_window, columns=("product_id", "product_name", "price", "quantity"), show="headings")
+            product_tree.heading("product_id", text="ID")
+            product_tree.heading("product_name", text="Название")
+            product_tree.heading("price", text="Цена")
+            product_tree.heading("quantity", text="Количество")
+            product_tree.pack(fill="both", expand=True)
+
+            # Получение списка продуктов и отображение их в таблице
+            products = fetch_products()
+            for product in products:
+             product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
+
+            def add_product_to_order():
+                selected_item = product_tree.selection()
+                if selected_item:
+                    item_data = product_tree.item(selected_item)["values"]
+                    if len(item_data) == 4:  # Проверка на наличие всех полей
+                        product_id, product_name, price, stock = item_data
+                        if product_id in selected_products:
+                            if selected_products[product_id]['quantity'] < stock:
+                                selected_products[product_id]['quantity'] += 1
+                            else:
+                                messagebox.showerror("Ошибка", "Достигнуто максимальное количество для этого товара.")
+                                return
+                        else:
+                            if stock > 0:
+                                selected_products[product_id] = {'name': product_name, 'price': price, 'quantity': 1, 'stock': stock}
+                            else:
+                                messagebox.showerror("Ошибка", "Недостаточно товара на складе.")
+                                return
+                        
+                        # Обновление отображения выбранных продуктов
+                        selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
+                        for prod_id, prod_info in selected_products.items():
+                            selected_products_tree.insert("", tk.END, values=(prod_info['name'], prod_info['price'], prod_info['quantity']))
+                        
+                        update_total_price()
+                    else:
+                        messagebox.showerror("Ошибка", "Некорректные данные продукта!")
+
+            def remove_product_from_order():
+                selected_item = product_tree.selection()
+                if selected_item:
+                    item_data = product_tree.item(selected_item)["values"]
+                    product_id = item_data[0]
+                    if product_id in selected_products and selected_products[product_id]['quantity'] > 0:
+                        selected_products[product_id]['quantity'] -= 1
+                        if selected_products[product_id]['quantity'] == 0:
+                            del selected_products[product_id]
+                        update_total_price()
+
+                        # Обновление отображения выбранных продуктов
+                        selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
+                        for prod_id, prod_info in selected_products.items():
+                            selected_products_tree.insert("", tk.END, values=(prod_info['name'], prod_info['price'], prod_info['quantity']))
+
+
+            def update_total_price():
+                nonlocal total_product_price
+                total_product_price = sum(float(product['price']) * product['quantity'] for product in selected_products.values())
+                entry_sales.config(state='normal')
+                entry_sales.delete(0, tk.END)
+                entry_sales.insert(0, total_product_price)
+                entry_sales.config(state='readonly')
+
+            tk.Button(product_window, text="+ Добавить", command=add_product_to_order).pack(side="left")
+            tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
+            tk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
+
+        tk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=4, columnspan=2)
+
+
         def update_sales_price(event):
             selected = cabins_combo_modal.get().split(" - ")[0]
             cabins_data = get_cabins_data()
@@ -279,14 +366,19 @@ def create_gui_page(root):
                 selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
                 cabin_price = next((cabin['price'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
 
-                insert_sales_data(name, number, selected_cabin_id, cabin_price)
+                total_price = cabin_price + total_product_price
+                insert_sales_data(name, number, selected_cabin_id, total_price)
+
+                # Обновление количества на складе
+                for product_id, product_info in selected_products.items():
+                    update_product_stock(product_id, product_info['quantity'])
                 messagebox.showinfo("Успех", "Данные успешно добавлены!")
                 display_sales_data()
                 add_window.destroy()
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
-        tk.Button(add_window, text="Добавить", command=submit_data).grid(row=4, columnspan=2)
+        tk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
 
     tk.Button(frame, text="Добавить запись", command=open_add_modal).grid(row=8, columnspan=2)
 

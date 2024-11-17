@@ -297,3 +297,18 @@ def insert_expense(expense_name, expense_amount, expense_date=None):
         connection.close()
     except Exception as e:
         print("Error inserting expense:", e)
+
+
+def update_product_stock(product_id, quantity_sold):
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        cursor.execute(
+            "UPDATE products SET quantity = quantity - %s WHERE id = %s AND quantity >= %s",
+            (quantity_sold, product_id, quantity_sold)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print("Ошибка при обновлении количества продукта:", e)
