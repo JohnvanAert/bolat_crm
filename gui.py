@@ -332,15 +332,25 @@ def create_gui_page(root):
 
             def update_total_price():
                 nonlocal total_product_price
-                selected_cabin_price = float(entry_sales.get()) if entry_sales.get() else 0
+
+                # Пересчитываем сумму продуктов заново, чтобы избежать дублирования
                 total_product_price = sum(float(product['price']) * product['quantity'] for product in selected_products.values())
+
+                # Получаем текущую цену кабинки (введенную при выборе) и используем ее только один раз
+                if cabins_combo_modal.get():
+                    selected_cabin_price_str = cabins_combo_modal.get().split(" - ")[1].replace(" $", "")
+                    selected_cabin_price = float(selected_cabin_price_str)
+                else:
+                    selected_cabin_price = 0
+
+                # Итоговая сумма включает одну цену кабинки и общую стоимость продуктов
                 total_price = selected_cabin_price + total_product_price
-                
+
+                # Обновляем поле ввода с общей продажей
                 entry_sales.config(state='normal')
                 entry_sales.delete(0, tk.END)
-                entry_sales.insert(0, total_price)
+                entry_sales.insert(0, round(total_price, 2))  # Округляем для точности
                 entry_sales.config(state='readonly')
-
 
             tk.Button(product_window, text="+ Добавить", command=add_product_to_order).pack(side="left")
             tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
@@ -358,14 +368,11 @@ def create_gui_page(root):
                     cabin_price = Decimal(cabin['price'])
                     entry_sales.config(state='normal')
                     entry_sales.delete(0, tk.END)
-                    total_product_price_decimal = Decimal(total_product_price)
 
-                    # Обновляем общую сумму (включая продукты)
-                    total_price = cabin_price + total_product_price_decimal
-                    entry_sales.insert(0, total_price)
+                    # Устанавливаем только цену кабинки при выборе
+                    entry_sales.insert(0, cabin_price)
                     entry_sales.config(state='readonly')
                     break
-
 
         cabins_combo_modal.bind("<<ComboboxSelected>>", update_sales_price)
 

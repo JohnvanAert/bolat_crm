@@ -29,6 +29,7 @@ def insert_sales_data(name, number, cabins_count, total_sales):
         query = """
         INSERT INTO sales (name, number, cabins_count, total_sales, date)
         VALUES (%s, %s, %s, %s, NOW()::timestamp(0))
+        RETURNING id
         """
         cursor.execute(query, (name, number, cabins_count, total_sales))
         conn.commit()
