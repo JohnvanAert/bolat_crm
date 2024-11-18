@@ -393,7 +393,7 @@ def create_gui_page(root):
 
                 # Сохраняем продажу и получаем ID
                 sale_id = insert_sales_data(name, number, selected_cabin_id, total_price)
-
+                
                 # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
                 for product_id, product_info in selected_products.items():
                     insert_order_product(sale_id, product_id, product_info['quantity'], product_info['price'])

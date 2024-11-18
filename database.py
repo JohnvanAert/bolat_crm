@@ -21,22 +21,40 @@ def connect():
         host=DB_HOST,
         port=DB_PORT
     )
+
 def insert_sales_data(name, number, cabins_count, total_sales):
     """Функция для добавления новой записи о продажах."""
     try:
+        # Устанавливаем соединение с базой данных
         conn = connect()
         cursor = conn.cursor()
+        
+        # SQL-запрос для вставки данных и получения id новой записи
         query = """
         INSERT INTO sales (name, number, cabins_count, total_sales, date)
         VALUES (%s, %s, %s, %s, NOW()::timestamp(0))
         RETURNING id
         """
+        
+        # Выполняем запрос
         cursor.execute(query, (name, number, cabins_count, total_sales))
+        
+        # Получаем id вставленной записи
+        sale_id = cursor.fetchone()[0]
+        
+        # Подтверждаем изменения
         conn.commit()
+        
+        # Закрываем курсор и соединение
         cursor.close()
         conn.close()
+        
+        # Возвращаем id
+        return sale_id
     except Exception as e:
+        # Обрабатываем ошибки и выводим их в консоль
         print(f"Ошибка при вставке данных о продажах: {e}")
+        return None
 
 def fetch_sales_data():
     """Функция для получения всех данных о продажах из таблицы."""
