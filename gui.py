@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -189,6 +189,33 @@ def create_gui_page(root):
         # Установка текущей кабинки
         selected_cabin = selected_data[3]
         edit_cabins_combo.set(selected_cabin)
+
+            # Раздел для отображения товаров
+        tk.Label(edit_window, text="Список товаров").grid(row=3, column=0, columnspan=2)
+        products_frame = tk.Frame(edit_window)
+        products_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
+
+        # Загрузка товаров из базы данных
+        sale_id = selected_data[0]
+        products_data = get_products_for_sale(sale_id)  # Получение товаров для текущей продажи
+
+        products_tree = ttk.Treeview(products_frame, columns=("ID", "Название", "Количество", "Цена"), show="headings")
+        products_tree.pack(fill="both", expand=True)
+
+        # Настройка столбцов
+        products_tree.heading("ID", text="ID")
+        products_tree.heading("Название", text="Название")
+        products_tree.heading("Количество", text="Количество")
+        products_tree.heading("Цена", text="Цена")
+
+        products_tree.column("ID", width=50)
+        products_tree.column("Название", width=150)
+        products_tree.column("Количество", width=100)
+        products_tree.column("Цена", width=100)
+
+        # Заполнение данными
+        for product in products_data:
+            products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
         def save_changes():
             new_name = edit_name_entry.get()

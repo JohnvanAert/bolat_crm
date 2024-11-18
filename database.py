@@ -341,3 +341,62 @@ def insert_order_product(sale_id, product_id, quantity, price):
                 (sale_id, product_id, quantity, price)
             )
     conn.close()
+
+
+def get_products_for_sale(sale_id):
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        query = """
+        SELECT p.id, p.name, sp.quantity, sp.price
+        FROM sales_products sp
+        JOIN products p ON sp.product_id = p.id
+        WHERE sp.sale_id = %s
+        """
+        cursor.execute(query, (sale_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Преобразуем результаты в список словарей
+        return [{"id": row[0], "name": row[1], "quantity": row[2], "price": row[3]} for row in results]
+    except Exception as e:
+        print(f"Ошибка при получении товаров для продажи: {e}")
+        return []
+    
+def get_products_data():
+    conn = connect()
+    cursor = conn.cursor()
+    query = "SELECT id, name FROM products"
+    cursor.execute(query)
+    results = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [{"id": row[0], "name": row[1]} for row in results]
+
+def get_product_price(product_id):
+    conn = connect()
+    cursor = conn.cursor()
+    query = "SELECT price FROM products WHERE id = %s"
+    cursor.execute(query, (product_id,))
+    price = cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+    return price
+
+def update_products_for_sale(sale_id, products):
+    conn = connect()
+    cursor = conn.cursor()
+
+    # Удаляем старые товары
+    delete_query = "DELETE FROM sales_products WHERE sale_id = %s"
+    cursor.execute(delete_query, (sale_id,))
+
+    # Добавляем новые товары
+    insert_query = "INSERT INTO sales_products (sale_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)"
+    for product in products:
+        cursor.execute(insert_query, (sale_id, product["id"], product["quantity"], product["price"]))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
