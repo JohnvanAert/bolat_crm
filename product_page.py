@@ -193,6 +193,10 @@ def create_product_page(root):
 
     def create_product_card(product, row, col):
         card = tk.Frame(product_container, borderwidth=2, relief="groove", padx=10, pady=10)
+        
+        def handle_click(event):
+            open_edit_modal(product)
+
         try:
             img = Image.open(product["image_path"])
             img = img.resize((150, 100), Image.LANCZOS)
@@ -200,15 +204,25 @@ def create_product_page(root):
             img_label = tk.Label(card, image=img_tk)
             img_label.image = img_tk
             img_label.pack()
+            img_label.bind("<Button-1>", handle_click)  # Привязка события к изображению
         except (FileNotFoundError, IOError):
             img_label = tk.Label(card, text="No Image", width=10, height=5)
             img_label.pack()
+            img_label.bind("<Button-1>", handle_click)  # Привязка события к метке с текстом
 
-        tk.Label(card, text=f"Название: {product['name']}").pack()
-        tk.Label(card, text=f"Цена: {product['price']}").pack()
-        tk.Label(card, text=f"Количество: {product['quantity']}").pack()
+        name_label = tk.Label(card, text=f"Название: {product['name']}")
+        name_label.pack()
+        name_label.bind("<Button-1>", handle_click)  # Привязка события к метке с названием
 
-        card.bind("<Button-1>", lambda e, p=product: open_edit_modal(p))
+        price_label = tk.Label(card, text=f"Цена: {product['price']}")
+        price_label.pack()
+        price_label.bind("<Button-1>", handle_click)  # Привязка события к метке с ценой
+
+        quantity_label = tk.Label(card, text=f"Количество: {product['quantity']}")
+        quantity_label.pack()
+        quantity_label.bind("<Button-1>", handle_click)  # Привязка события к метке с количеством
+
+        card.bind("<Button-1>", handle_click)  # Привязка события к карточке
         card.grid(row=row, column=col, padx=10, pady=10)
 
     def open_edit_modal(product):

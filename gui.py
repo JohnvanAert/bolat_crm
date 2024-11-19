@@ -404,6 +404,10 @@ def create_gui_page(root):
         cabins_combo_modal.bind("<<ComboboxSelected>>", update_sales_price)
 
         def submit_data():
+            name = entry_name.get().strip()
+            if not name:
+                messagebox.showerror("Ошибка", "Поле 'Имя' обязательно к заполнению.")
+                return
             try:
                 name = entry_name.get()
                 number = entry_number.get()
