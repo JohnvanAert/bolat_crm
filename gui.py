@@ -237,8 +237,15 @@ def create_gui_page(root):
                 selected_cabin_id = selected_data[3]  # Используем прежнее значение ID кабинки
                 cabin_price = selected_data[4]        # Используем прежнее значение цены
 
+            # Получаем текущую стоимость товаров
+            products_data = get_products_for_sale(selected_data[0])
+            total_products_price = sum(product['price'] * product['quantity'] for product in products_data)
+
+            # Пересчитываем общий чек
+            total_price = cabin_price + total_products_price
+
             # Обновить данные в базе данных
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, cabin_price)
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price)
             
             # Обновить данные в интерфейсе
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -246,6 +253,7 @@ def create_gui_page(root):
             
             # Закрыть окно редактирования
             edit_window.destroy()
+
 
         def delete_sale():
             response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту запись?")
@@ -256,8 +264,8 @@ def create_gui_page(root):
                 edit_window.destroy()
 
 
-        tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=3, columnspan=2)
-        tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=4, columnspan=2)
+        tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=6, columnspan=2)
+        tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=7, columnspan=2)
 
     tree.bind("<Double-1>", on_item_double_click)
 
