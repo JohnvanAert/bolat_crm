@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data
+from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -217,6 +217,9 @@ def create_gui_page(root):
         for product in products_data:
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
+        def open_add_product_window():
+            add_product_window(sale_id, products_tree)
+
         def save_changes():
             new_name = edit_name_entry.get()
             new_number = edit_number_entry.get()
@@ -242,18 +245,20 @@ def create_gui_page(root):
             total_products_price = sum(product['price'] * product['quantity'] for product in products_data)
 
             # Пересчитываем общий чек
+            cabin_price = Decimal(cabin_price)
             total_price = cabin_price + total_products_price
 
+                # Виджет для отображения общего чека
+            
             # Обновить данные в базе данных
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price)
-            
-            # Обновить данные в интерфейсе
+                
+            # Обновить данные в интерфейсе  
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
             display_sales_data()
             
             # Закрыть окно редактирования
             edit_window.destroy()
-
 
         def delete_sale():
             response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту запись?")
@@ -263,9 +268,83 @@ def create_gui_page(root):
                 display_sales_data()  # Refresh the data displayed in the table
                 edit_window.destroy()
 
-
+        tk.Button(edit_window, text="Добавить продукты", command=open_add_product_window).grid(row=5, columnspan=2)
         tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=6, columnspan=2)
         tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=7, columnspan=2)
+
+    def add_product_window(sale_id, products_tree):
+            product_window = tk.Toplevel(root)
+            product_window.title("Добавить продукты")
+
+            tk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
+
+            product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена"), show="headings")
+            product_list.grid(row=1, column=0, columnspan=2)
+
+            product_list.heading("ID", text="ID")
+            product_list.heading("Название", text="Название")
+            product_list.heading("Цена", text="Цена")
+
+            product_list.column("ID", width=50)
+            product_list.column("Название", width=150)
+            product_list.column("Цена", width=100)
+
+            all_products = get_all_products()
+            current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
+
+            for product in all_products:
+                if product['id'] in current_products:
+                    product_list.insert(
+                        "",
+                        "end",
+                        values=(product['id'], product['name'], product['price']),
+                        tags=("existing",)
+                    )
+                else:
+                    product_list.insert("", "end", values=(product['id'], product['name'], product['price']))
+
+            product_list.tag_configure("existing", background="green")
+
+            def add_or_update_product():
+                selected_item = product_list.selection()
+                if not selected_item:
+                    messagebox.showerror("Ошибка", "Выберите продукт!")
+                    return
+
+                selected_product = product_list.item(selected_item[0], "values")
+                product_id, product_name, product_price = selected_product
+
+                if product_id in current_products:
+                    new_quantity = current_products[product_id] + 1
+                    update_product_quantity(sale_id, product_id, new_quantity)
+                else:
+                    add_product_to_sale(sale_id, product_id, 1, product_price)
+
+                current_products[product_id] = current_products.get(product_id, 0) + 1
+                refresh_products_tree(products_tree, sale_id)
+
+            def decrease_quantity():
+                selected_item = product_list.selection()
+                if not selected_item:
+                    messagebox.showerror("Ошибка", "Выберите продукт!")
+                    return
+
+                selected_product = product_list.item(selected_item[0], "values")
+                product_id, product_name, product_price = selected_product
+
+                if product_id in current_products:
+                    new_quantity = current_products[product_id] - 1
+                    if new_quantity == 0:
+                        delete_product_from_sale(sale_id, product_id)
+                        del current_products[product_id]
+                    else:
+                        update_product_quantity(sale_id, product_id, new_quantity)
+
+                    refresh_products_tree(products_tree, sale_id)
+
+            tk.Button(product_window, text="Добавить/увеличить", command=add_or_update_product).grid(row=2, column=0)
+            tk.Button(product_window, text="Уменьшить", command=decrease_quantity).grid(row=2, column=1)
+
 
     tree.bind("<Double-1>", on_item_double_click)
 

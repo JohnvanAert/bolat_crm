@@ -400,3 +400,54 @@ def update_products_for_sale(sale_id, products):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+def get_all_products():
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, price FROM products")
+    products = [{"id": row[0], "name": row[1], "price": row[2]} for row in cursor.fetchall()]
+    conn.close()
+    return products
+
+
+def update_product_quantity(sale_id, product_id, quantity):
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE sales_products SET quantity = %s WHERE sale_id = %s AND product_id = %s",
+        (quantity, sale_id, product_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def add_product_to_sale(sale_id, product_id, quantity, price):
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO sales_products (sale_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
+        (sale_id, product_id, quantity, price)
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_product_from_sale(sale_id, product_id):
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM sales_products WHERE sale_id = %s AND product_id = %s",
+        (sale_id, product_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def refresh_products_tree(tree, sale_id):
+    for item in tree.get_children():
+        tree.delete(item)
+
+    products = get_products_for_sale(sale_id)
+    for product in products:
+        tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
