@@ -426,10 +426,17 @@ def update_products_for_sale(sale_id, products):
 def get_all_products():
     conn = connect()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, price FROM products")
-    products = [{"id": row[0], "name": row[1], "price": row[2]} for row in cursor.fetchall()]
+    cursor.execute("SELECT id, name, price, quantity FROM products")  # Добавляем поле quantity
+    products = [{"id": row[0], "name": row[1], "price": row[2], "quantity": row[3]} for row in cursor.fetchall()]
     conn.close()
     return products
+
+def update_product_quantity_in_stock(product_id, new_quantity):
+    conn = connect()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE products SET quantity = %s WHERE id = %s", (new_quantity, product_id))
+    conn.commit()
+    conn.close()
 
 
 def update_product_quantity(sale_id, product_id, quantity):

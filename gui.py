@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -191,7 +191,7 @@ def create_gui_page(root):
         edit_cabins_combo.set(selected_cabin)
 
             # Раздел для отображения товаров
-        tk.Label(edit_window, text="Список товаров").grid(row=3, column=0, columnspan=2)
+        tk.Label(edit_window, text="Список заказов").grid(row=3, column=0, columnspan=2)
         products_frame = tk.Frame(edit_window)
         products_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
 
@@ -216,7 +216,7 @@ def create_gui_page(root):
         # Заполнение данными
         for product in products_data:
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
-
+            
         def open_add_product_window():
             add_product_window(sale_id, products_tree)
 
@@ -282,32 +282,63 @@ def create_gui_page(root):
 
             tk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
 
-            product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена"), show="headings")
+            product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена", "Количество"), show="headings")
             product_list.grid(row=1, column=0, columnspan=2)
 
             product_list.heading("ID", text="ID")
             product_list.heading("Название", text="Название")
             product_list.heading("Цена", text="Цена")
+            product_list.heading("Количество", text="Количество")
 
             product_list.column("ID", width=50)
             product_list.column("Название", width=150)
             product_list.column("Цена", width=100)
+            product_list.column("Количество", width=100)
 
             all_products = get_all_products()
             current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
 
             for product in all_products:
-                if product['id'] in current_products:
-                    product_list.insert(
-                        "",
-                        "end",
-                        values=(product['id'], product['name'], product['price']),
-                        tags=("existing",)
-                    )
-                else:
-                    product_list.insert("", "end", values=(product['id'], product['name'], product['price']))
+                product_id, product_name, product_price, product_quantity = (
+                    product['id'], product['name'], product['quantity'], product['price']
+                )
 
+                # Проверяем, есть ли продукт в текущей продаже
+                if product_id in current_products:
+                    # Если количество 0, делаем строку недоступной
+                    if product_quantity == 0:
+                        product_list.insert(
+                            "",
+                            "end",
+                            values=(product_id, product_name, product_quantity, product_price),
+                            tags=("existing", "disabled")
+                        )
+                    else:
+                        product_list.insert(
+                            "",
+                            "end",
+                            values=(product_id, product_name, product_quantity, product_price),
+                            tags=("existing",)
+                        )
+                else:
+                    # Если количество 0, делаем строку недоступной
+                    if product_quantity == 0:
+                        product_list.insert(
+                            "",
+                            "end",
+                            values=(product_id, product_name, product_quantity, product_price),
+                            tags=("disabled",)
+                        )
+                    else:
+                        product_list.insert(
+                            "",
+                            "end",
+                            values=(product_id, product_name, product_quantity, product_price)
+                        )
+
+            # Настройка тегов для таблицы
             product_list.tag_configure("existing", background="green")
+            product_list.tag_configure("disabled", background="lightgray", foreground="gray")
 
             def add_or_update_product():
                 selected_item = product_list.selection()
@@ -315,17 +346,82 @@ def create_gui_page(root):
                     messagebox.showerror("Ошибка", "Выберите продукт!")
                     return
 
+                # Получаем значения из выбранного продукта
                 selected_product = product_list.item(selected_item[0], "values")
-                product_id, product_name, product_price = selected_product
+                product_id, product_name, product_quantity, product_price = selected_product
 
+                # Преобразование значений из строк в числа
+                product_quantity = float(product_quantity)
+                product_price = float(product_price)
+
+                if product_quantity == 0:
+                    messagebox.showerror("Ошибка", "Продукт недоступен для добавления!")
+                    return
+
+                # Если продукт уже есть в текущей продаже
                 if product_id in current_products:
                     new_quantity = current_products[product_id] + 1
+                    if new_quantity > product_quantity:
+                        messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
+                        return
+
                     update_product_quantity(sale_id, product_id, new_quantity)
                 else:
                     add_product_to_sale(sale_id, product_id, 1, product_price)
 
-                current_products[product_id] = current_products.get(product_id, 0) + 1
+                # Обновляем количество доступного продукта в базе данных
+                update_product_quantity_in_stock(product_id, product_quantity - 1)
+
+                # Обновляем отображение списка продуктов
                 refresh_products_tree(products_tree, sale_id)
+                refresh_product_list(product_list, sale_id)
+
+
+            def refresh_product_list(product_list, sale_id):
+                # Очищаем список
+                product_list.delete(*product_list.get_children())
+
+                # Загружаем обновленные данные
+                all_products = get_all_products()
+                current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
+
+                for product in all_products:
+                    product_id, product_name, product_price, product_quantity = (
+                        product['id'], product['name'], product['price'], product['quantity']
+                    )
+
+                    # Проверяем, есть ли продукт в текущей продаже
+                    if product_id in current_products:
+                        # Если количество 0, делаем строку недоступной
+                        if product_quantity == 0:
+                            product_list.insert(
+                                "",
+                                "end",
+                                values=(product_id, product_name, product_quantity, product_price),
+                                tags=("existing", "disabled")
+                            )
+                        else:
+                            product_list.insert(
+                                "",
+                                "end",
+                                values=(product_id, product_name, product_quantity, product_price),
+                                tags=("existing",)
+                            )
+                    else:
+                        # Если количество 0, делаем строку недоступной
+                        if product_quantity == 0:
+                            product_list.insert(
+                                "",
+                                "end",
+                                values=(product_id, product_name, product_quantity, product_price),
+                                tags=("disabled",)
+                            )
+                        else:
+                            product_list.insert(
+                                "",
+                                "end",
+                                values=(product_id, product_name, product_quantity, product_price)
+                            )
 
             def decrease_quantity():
                 selected_item = product_list.selection()
