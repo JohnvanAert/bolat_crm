@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, get_cabins, update_sales_data, remove_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -223,38 +223,42 @@ def create_gui_page(root):
         def save_changes():
             new_name = edit_name_entry.get()
             new_number = edit_number_entry.get()
-            
+
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
                 new_cabin = edit_cabins_combo.get().split(" - ")[0]
             else:
                 new_cabin = selected_cabin  # Используем старое значение, если новое не выбрано
 
-            # Проверяем, существует ли кабинка с таким именем и получаем ее ID и цену
+            # Получаем данные о кабинках
             cabins_data = get_cabins_data()
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == new_cabin), None)
             cabin_price = next((cabin['price'] for cabin in cabins_data if cabin['name'] == new_cabin), None)
 
-            # Если выбранная кабинка не найдена (например, при сохранении без изменений)
+            # Если выбранная кабинка не найдена, используем прежнее значение
             if selected_cabin_id is None:
-                selected_cabin_id = selected_data[3]  # Используем прежнее значение ID кабинки
-                cabin_price = selected_data[4]        # Используем прежнее значение цены
+                selected_cabin_id = selected_data[3]  # Прежний ID кабинки
+                cabin_price = Decimal(selected_data[4])  # Прежняя цена кабинки
+            else:
+                cabin_price = Decimal(cabin_price)  # Новая цена кабинки
 
             # Получаем текущую стоимость товаров
             products_data = get_products_for_sale(selected_data[0])
-            total_products_price = sum(product['price'] * product['quantity'] for product in products_data)
+            total_products_price = sum(
+                Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
+            )
 
             # Пересчитываем общий чек
-            cabin_price = Decimal(cabin_price)
-            total_price = cabin_price + total_products_price
+            total_price = total_products_price + cabin_price
+            print(f"Products total: {total_products_price}, Cabin price: {cabin_price}, Total: {total_price}")
 
-                # Виджет для отображения общего чека
-            
             # Обновить данные в базе данных
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price)
-                
-            # Обновить данные в интерфейсе  
+
+            # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
+            
+            # Обновить интерфейс  
             display_sales_data()
             
             # Закрыть окно редактирования
@@ -263,7 +267,7 @@ def create_gui_page(root):
         def delete_sale():
             response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту запись?")
             if response:
-                remove_sales_data(selected_data[0])  # Call to delete the record from database
+                delete_sales(selected_data[0])  # Call to delete the record from database
                 messagebox.showinfo("Успех", "Запись успешно удалена!")
                 display_sales_data()  # Refresh the data displayed in the table
                 edit_window.destroy()
@@ -508,7 +512,7 @@ def create_gui_page(root):
 
                 # Общая сумма заказа
                 total_price = cabin_price + total_product_price_decimal
-
+                
                 # Сохраняем продажу и получаем ID
                 sale_id = insert_sales_data(name, number, selected_cabin_id, total_price)
                 

@@ -90,18 +90,39 @@ def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sal
         cursor.close()
         conn.close()
 
-def remove_sales_data(sale_id):
-    """Функция для удаления записи о продаже по ID."""
+def delete_sales(sale_id):
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM sales WHERE id = %s", (sale_id,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        print(f"Ошибка при удалении записи о продаже: {e}")
+        # Получаем данные о продуктах, связанных с продажей
+        cursor.execute("""
+            SELECT product_id, quantity
+            FROM sales_products
+            WHERE sale_id = %s
+        """, (sale_id,))
+        products = cursor.fetchall()
 
+        # Восстанавливаем количество продуктов
+        for product in products:
+            product_id, quantity_sold = product
+            cursor.execute("""
+                UPDATE products
+                SET quantity = quantity + %s
+                WHERE id = %s
+            """, (quantity_sold, product_id))
+
+        # Удаляем записи из sales_products
+        cursor.execute("DELETE FROM sales_products WHERE sale_id = %s", (sale_id,))
+        
+        # Удаляем запись из sales
+        cursor.execute("DELETE FROM sales WHERE id = %s", (sale_id,))
+
+        # Подтверждаем изменения
+        conn.commit()
+        print("Запись успешно удалена, количество продуктов восстановлено.")
+    except Exception as e:
+        conn.rollback()
+        print(f"Ошибка при удалении записи: {e}")
 
 # Функция для вставки данных о продуктах
 def insert_product(name, price, quantity, image_path):
