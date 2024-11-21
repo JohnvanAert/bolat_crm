@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, refresh_products_tree, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -216,7 +216,7 @@ def create_gui_page(root):
         # Заполнение данными
         for product in products_data:
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
-            
+
         def open_add_product_window():
             add_product_window(sale_id, products_tree)
 
@@ -348,33 +348,44 @@ def create_gui_page(root):
 
                 # Получаем значения из выбранного продукта
                 selected_product = product_list.item(selected_item[0], "values")
-                product_id, product_name, product_quantity, product_price = selected_product
+                product_id = int(selected_product[0])  # ID продукта
+                product_name = selected_product[1]  # Название
+                product_price = float(selected_product[2])  # Цена
+                available_quantity = float(selected_product[3])  # Доступное количество
 
-                # Преобразование значений из строк в числа
-                product_quantity = float(product_quantity)
-                product_price = float(product_price)
-
-                if product_quantity == 0:
+                if available_quantity <= 0:
                     messagebox.showerror("Ошибка", "Продукт недоступен для добавления!")
                     return
 
-                # Если продукт уже есть в текущей продаже
+                # Проверяем, есть ли продукт в текущей продаже
                 if product_id in current_products:
-                    new_quantity = current_products[product_id] + 1
-                    if new_quantity > product_quantity:
+                    new_quantity = current_products[product_id] + 1  # Увеличиваем количество
+                    if new_quantity > available_quantity:
                         messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
                         return
 
+                    # Обновляем количество продукта в продаже
                     update_product_quantity(sale_id, product_id, new_quantity)
                 else:
+                    # Добавляем продукт в продажу
                     add_product_to_sale(sale_id, product_id, 1, product_price)
+                    current_products[product_id] = 1  # Обновляем текущие продукты
 
-                # Обновляем количество доступного продукта в базе данных
-                update_product_quantity_in_stock(product_id, product_quantity - 1)
+                # Уменьшаем количество доступного продукта в базе данных
+                update_product_quantity_in_stock(product_id, available_quantity - 1)
 
-                # Обновляем отображение списка продуктов
+                # Обновляем таблицы
                 refresh_products_tree(products_tree, sale_id)
                 refresh_product_list(product_list, sale_id)
+
+
+            def refresh_products_tree(tree, sale_id):
+                for item in tree.get_children():
+                    tree.delete(item)
+
+                products = get_products_for_sale(sale_id)
+                for product in products:
+                    tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
 
             def refresh_product_list(product_list, sale_id):
@@ -387,7 +398,7 @@ def create_gui_page(root):
 
                 for product in all_products:
                     product_id, product_name, product_price, product_quantity = (
-                        product['id'], product['name'], product['price'], product['quantity']
+                        product['id'], product['name'], product['quantity'], product['price']
                     )
 
                     # Проверяем, есть ли продукт в текущей продаже
@@ -446,6 +457,7 @@ def create_gui_page(root):
             tk.Button(product_window, text="Уменьшить", command=decrease_quantity).grid(row=2, column=1)
 
 
+            
     tree.bind("<Double-1>", on_item_double_click)
 
 

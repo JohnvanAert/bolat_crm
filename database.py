@@ -470,12 +470,3 @@ def delete_product_from_sale(sale_id, product_id):
     )
     conn.commit()
     conn.close()
-
-
-def refresh_products_tree(tree, sale_id):
-    for item in tree.get_children():
-        tree.delete(item)
-
-    products = get_products_for_sale(sale_id)
-    for product in products:
-        tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
