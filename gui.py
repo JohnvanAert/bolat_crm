@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock, delete_product_from_order
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal
@@ -440,18 +440,37 @@ def create_gui_page(root):
                     messagebox.showerror("Ошибка", "Выберите продукт!")
                     return
 
+                # Получаем данные о продукте из выбранного элемента
                 selected_product = product_list.item(selected_item[0], "values")
-                product_id, product_name, product_price = selected_product
+                product_id = int(selected_product[0])  # ID продукта
+                product_name = selected_product[1]  # Название
+                product_price = float(selected_product[2])  # Цена
+                available_quantity = float(selected_product[3])  # Текущее количество на складе
 
+                # Проверяем, есть ли продукт в текущей продаже
                 if product_id in current_products:
                     new_quantity = current_products[product_id] - 1
                     if new_quantity == 0:
+                        # Удаляем продукт из текущей продажи
                         delete_product_from_sale(sale_id, product_id)
-                        del current_products[product_id]
-                    else:
+                        del current_products[product_id]  # Удаляем из текущих продуктов
+                    elif new_quantity > 0:
+                        # Обновляем количество продукта в текущей продаже
                         update_product_quantity(sale_id, product_id, new_quantity)
+                        current_products[product_id] = new_quantity
+                    else:
+                        messagebox.showerror("Ошибка", "Количество не может быть отрицательным!")
+                        return
 
+                    # Увеличиваем количество доступного продукта в базе данных
+                    update_product_quantity_in_stock(product_id, available_quantity + 1)
+
+                    # Обновляем таблицы
                     refresh_products_tree(products_tree, sale_id)
+                    refresh_product_list(product_list, sale_id)
+                else:
+                    messagebox.showerror("Ошибка", "Этот продукт не был добавлен в продажу!")
+
 
             tk.Button(product_window, text="Добавить/увеличить", command=add_or_update_product).grid(row=2, column=0)
             tk.Button(product_window, text="Уменьшить", command=decrease_quantity).grid(row=2, column=1)

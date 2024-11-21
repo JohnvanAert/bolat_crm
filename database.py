@@ -470,3 +470,69 @@ def delete_product_from_sale(sale_id, product_id):
     )
     conn.commit()
     conn.close()
+
+
+def recalculate_total_sale(sale_id):
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        # 1. Вычисляем сумму всех товаров в заказе
+        query = """
+        SELECT SUM(quantity * price)
+        FROM sales_products
+        WHERE sale_id = %s
+        """
+        cursor.execute(query, (sale_id,))
+        total = cursor.fetchone()[0]  # Получаем сумму (или None, если товаров нет)
+        total_amount = total if total else 0
+
+        # 2. Обновляем сумму в таблице `sales`
+        update_query = """
+        UPDATE sales
+        SET total_sales = %s
+        WHERE id = %s
+        """
+        cursor.execute(update_query, (total_amount, sale_id))
+        conn.commit()  # Применяем изменения
+
+        return total_amount
+
+    except psycopg2.Error as e:
+        print(f"Ошибка при работе с базой данных: {e}")
+        if conn:
+            conn.rollback()  # Откат изменений при ошибке
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def delete_product_from_order(sale_id, product_id):
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+
+        # Удаляем товар из заказа
+        delete_query = """
+        DELETE FROM sales_products
+        WHERE sale_id = %s AND product_id = %s
+        """
+        cursor.execute(delete_query, (sale_id, product_id))
+        conn.commit()
+
+        # Пересчитываем сумму заказа
+        new_total = recalculate_total_sale(sale_id)
+        print(f"Новая сумма заказа: {new_total}")
+        return new_total
+
+    except psycopg2.Error as e:
+        print(f"Ошибка при удалении товара из заказа: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
