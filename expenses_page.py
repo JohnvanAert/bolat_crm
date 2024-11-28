@@ -4,6 +4,8 @@ from tkinter import ttk, messagebox
 from database import fetch_expenses_data, add_expense, update_expense, remove_expense
 from expenses_data import add_observer, update_expenses_data, get_expenses_data
 from datetime import datetime
+from tkcalendar import Calendar
+import datetime
 
 def create_expenses_page(root):
     frame = tk.Frame(root)
@@ -18,13 +20,34 @@ def create_expenses_page(root):
     search_price_entry = tk.Entry(frame)
     search_price_entry.pack()
 
-    tk.Label(frame, text="Дата с").pack()
-    start_date_entry = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
-    start_date_entry.pack()
+    # Переменные для хранения выбранных дат
+    selected_start_date = tk.StringVar(value="Нажмите для выбора")
+    selected_end_date = tk.StringVar(value="Нажмите для выбора")
 
-    tk.Label(frame, text="Дата по").pack()
-    end_date_entry = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
-    end_date_entry.pack()
+    def open_calendar(entry_variable):
+        def set_date():
+            selected_date = calendar.get_date()
+            entry_variable.set(selected_date)
+            calendar_window.destroy()
+
+        # Создаем модальное окно для выбора даты
+        calendar_window = tk.Toplevel(root)
+        calendar_window.title("Выбор даты")
+        calendar_window.geometry("300x300")
+        calendar_window.grab_set()  # Делаем окно модальным
+
+        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
+        calendar.pack(pady=20)
+
+        tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+
+    # Виджеты для выбора диапазона дат
+    tk.Label(frame, text="Дата с").pack(padx=10, pady=5)
+    tk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).pack()
+
+    tk.Label(frame, text="Дата по").pack(padx=10, pady=5)
+    tk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).pack()
+
 
     # Table for displaying expense data
     tree = ttk.Treeview(frame, columns=("id", "name", "price", "date"), show="headings")
@@ -147,9 +170,15 @@ def create_expenses_page(root):
                 return
 
         # Filter by date range
-        start_date = datetime.combine(start_date_entry.get_date(), datetime.min.time())
-        end_date = datetime.combine(end_date_entry.get_date(), datetime.max.time())
-        all_data = [row for row in all_data if start_date <= row[3] <= end_date]
+        try:
+            start_date = datetime.datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
+            end_date = datetime.datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
+
+            if start_date and end_date:
+                all_data = [row for row in all_data if start_date <= row[3].date() <= end_date]
+        except ValueError:
+            pass  # Если дата не выбрана или формат неверный, фильтрация не применяется
+
 
         # Pagination logic
         total_pages = (len(all_data) - 1) // records_per_page.get() + 1
@@ -173,8 +202,8 @@ def create_expenses_page(root):
     def clear_filters():
         search_name_entry.delete(0, tk.END)
         search_price_entry.delete(0, tk.END)
-        start_date_entry.set_date(datetime.today().date())
-        end_date_entry.set_date(datetime.today().date())
+        selected_start_date.set("Нажмите для выбора")
+        selected_end_date.set("Нажмите для выбора")
         display_expenses_data()
 
     tk.Button(frame, text="Очистить фильтры", command=clear_filters).pack()
