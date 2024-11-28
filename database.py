@@ -22,7 +22,7 @@ def connect():
         port=DB_PORT
     )
 
-def insert_sales_data(name, number, cabins_count, total_sales):
+def insert_sales_data(name, number, cabins_id, total_sales, cabin_price):
     """Функция для добавления новой записи о продажах."""
     try:
         # Устанавливаем соединение с базой данных
@@ -31,13 +31,13 @@ def insert_sales_data(name, number, cabins_count, total_sales):
         
         # SQL-запрос для вставки данных и получения id новой записи
         query = """
-        INSERT INTO sales (name, number, cabins_count, total_sales, date)
-        VALUES (%s, %s, %s, %s, NOW()::timestamp(0))
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
+        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s)
         RETURNING id
         """
         
         # Выполняем запрос
-        cursor.execute(query, (name, number, cabins_count, total_sales))
+        cursor.execute(query, (name, number, cabins_id, total_sales, cabin_price))
         
         # Получаем id вставленной записи
         sale_id = cursor.fetchone()[0]
@@ -61,7 +61,7 @@ def fetch_sales_data():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_count, total_sales, date FROM sales ORDER BY date DESC")
+        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price FROM sales ORDER BY date DESC")
         sales_data = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -70,17 +70,17 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sales):
+def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sales, new_cabin_price):
     conn = connect()
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
             UPDATE sales
-            SET name = %s, number = %s, cabins_count = %s, total_sales = %s
+            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s
             WHERE id = %s
             """,
-            (new_name, new_number, new_cabin_id, new_total_sales, sale_id)
+            (new_name, new_number, new_cabin_id, new_total_sales, new_cabin_price, sale_id)
         )
         conn.commit()
     except Exception as e:
@@ -363,7 +363,6 @@ def insert_order_product(sale_id, product_id, quantity, price):
             )
     conn.close()
 
-
 def get_products_for_sale(sale_id):
     try:
         conn = connect()
@@ -384,81 +383,26 @@ def get_products_for_sale(sale_id):
     except Exception as e:
         print(f"Ошибка при получении товаров для продажи: {e}")
         return []
-    
-def get_products_data():
+
+def update_product_quantity(sale_id, product_id, new_quantity):
     conn = connect()
     cursor = conn.cursor()
-    query = "SELECT id, name FROM products"
-    cursor.execute(query)
-    results = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [{"id": row[0], "name": row[1]} for row in results]
-
-def get_product_price(product_id):
-    conn = connect()
-    cursor = conn.cursor()
-    query = "SELECT price FROM products WHERE id = %s"
-    cursor.execute(query, (product_id,))
-    price = cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
-    return price
-
-def update_products_for_sale(sale_id, products):
-    conn = connect()
-    cursor = conn.cursor()
-
-    # Удаляем старые товары
-    delete_query = "DELETE FROM sales_products WHERE sale_id = %s"
-    cursor.execute(delete_query, (sale_id,))
-
-    # Добавляем новые товары
-    insert_query = "INSERT INTO sales_products (sale_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)"
-    for product in products:
-        cursor.execute(insert_query, (sale_id, product["id"], product["quantity"], product["price"]))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-
-def get_all_products():
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name, price, quantity FROM products")  # Добавляем поле quantity
-    products = [{"id": row[0], "name": row[1], "price": row[2], "quantity": row[3]} for row in cursor.fetchall()]
-    conn.close()
-    return products
-
-def update_product_quantity_in_stock(product_id, new_quantity):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE products SET quantity = %s WHERE id = %s", (new_quantity, product_id))
-    conn.commit()
-    conn.close()
-
-
-def update_product_quantity(sale_id, product_id, quantity):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE sales_products SET quantity = %s WHERE sale_id = %s AND product_id = %s",
-        (quantity, sale_id, product_id)
-    )
-    conn.commit()
-    conn.close()
-
-
-def add_product_to_sale(sale_id, product_id, quantity, price):
-    conn = connect()
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO sales_products (sale_id, product_id, quantity, price) VALUES (%s, %s, %s, %s)",
-        (sale_id, product_id, quantity, price)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute(
+            """
+            UPDATE sales_products
+            SET quantity = %s
+            WHERE sale_id = %s AND product_id = %s
+            """,
+            (new_quantity, sale_id, product_id)
+        )
+        conn.commit()
+    except psycopg2.Error as e:
+        conn.rollback()
+        print(f"Database error: {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
 
 def delete_product_from_sale(sale_id, product_id):
@@ -472,67 +416,110 @@ def delete_product_from_sale(sale_id, product_id):
     conn.close()
 
 
-def recalculate_total_sale(sale_id):
+def get_cabin_data():
+    conn = connect()
+    cursor = conn.cursor()
+    query = """
+        SELECT id, cabins_id, total_sales, customer_count, date
+        FROM sales
+        """
+    cursor.execute(query)
+
+
+def get_cabin_info_from_sale(sale_id):
+    """Получает ID кабинки и её текущую стоимость (cabin_price), связанную с записью."""
     try:
         conn = connect()
         cursor = conn.cursor()
 
-        # 1. Вычисляем сумму всех товаров в заказе
         query = """
-        SELECT SUM(quantity * price)
-        FROM sales_products
-        WHERE sale_id = %s
+            SELECT cabins_id, cabin_price
+            FROM sales
+            WHERE id = %s;
         """
         cursor.execute(query, (sale_id,))
-        total = cursor.fetchone()[0]  # Получаем сумму (или None, если товаров нет)
-        total_amount = total if total else 0
+        result = cursor.fetchone()
 
-        # 2. Обновляем сумму в таблице `sales`
-        update_query = """
-        UPDATE sales
-        SET total_sales = %s
-        WHERE id = %s
-        """
-        cursor.execute(update_query, (total_amount, sale_id))
-        conn.commit()  # Применяем изменения
+        cursor.close()
+        conn.close()
 
-        return total_amount
-
-    except psycopg2.Error as e:
-        print(f"Ошибка при работе с базой данных: {e}")
-        if conn:
-            conn.rollback()  # Откат изменений при ошибке
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+        if result:
+            cabin_id, cabin_price = result
+            return cabin_id, cabin_price
+        else:
+            return None, None  # Если запись не найдена
+    except Exception as e:
+        print(f"Ошибка при получении информации о кабинке: {e}")
+        return None, None
 
 
-def delete_product_from_order(sale_id, product_id):
+def recalculate_cabin_price(cabin_id):
+    """Пересчитывает стоимость кабинки на основе связанных продаж."""
     try:
         conn = connect()
         cursor = conn.cursor()
 
-        # Удаляем товар из заказа
-        delete_query = """
-        DELETE FROM sales_products
-        WHERE sale_id = %s AND product_id = %s
+        # Суммируем цены всех товаров, связанных с продажами этой кабинки
+        query = """
+            SELECT COALESCE(SUM(sp.price * sp.quantity), 0) AS cabin_total_price
+            FROM sales_products sp
+            JOIN sales s ON sp.sale_id = s.id
+            WHERE s.cabins_id = %s;
         """
-        cursor.execute(delete_query, (sale_id, product_id))
+        cursor.execute(query, (cabin_id,))
+        new_cabin_price = cursor.fetchone()[0]
+
+        # Обновляем цену кабинки
+        update_query = "UPDATE sales SET cabin_price = %s WHERE id = %s;"
+        cursor.execute(update_query, (new_cabin_price, cabin_id))
+
         conn.commit()
+        cursor.close()
+        conn.close()
 
-        # Пересчитываем сумму заказа
-        new_total = recalculate_total_sale(sale_id)
-        print(f"Новая сумма заказа: {new_total}")
-        return new_total
+        print(f"Cabin price recalculated: {new_cabin_price}")
+    except Exception as e:
+        print(f"Ошибка при пересчете стоимости кабинки: {e}")
 
-    except psycopg2.Error as e:
-        print(f"Ошибка при удалении товара из заказа: {e}")
-        if conn:
-            conn.rollback()
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
+
+def get_products_data_for_sale(sale_id):
+    """
+    Получает данные о продуктах, связанных с конкретной продажей.
+    Возвращает список словарей с `product_id`, `price`, `quantity`.
+    """
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        query = """
+            SELECT p.id AS product_id, sp.price, sp.quantity
+            FROM sales_products sp
+            JOIN products p ON sp.product_id = p.id
+            WHERE sp.sale_id = %s;
+        """
+        cursor.execute(query, (sale_id,))
+        products = [
+            {"product_id": row[0], "price": row[1], "quantity": row[2]} for row in cursor.fetchall()
+        ]
+        cursor.close()
+        conn.close()
+        return products
+    except Exception as e:
+        print(f"Ошибка при получении данных о продуктах для продажи {sale_id}: {e}")
+        return []
+
+
+def update_total_sales(sale_id, total_price):
+    """
+    Обновляет общую сумму продажи в таблице sales.
+    """
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        query = "UPDATE sales SET total_sales = %s WHERE id = %s;"
+        cursor.execute(query, (total_price, sale_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"Обновлена общая сумма продажи {sale_id}: {total_price}")
+    except Exception as e:
+        print(f"Ошибка при обновлении общей суммы продажи {sale_id}: {e}")

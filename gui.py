@@ -1,10 +1,11 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, update_products_for_sale, get_product_price, get_products_data, delete_product_from_sale, add_product_to_sale, update_product_quantity,get_all_products, delete_sales, update_product_quantity_in_stock, delete_product_from_order
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales
 from cabin_data import add_observer, get_cabins_data
 import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from tkcalendar import Calendar
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -22,15 +23,32 @@ def create_gui_page(root):
     search_number_entry = tk.Entry(frame)
     search_number_entry.grid(row=2, column=1)
 
-    # Поля для выбора диапазона дат
+        # Поля для выбора диапазона дат (модальное окно вместо DateEntry)
+    selected_start_date = tk.StringVar(value="Нажмите для выбора")
+    selected_end_date = tk.StringVar(value="Нажмите для выбора")
+
+    def open_calendar(entry_variable):
+        def set_date():
+            selected_date = calendar.get_date()
+            entry_variable.set(selected_date)
+            calendar_window.destroy()
+
+        # Создаем модальное окно для выбора даты
+        calendar_window = tk.Toplevel(root)
+        calendar_window.title("Выбор даты")
+        calendar_window.geometry("300x300")
+        calendar_window.grab_set()  # Делаем окно модальным
+
+        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
+        calendar.pack(pady=20)
+
+        tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+
     tk.Label(frame, text="Дата с").grid(row=3, column=0)
-    start_date_entry = DateEntry(frame, width=12, background='white', foreground='white', borderwidth=2)
-    start_date_entry.grid(row=3, column=1)
-    start_date_entry.focus_set()  # Устанавливаем фокус на поле выбора даты
-    
+    tk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1)
+
     tk.Label(frame, text="Дата по").grid(row=4, column=0)
-    end_date_entry = DateEntry(frame, width=12, background='darkblue', foreground='white', borderwidth=2)
-    end_date_entry.grid(row=4, column=1)
+    tk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1)
 
 
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date"), show="headings")
@@ -80,9 +98,16 @@ def create_gui_page(root):
                 all_data = [row for row in all_data if row[3] == selected_cabin_id_value]  # row[3] должен содержать ID кабинки
         
          # Фильтрация по диапазону дат
-        start_date = start_date_entry.get_date()
-        end_date = end_date_entry.get_date()
-        all_data = [row for row in all_data if start_date <= row[5].date() <= end_date]
+        # Фильтрация по диапазону дат
+        try:
+            start_date = datetime.datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
+            end_date = datetime.datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
+
+            if start_date and end_date:
+                all_data = [row for row in all_data if start_date <= row[5].date() <= end_date]
+        except ValueError:
+            pass  # Если дата не выбрана или формат неверный, фильтрация не применяется
+
 
 
             # Фильтрация данных по имени и номеру
@@ -121,8 +146,8 @@ def create_gui_page(root):
             search_name_entry.delete(0, tk.END)
             search_number_entry.delete(0, tk.END)
             selected_cabin_id.set("не выбрано")
-            start_date_entry.set_date(datetime.date.today())
-            end_date_entry.set_date(datetime.date.today())
+            selected_start_date.set("Нажмите для выбора")
+            selected_end_date.set("Нажмите для выбора")
             display_sales_data()
 
         tk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2)
@@ -217,43 +242,125 @@ def create_gui_page(root):
         for product in products_data:
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
-        def open_add_product_window():
-            add_product_window(sale_id, products_tree)
+        def delete_product():
+            """Удаляет выбранный товар из заказа."""
+            selected_item = products_tree.selection()
+            if not selected_item:
+                messagebox.showerror("Ошибка", "Выберите товар для удаления!")
+                return
 
+            product_data = products_tree.item(selected_item[0], "values")
+            product_id = product_data[0]  # ID товара
+            cabin_id, cabin_price = get_cabin_info_from_sale(sale_id)  # Получаем ID кабинки и её стоимость
+
+            if cabin_id is None:
+                messagebox.showerror("Ошибка", "Не удалось получить данные о кабинке!")
+                return
+
+            response = messagebox.askyesno("Подтверждение", "Вы уверены, что хотите удалить товар?")
+            if response:
+                delete_product_from_sale(sale_id, product_id)  # Удаление товара из базы данных
+                refresh_products_tree(products_tree, sale_id)  # Обновление списка товаров
+                recalculate_total_price(sale_id, cabin_price)  # Пересчет общей цены заказа
+                recalculate_cabin_price(cabin_id)  # Пересчет стоимости кабинки
+
+        def decrease_quantity():
+            """Уменьшает количество выбранного товара."""
+            selected_item = products_tree.selection()
+            if not selected_item:
+                messagebox.showerror("Ошибка", "Выберите товар для уменьшения количества!")
+                return
+
+            product_data = products_tree.item(selected_item[0], "values")
+            product_id, current_quantity = product_data[0], int(product_data[2])
+            cabin_id, cabin_price = get_cabin_info_from_sale(sale_id)  # Получаем ID кабинки и её стоимость
+
+            if cabin_id is None:
+                messagebox.showerror("Ошибка", "Не удалось получить данные о кабинке!")
+                return
+
+            if current_quantity <= 1:
+                delete_product()  # Удалить товар, если количество становится 0
+            else:
+                update_product_quantity(sale_id, product_id, current_quantity - 1)  # Уменьшение количества
+                refresh_products_tree(products_tree, sale_id)  # Обновление списка товаров
+                recalculate_total_price(sale_id, cabin_price)  # Пересчет общей цены заказа
+                recalculate_cabin_price(cabin_id)  # Пересчет стоимости кабинки
+
+
+        def refresh_products_tree(products_tree, sale_id=None):
+            # Очистка текущих данных из таблицы
+            for item in products_tree.get_children():
+                products_tree.delete(item)
+
+            # Получение актуальных данных из базы данных
+            if sale_id:
+                products_data = get_products_for_sale(sale_id)  # Используется из database.py
+            else:
+                products_data = fetch_products()  # Используется из database.py
+
+            # Заполнение TreeView новыми данными
+            for product in products_data:
+                products_tree.insert(
+                    "",
+                    "end",
+                    values=(product['id'], product['name'], product['quantity'], product['price'])
+                )
+ 
         def save_changes():
             new_name = edit_name_entry.get()
             new_number = edit_number_entry.get()
 
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
-                new_cabin = edit_cabins_combo.get().split(" - ")[0]
+                new_cabin = edit_cabins_combo.get()
             else:
                 new_cabin = selected_cabin  # Используем старое значение, если новое не выбрано
 
+            # Убираем лишние пробелы и приводим к нижнему регистру
+            new_cabin = new_cabin.strip().lower()
+
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
-            selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == new_cabin), None)
-            cabin_price = next((cabin['price'] for cabin in cabins_data if cabin['name'] == new_cabin), None)
 
-            # Если выбранная кабинка не найдена, используем прежнее значение
-            if selected_cabin_id is None:
+            # Проверяем, выбрана ли новая кабинка
+            selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
+            new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
+
+            # Если кабинка не найдена, используем прежние данные из базы (sales)
+            if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
                 cabin_price = Decimal(selected_data[4])  # Прежняя цена кабинки
             else:
-                cabin_price = Decimal(cabin_price)  # Новая цена кабинки
+                cabin_price = new_cabin_price  # Новая цена кабинки
 
-            # Получаем текущую стоимость товаров
+            # Проверяем сумму продуктов
             products_data = get_products_for_sale(selected_data[0])
             total_products_price = sum(
                 Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
             )
 
-            # Пересчитываем общий чек
-            total_price = total_products_price + cabin_price
+            # Общая сумма: сумма продуктов + цена кабинки
+            if not products_data:
+                total_price = cabin_price  # Если нет продуктов, только цена кабинки
+            else:
+                total_price = total_products_price + cabin_price
+
+            # Проверяем корректность значения selected_data[5]
+            try:
+                previous_total_price = Decimal(selected_data[5])
+            except (ValueError, TypeError, InvalidOperation):
+                messagebox.showerror("Ошибка", "Некорректное значение общей суммы в данных! Попробуйте еще раз.")
+                return
+
+            # Сравниваем старую и новую суммы
+            if total_price != previous_total_price:
+                print(f"Сумма изменилась: {previous_total_price} → {total_price}")
+
             print(f"Products total: {total_products_price}, Cabin price: {cabin_price}, Total: {total_price}")
 
-            # Обновить данные в базе данных
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price)
+            # Обновляем данные в базе
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price, cabin_price)
 
             # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -264,6 +371,33 @@ def create_gui_page(root):
             # Закрыть окно редактирования
             edit_window.destroy()
 
+        def recalculate_total_price(sale_id, cabin_price):
+            """
+            Пересчитывает общую сумму продажи.
+            Использует данные о товарах и стоимости кабинки.
+            """
+            try:
+                # Получаем данные о продуктах через database.py
+                products_data = get_products_data_for_sale(sale_id)
+                
+                # Считаем общую стоимость товаров
+                total_products_price = sum(
+                    Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
+                )
+                
+                # Если товаров нет, общая цена заказа должна быть 0
+                total_price = total_products_price + cabin_price
+                
+                # Обновляем общую стоимость продажи через database.py
+                update_total_sales(sale_id, total_price)
+                
+                print(f"Recalculated: Products total: {total_products_price}, Cabin price: {cabin_price}, Total: {total_price}")
+                return total_products_price, total_price
+            except Exception as e:
+                print(f"Ошибка при пересчете общей стоимости: {e}")
+                return None, None
+  
+
         def delete_sale():
             response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить эту запись?")
             if response:
@@ -271,210 +405,12 @@ def create_gui_page(root):
                 messagebox.showinfo("Успех", "Запись успешно удалена!")
                 display_sales_data()  # Refresh the data displayed in the table
                 edit_window.destroy()
+                
 
-        tk.Button(edit_window, text="Добавить продукты", command=open_add_product_window).grid(row=5, columnspan=2)
+        tk.Button(edit_window, text="Удалить товар", command=delete_product, fg="red").grid(row=5, column=0)
+        tk.Button(edit_window, text="Уменьшить количество", command=decrease_quantity).grid(row=5, column=1)
         tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=6, columnspan=2)
         tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=7, columnspan=2)
-
-    def add_product_window(sale_id, products_tree):
-            product_window = tk.Toplevel(root)
-            product_window.title("Добавить продукты")
-
-            tk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
-
-            product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена", "Количество"), show="headings")
-            product_list.grid(row=1, column=0, columnspan=2)
-
-            product_list.heading("ID", text="ID")
-            product_list.heading("Название", text="Название")
-            product_list.heading("Цена", text="Цена")
-            product_list.heading("Количество", text="Количество")
-
-            product_list.column("ID", width=50)
-            product_list.column("Название", width=150)
-            product_list.column("Цена", width=100)
-            product_list.column("Количество", width=100)
-
-            all_products = get_all_products()
-            current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
-
-            for product in all_products:
-                product_id, product_name, product_price, product_quantity = (
-                    product['id'], product['name'], product['quantity'], product['price']
-                )
-
-                # Проверяем, есть ли продукт в текущей продаже
-                if product_id in current_products:
-                    # Если количество 0, делаем строку недоступной
-                    if product_quantity == 0:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_quantity, product_price),
-                            tags=("existing", "disabled")
-                        )
-                    else:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_quantity, product_price),
-                            tags=("existing",)
-                        )
-                else:
-                    # Если количество 0, делаем строку недоступной
-                    if product_quantity == 0:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_quantity, product_price),
-                            tags=("disabled",)
-                        )
-                    else:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_quantity, product_price)
-                        )
-
-            # Настройка тегов для таблицы
-            product_list.tag_configure("existing", background="green")
-            product_list.tag_configure("disabled", background="lightgray", foreground="gray")
-
-            def add_or_update_product():
-                selected_item = product_list.selection()
-                if not selected_item:
-                    messagebox.showerror("Ошибка", "Выберите продукт!")
-                    return
-
-                # Получаем значения из выбранного продукта
-                selected_product = product_list.item(selected_item[0], "values")
-                product_id = int(selected_product[0])  # ID продукта
-                product_name = selected_product[1]  # Название
-                product_price = float(selected_product[2])  # Цена
-                available_quantity = float(selected_product[3])  # Доступное количество
-
-                if available_quantity <= 0:
-                    messagebox.showerror("Ошибка", "Продукт недоступен для добавления!")
-                    return
-
-                # Проверяем, есть ли продукт в текущей продаже
-                if product_id in current_products:
-                    new_quantity = current_products[product_id] + 1  # Увеличиваем количество
-                    if new_quantity > available_quantity:
-                        messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
-                        return
-
-                    # Обновляем количество продукта в продаже
-                    update_product_quantity(sale_id, product_id, new_quantity)
-                else:
-                    # Добавляем продукт в продажу
-                    add_product_to_sale(sale_id, product_id, 1, product_price)
-                    current_products[product_id] = 1  # Обновляем текущие продукты
-
-                # Уменьшаем количество доступного продукта в базе данных
-                update_product_quantity_in_stock(product_id, available_quantity - 1)
-
-                # Обновляем таблицы
-                refresh_products_tree(products_tree, sale_id)
-                refresh_product_list(product_list, sale_id)
-
-
-            def refresh_products_tree(tree, sale_id):
-                for item in tree.get_children():
-                    tree.delete(item)
-
-                products = get_products_for_sale(sale_id)
-                for product in products:
-                    tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
-
-
-            def refresh_product_list(product_list, sale_id):
-                # Очищаем список
-                product_list.delete(*product_list.get_children())
-
-                # Загружаем обновленные данные
-                all_products = get_all_products()
-                current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
-
-                for product in all_products:
-                    product_id, product_name, product_price, product_quantity = (
-                        product['id'], product['name'], product['quantity'], product['price']
-                    )
-
-                    # Проверяем, есть ли продукт в текущей продаже
-                    if product_id in current_products:
-                        # Если количество 0, делаем строку недоступной
-                        if product_quantity == 0:
-                            product_list.insert(
-                                "",
-                                "end",
-                                values=(product_id, product_name, product_quantity, product_price),
-                                tags=("existing", "disabled")
-                            )
-                        else:
-                            product_list.insert(
-                                "",
-                                "end",
-                                values=(product_id, product_name, product_quantity, product_price),
-                                tags=("existing",)
-                            )
-                    else:
-                        # Если количество 0, делаем строку недоступной
-                        if product_quantity == 0:
-                            product_list.insert(
-                                "",
-                                "end",
-                                values=(product_id, product_name, product_quantity, product_price),
-                                tags=("disabled",)
-                            )
-                        else:
-                            product_list.insert(
-                                "",
-                                "end",
-                                values=(product_id, product_name, product_quantity, product_price)
-                            )
-
-            def decrease_quantity():
-                selected_item = product_list.selection()
-                if not selected_item:
-                    messagebox.showerror("Ошибка", "Выберите продукт!")
-                    return
-
-                # Получаем данные о продукте из выбранного элемента
-                selected_product = product_list.item(selected_item[0], "values")
-                product_id = int(selected_product[0])  # ID продукта
-                product_name = selected_product[1]  # Название
-                product_price = float(selected_product[2])  # Цена
-                available_quantity = float(selected_product[3])  # Текущее количество на складе
-
-                # Проверяем, есть ли продукт в текущей продаже
-                if product_id in current_products:
-                    new_quantity = current_products[product_id] - 1
-                    if new_quantity == 0:
-                        # Удаляем продукт из текущей продажи
-                        delete_product_from_sale(sale_id, product_id)
-                        del current_products[product_id]  # Удаляем из текущих продуктов
-                    elif new_quantity > 0:
-                        # Обновляем количество продукта в текущей продаже
-                        update_product_quantity(sale_id, product_id, new_quantity)
-                        current_products[product_id] = new_quantity
-                    else:
-                        messagebox.showerror("Ошибка", "Количество не может быть отрицательным!")
-                        return
-
-                    # Увеличиваем количество доступного продукта в базе данных
-                    update_product_quantity_in_stock(product_id, available_quantity + 1)
-
-                    # Обновляем таблицы
-                    refresh_products_tree(products_tree, sale_id)
-                    refresh_product_list(product_list, sale_id)
-                else:
-                    messagebox.showerror("Ошибка", "Этот продукт не был добавлен в продажу!")
-
-
-            tk.Button(product_window, text="Добавить/увеличить", command=add_or_update_product).grid(row=2, column=0)
-            tk.Button(product_window, text="Уменьшить", command=decrease_quantity).grid(row=2, column=1)
-
 
             
     tree.bind("<Double-1>", on_item_double_click)
@@ -639,9 +575,9 @@ def create_gui_page(root):
 
                 # Общая сумма заказа
                 total_price = cabin_price + total_product_price_decimal
-                
+                print(f"Products total: {total_product_price_decimal}, Cabin price: {cabin_price}, Total: {total_price}")
                 # Сохраняем продажу и получаем ID
-                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price)
+                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, cabin_price)
                 
                 # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
                 for product_id, product_info in selected_products.items():
