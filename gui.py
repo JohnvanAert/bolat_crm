@@ -308,47 +308,46 @@ def create_gui_page(root):
                 )
  
         def save_changes():
-            new_name = edit_name_entry.get()
-            new_number = edit_number_entry.get()
+            new_name = edit_name_entry.get().strip()
+            new_number = edit_number_entry.get().strip()
 
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
-                new_cabin = edit_cabins_combo.get()
+                new_cabin = edit_cabins_combo.get().strip().lower()
             else:
-                new_cabin = selected_cabin  # Используем старое значение, если новое не выбрано
-
-            # Убираем лишние пробелы и приводим к нижнему регистру
-            new_cabin = new_cabin.strip().lower()
+                new_cabin = selected_cabin.strip().lower()  # Используем старое значение, если новое не выбрано
 
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
 
-            # Проверяем, выбрана ли новая кабинка
+            # Определяем новую кабинку и её цену
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
             new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
 
-            # Если кабинка не найдена, используем прежние данные из базы (sales)
+            # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
                 cabin_price = Decimal(selected_data[4])  # Прежняя цена кабинки
             else:
                 cabin_price = new_cabin_price  # Новая цена кабинки
 
-            # Проверяем сумму продуктов
+            # Получаем данные о продуктах
             products_data = get_products_for_sale(selected_data[0])
+
+            # Проверяем сумму продуктов
             total_products_price = sum(
                 Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
-            )
+            ) if products_data else Decimal(0)
 
-            # Общая сумма: сумма продуктов + цена кабинки
-            if not products_data:
-                total_price = cabin_price  # Если нет продуктов, только цена кабинки
-            else:
-                total_price = total_products_price + cabin_price
+            # Общая сумма = сумма продуктов + цена кабинки
+            # Но учитываем, если кабинка не изменилась, используем старую цену
+            if new_cabin == selected_cabin.strip().lower():
+                cabin_price = Decimal(selected_data[6])  # Используем старую цену кабинки
+            total_price = total_products_price + cabin_price
 
-            # Проверяем корректность значения selected_data[5]
+            # Проверяем корректность значения общей суммы в selected_data
             try:
-                previous_total_price = Decimal(selected_data[5])
+                previous_total_price = Decimal(selected_data[4])
             except (ValueError, TypeError, InvalidOperation):
                 messagebox.showerror("Ошибка", "Некорректное значение общей суммы в данных! Попробуйте еще раз.")
                 return
@@ -358,6 +357,15 @@ def create_gui_page(root):
                 print(f"Сумма изменилась: {previous_total_price} → {total_price}")
 
             print(f"Products total: {total_products_price}, Cabin price: {cabin_price}, Total: {total_price}")
+
+            # Проверка имени и номера на корректность
+            if not new_name:
+                messagebox.showerror("Ошибка", "Имя не может быть пустым!")
+                return
+
+            if not new_number.isdigit():
+                messagebox.showerror("Ошибка", "Номер должен быть числом!")
+                return
 
             # Обновляем данные в базе
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price, cabin_price)
@@ -370,6 +378,7 @@ def create_gui_page(root):
 
             # Закрыть окно редактирования
             edit_window.destroy()
+
 
         def recalculate_total_price(sale_id, cabin_price):
             """

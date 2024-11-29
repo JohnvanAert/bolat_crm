@@ -453,31 +453,41 @@ def get_cabin_info_from_sale(sale_id):
         return None, None
 
 
-def recalculate_cabin_price(cabin_id):
-    """Пересчитывает стоимость кабинки на основе связанных продаж."""
+def recalculate_cabin_price(sale_id):
+    """Пересчитывает стоимость кабинки на основе конкретной продажи."""
     try:
         conn = connect()
         cursor = conn.cursor()
 
-        # Суммируем цены всех товаров, связанных с продажами этой кабинки
+        # Получаем ID кабинки, связанной с данной продажей
+        query_cabin = "SELECT cabins_id FROM sales WHERE id = %s;"
+        cursor.execute(query_cabin, (sale_id,))
+        cabin_id = cursor.fetchone()
+        if not cabin_id:
+            print(f"Продажа с ID {sale_id} не найдена.")
+            return
+        cabin_id = cabin_id[0]
+
+        # Суммируем стоимость товаров, связанных с конкретной продажей
         query = """
-            SELECT COALESCE(SUM(sp.price * sp.quantity), 0) AS cabin_total_price
+            SELECT COALESCE(SUM(sp.price * sp.quantity), 0) AS sale_total_price
             FROM sales_products sp
-            JOIN sales s ON sp.sale_id = s.id
-            WHERE s.cabins_id = %s;
+            WHERE sp.sale_id = %s;
         """
-        cursor.execute(query, (cabin_id,))
+        cursor.execute(query, (sale_id,))
         new_cabin_price = cursor.fetchone()[0]
 
-        # Обновляем цену кабинки
-        update_query = "UPDATE sales SET cabin_price = %s WHERE id = %s;"
-        cursor.execute(update_query, (new_cabin_price, cabin_id))
+        # Обновляем cabin_price только для текущей записи продажи
+        update_query = """
+            UPDATE sales SET cabin_price = %s WHERE id = %s;
+        """
+        cursor.execute(update_query, (new_cabin_price, sale_id))
 
         conn.commit()
         cursor.close()
         conn.close()
 
-        print(f"Cabin price recalculated: {new_cabin_price}")
+        print(f"Cabin price recalculated for sale {sale_id}: {new_cabin_price}")
     except Exception as e:
         print(f"Ошибка при пересчете стоимости кабинки: {e}")
 
