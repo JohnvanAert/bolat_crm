@@ -533,3 +533,73 @@ def update_total_sales(sale_id, total_price):
         print(f"Обновлена общая сумма продажи {sale_id}: {total_price}")
     except Exception as e:
         print(f"Ошибка при обновлении общей суммы продажи {sale_id}: {e}")
+
+
+# Product adding function
+
+def get_all_products():
+    """
+    Получить список всех продуктов из таблицы products.
+    Возвращает список словарей с полями: id, name, price, quantity.
+    """
+    query = """
+        SELECT id, name, price, quantity 
+        FROM products
+        WHERE quantity > 0
+        ORDER BY name;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            # Преобразуем результат в список словарей
+            products = [
+                {"id": row[0], "name": row[1], "price": row[2], "quantity": row[3]}
+                for row in rows
+            ]
+        conn.close()
+        return products
+    except Exception as e:
+        print(f"Ошибка получения продуктов: {e}")
+        return []
+
+def add_product_to_sale(sale_id, product_id, quantity, product_price):
+    """
+    Добавить продукт в продажу. Если продукт уже существует, обновить количество.
+    """
+    query_insert = """
+        INSERT INTO sales_products (sale_id, product_id, quantity, price)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (sale_id, product_id)
+        DO UPDATE SET quantity = sales_products.quantity + EXCLUDED.quantity;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query_insert, (sale_id, product_id, quantity, product_price))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Ошибка добавления продукта в продажу: {e}")
+
+
+def update_sale_total_price(sale_id, product_price):
+    """
+    Обновить общую стоимость продажи, добавив стоимость нового продукта.
+    """
+    query = """
+        UPDATE sales
+        SET total_sales = total_sales + %s
+        WHERE id = %s;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (product_price, sale_id))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Ошибка обновления общей стоимости продажи: {e}")
+
+
