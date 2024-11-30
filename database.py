@@ -70,7 +70,7 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sales, new_cabin_price):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price):
     conn = connect()
     cursor = conn.cursor()
     try:
@@ -80,7 +80,7 @@ def update_sales_data(sale_id, new_name, new_number, new_cabin_id, new_total_sal
             SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s
             WHERE id = %s
             """,
-            (new_name, new_number, new_cabin_id, new_total_sales, new_cabin_price, sale_id)
+            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, sale_id)
         )
         conn.commit()
     except Exception as e:

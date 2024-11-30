@@ -471,41 +471,54 @@ def create_gui_page(root):
 
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
-                new_cabin = edit_cabins_combo.get().strip().lower()
+                # Извлекаем только название кабинки (до дефиса)
+                new_cabin = edit_cabins_combo.get().split(' - ')[0].strip().lower()
             else:
                 new_cabin = selected_cabin.strip().lower()  # Используем старое значение, если новое не выбрано
 
+            print(f"Выбранная кабинка (после извлечения названия): {new_cabin}")  # Лог выбранной кабинки
+
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
+            print(f"Данные о кабинках: {cabins_data}")  # Лог данных кабинок
 
             # Определяем новую кабинку и её цену
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
             new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
 
+            print(f"Новая кабинка ID: {selected_cabin_id}, Новая цена: {new_cabin_price}")  # Лог ID и цены новой кабинки
+
             # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
                 cabin_price = Decimal(selected_data[4])  # Прежняя цена кабинки
+                print(f"Кабинка не найдена, используем прежние данные: ID={selected_cabin_id}, Цена={cabin_price}")
             else:
                 cabin_price = new_cabin_price  # Новая цена кабинки
 
             # Получаем данные о продуктах
             products_data = get_products_for_sale(selected_data[0])
+            print(f"Данные о продуктах: {products_data}")  # Лог продуктов
 
             # Проверяем сумму продуктов
             total_products_price = sum(
                 Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
             ) if products_data else Decimal(0)
 
+            print(f"Сумма продуктов: {total_products_price}")  # Лог суммы продуктов
+
             # Общая сумма = сумма продуктов + цена кабинки
-            # Но учитываем, если кабинка не изменилась, используем старую цену
             if new_cabin == selected_cabin.strip().lower():
                 cabin_price = Decimal(selected_data[6])  # Используем старую цену кабинки
+                print("Кабинка не изменилась, используем старую цену:", cabin_price)
+
             total_price = total_products_price + cabin_price
+            print(f"Общая сумма: {total_price}")  # Лог общей суммы
 
             # Проверяем корректность значения общей суммы в selected_data
             try:
                 previous_total_price = Decimal(selected_data[4])
+                print(f"Старая общая сумма: {previous_total_price}")  # Лог старой суммы
             except (ValueError, TypeError, InvalidOperation):
                 messagebox.showerror("Ошибка", "Некорректное значение общей суммы в данных! Попробуйте еще раз.")
                 return
@@ -513,8 +526,6 @@ def create_gui_page(root):
             # Сравниваем старую и новую суммы
             if total_price != previous_total_price:
                 print(f"Сумма изменилась: {previous_total_price} → {total_price}")
-
-            print(f"Products total: {total_products_price}, Cabin price: {cabin_price}, Total: {total_price}")
 
             # Проверка имени и номера на корректность
             if not new_name:
@@ -526,6 +537,8 @@ def create_gui_page(root):
                 return
 
             # Обновляем данные в базе
+            print(f"Обновление данных: ID={selected_data[0]}, Имя={new_name}, Номер={new_number}, Кабинка ID={selected_cabin_id}, "
+                f"Общая сумма={total_price}, Цена кабинки={cabin_price}")
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price, cabin_price)
 
             # Уведомление об успешном обновлении
