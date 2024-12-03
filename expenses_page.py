@@ -5,7 +5,6 @@ from database import fetch_expenses_data, add_expense, update_expense, remove_ex
 from expenses_data import add_observer, update_expenses_data, get_expenses_data
 from datetime import datetime
 from tkcalendar import Calendar
-import datetime
 
 def create_expenses_page(root):
     frame = tk.Frame(root)
@@ -171,8 +170,8 @@ def create_expenses_page(root):
 
         # Filter by date range
         try:
-            start_date = datetime.datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
-            end_date = datetime.datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
+            start_date = datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
+            end_date = datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
 
             if start_date and end_date:
                 all_data = [row for row in all_data if start_date <= row[3].date() <= end_date]
@@ -209,6 +208,7 @@ def create_expenses_page(root):
     tk.Button(frame, text="Очистить фильтры", command=clear_filters).pack()
 
     # Function to add a new expense
+    # Function to add a new expense
     def open_add_expense_modal():
         add_expense_modal = tk.Toplevel(frame)
         add_expense_modal.title("Добавить расход")
@@ -221,20 +221,45 @@ def create_expenses_page(root):
         amount_entry = tk.Entry(add_expense_modal)
         amount_entry.pack()
 
+        # Поле для выбора даты
         tk.Label(add_expense_modal, text="Дата:").pack()
-        date_entry = DateEntry(add_expense_modal, width=12, background='darkblue', foreground='white', borderwidth=2)
-        date_entry.pack()
-        date_entry.set_date(datetime.today().date())
-
+        selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 
+        date_button = tk.Button(
+            add_expense_modal,
+            text="Выбрать дату",
+            command=lambda: open_calendar(selected_date_var)  # Открыть календарь
+        )
+        date_button.pack()
+        # Отображение выбранной даты
+        date_label = tk.Label(add_expense_modal, textvariable=selected_date_var)
+        date_label.pack()
+        
         tk.Label(add_expense_modal, text="Время (чч:мм:сс):").pack()
         time_entry = tk.Entry(add_expense_modal)
         time_entry.pack()
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
 
+        def open_calendar(entry_variable):
+            def set_date():
+                selected_date = calendar.get_date()
+                entry_variable.set(selected_date)
+                calendar_window.destroy()
+
+            # Создаем модальное окно для выбора даты
+            calendar_window = tk.Toplevel(root)
+            calendar_window.title("Выбор даты")
+            calendar_window.geometry("300x300")
+            calendar_window.grab_set()  # Делаем окно модальным
+
+            calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
+            calendar.pack(pady=20)
+
+            tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+        
         def save_expense():
             name = name_entry.get()
             amount = amount_entry.get()
-            date = date_entry.get_date()
+            date = selected_date_var.get()
             time = time_entry.get()
 
             if not name or not amount or not time:
