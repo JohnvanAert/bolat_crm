@@ -603,3 +603,168 @@ def update_sale_total_price(sale_id, product_price):
         print(f"Ошибка обновления общей стоимости продажи: {e}")
 
 
+def fetch_all_bookings():
+    """Получает все бронирования из базы данных."""
+    query = """
+        SELECT 
+            b.id, 
+            b.customer_name, 
+            b.customer_phone, 
+            b.cabin_id, 
+            c.name AS cabin_name,
+            b.booking_date, 
+            b.start_date, 
+            b.end_date, 
+            b.total_price, 
+            b.status
+        FROM bookings b
+        LEFT JOIN cabins c ON b.cabin_id = c.id
+        ORDER BY b.booking_date DESC;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            return cursor.fetchall()
+    except Exception as e:
+        print("Ошибка при получении бронирований:", e)
+        return []
+    finally:
+        conn.close()
+
+
+def confirm_booking_to_sale(booking_id):
+    """Подтверждает бронирование и создает продажу."""
+    fetch_booking_query = """
+        SELECT 
+            customer_name, 
+            customer_phone, 
+            cabin_id, 
+            total_price, 
+            start_date
+        FROM bookings
+        WHERE id = %s AND status = 'Pending';
+    """
+    insert_sale_query = """
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
+        VALUES (%s, %s, %s, %s, NOW(), %s)
+        RETURNING id;
+    """
+    update_booking_status_query = """
+        UPDATE bookings
+        SET status = 'Confirmed'
+        WHERE id = %s;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            # Получаем данные бронирования
+            cursor.execute(fetch_booking_query, (booking_id,))
+            booking = cursor.fetchone()
+            if not booking:
+                raise ValueError("Бронирование не найдено или уже подтверждено.")
+            
+            # Добавляем продажу
+            cursor.execute(
+                insert_sale_query, 
+                (
+                    booking[0],  # customer_name
+                    booking[1],  # customer_phone
+                    booking[2],  # cabin_id
+                    booking[3],  # total_price
+                    booking[3]   # cabin_price
+                )
+            )
+            sale_id = cursor.fetchone()[0]
+
+            # Обновляем статус бронирования
+            cursor.execute(update_booking_status_query, (booking_id,))
+            conn.commit()
+            return sale_id
+    except Exception as e:
+        conn.rollback()
+        print("Ошибка при подтверждении бронирования:", e)
+        return None
+    finally:
+        conn.close()
+
+
+def update_booking_status(booking_id, new_status):
+    """Обновляет статус бронирования."""
+    query = """
+        UPDATE bookings
+        SET status = %s
+        WHERE id = %s;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (new_status, booking_id))
+            conn.commit()
+            return cursor.rowcount  # Возвращает количество обновленных строк
+    except Exception as e:
+        conn.rollback()
+        print("Ошибка при обновлении статуса бронирования:", e)
+        return 0
+    finally:
+        conn.close()
+
+
+def add_booking(customer_name, customer_phone, cabin_id, start_date, end_date, total_price):
+    """Добавляет новое бронирование."""
+    query = """
+        INSERT INTO bookings (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status)
+        VALUES (%s, %s, %s, %s, %s, %s, 'Pending')
+        RETURNING id;
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (customer_name, customer_phone, cabin_id, start_date, end_date, total_price))
+            booking_id = cursor.fetchone()[0]
+            conn.commit()
+            return booking_id
+    except Exception as e:
+        conn.rollback()
+        print("Ошибка при добавлении бронирования:", e)
+        return None
+    finally:
+        conn.close()
+
+def get_cabin_price(cabin_id):
+    """Получает цену кабины по ID."""
+    query = "SELECT price FROM cabins WHERE id = %s;"
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_id,))
+            result = cursor.fetchone()
+            if result:
+                return result[0]
+            else:
+                return None  # Если кабина с таким ID не найдена
+    except Exception as e:
+        print("Ошибка при получении цены кабины:", e)
+        return None
+    finally:
+        conn.close()
+
+def check_booking_conflict(cabin_id, start_date, end_date):
+    """Проверяет пересечение бронирования для выбранной кабины."""
+    query = """
+        SELECT COUNT(*)
+        FROM bookings
+        WHERE cabin_id = %s 
+          AND (start_date < %s AND end_date > %s)
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_id, end_date, start_date))
+            result = cursor.fetchone()
+            return result[0] > 0  # True, если есть пересечение
+    except Exception as e:
+        print("Ошибка при проверке конфликта бронирования:", e)
+        return True
+    finally:
+        conn.close()
