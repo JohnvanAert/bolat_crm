@@ -647,7 +647,7 @@ def confirm_booking_to_sale(booking_id):
     """
     insert_sale_query = """
         INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
-        VALUES (%s, %s, %s, %s, NOW(), %s)
+        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -768,3 +768,38 @@ def check_booking_conflict(cabin_id, start_date, end_date):
         return True
     finally:
         conn.close()
+
+def fetch_filtered_bookings(name, date, status, cabin, limit, page):
+    offset = (page - 1) * limit
+
+    # Если cabin пустой, передаем None
+    cabin_id = int(cabin) if cabin else None
+
+    query = """
+        SELECT * FROM bookings
+        WHERE (%s = '' OR customer_name ILIKE %s)
+          AND (%s = '' OR booking_date::text LIKE %s)
+          AND (%s = 'Все' OR status = %s)
+          AND (%s IS NULL OR cabin_id = %s)
+        LIMIT %s OFFSET %s
+    """
+    params = (name, f"%{name}%", date, f"%{date}%", status, status, cabin_id, cabin_id, limit, offset)
+
+    with connect() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+            # Подсчет общего количества записей с учетом фильтров
+            count_query = """
+                SELECT COUNT(*)
+                FROM bookings
+                WHERE (%s = '' OR customer_name ILIKE %s)
+                  AND (%s = '' OR booking_date::text LIKE %s)
+                  AND (%s = 'Все' OR status = %s)
+                  AND (%s IS NULL OR cabin_id = %s)
+            """
+            cursor.execute(count_query, params[:-2])  # Исключаем limit и offset
+            total_count = cursor.fetchone()[0]
+
+    return rows, total_count

@@ -5,7 +5,7 @@ from gui import create_gui_page
 from cabin_page import create_cabin_page  # Импорт новой страницы для кабин
 from expenses_page import create_expenses_page
 from tkcalendar import Calendar
-from database import fetch_all_bookings, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict  # Функции из базы данных
+from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings  # Функции из базы данных
 from tkinter import messagebox
 from datetime import datetime
 from tktimepicker import AnalogPicker, AnalogThemes, SpinTimePickerModern, constants
@@ -27,8 +27,55 @@ def create_main_page(root):
     # Заголовок
     tk.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).pack(pady=10)
 
+
+    # Панель фильтров
+    filter_frame = tk.Frame(frame_main)
+    filter_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    tk.Label(filter_frame, text="Имя:").pack(side=tk.LEFT, padx=5)
+    name_filter = tk.Entry(filter_frame)
+    name_filter.pack(side=tk.LEFT, padx=5)
+
+    # Фильтр по дате
+    tk.Label(filter_frame, text="Дата:").pack(side=tk.LEFT, padx=5)
+    selected_date = tk.StringVar()  # Переменная для хранения выбранной даты
+    date_button = tk.Button(filter_frame, text="Выбрать дату", command=lambda: open_calendar(selected_date, date_button))
+    date_button.pack(side=tk.LEFT, padx=5)
+
+    def open_calendar(date_var, date_button):
+        """Открывает модальное окно с календарем для выбора даты."""
+        def select_date():
+            selected_date = calendar.get_date()
+            date_var.set(selected_date)  # Устанавливаем выбранную дату в переменную
+            date_button.config(text=f"Дата: {selected_date}")  # Обновляем текст кнопки
+            calendar_window.destroy()
+
+        calendar_window = tk.Toplevel()
+        calendar_window.title("Выбрать дату")
+        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
+        calendar.pack(pady=10)
+
+        tk.Button(calendar_window, text="Выбрать", command=select_date).pack(pady=5)
+
+    tk.Label(filter_frame, text="Статус:").pack(side=tk.LEFT, padx=5)
+    status_filter = ttk.Combobox(filter_frame, values=["Все", "Подтверждено", "Отменено", "Ожидание"])
+    status_filter.set("Все")
+    status_filter.pack(side=tk.LEFT, padx=5)
+
+        # Создаем отображение ID -> имя кабинки
+    cabins = get_cabins()  # Предполагается, что функция возвращает список кабинок из базы данных
+    cabin_map = {cabin["name"]: cabin["id"] for cabin in cabins}  # Пример: {"Кабинка 1": 1, "Кабинка 2": 2}
+    cabin_names = ["Все"] + list(cabin_map.keys())  # Список для выпадающего меню
+
+    tk.Label(filter_frame, text="Кабинка:").pack(side=tk.LEFT, padx=5)
+    cabin_filter = ttk.Combobox(filter_frame, values=cabin_names)
+    cabin_filter.set("Все")
+    cabin_filter.pack(side=tk.LEFT, padx=5)
+
+    tk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).pack(side=tk.LEFT, padx=10)
+
     # Таблица бронирований
-    columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Дата записи", "Начало брони", "Статус")
+    columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Добавлено", "Начало брони", "Статус")
     bookings_table = ttk.Treeview(frame_main, columns=columns, show="headings", height=10)
     bookings_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -36,10 +83,34 @@ def create_main_page(root):
         bookings_table.heading(col, text=col)
         bookings_table.column(col, width=150)
 
-    def load_bookings():
-        """Загрузка данных бронирований в таблицу."""
+     # Параметры пагинации
+    records_per_page = 10
+    current_page = 1
+    total_pages = 1
+
+    def update_pagination_controls():
+        """Обновление кнопок пагинации."""
+        pagination_label.config(text=f"Страница {current_page} из {total_pages}")
+        prev_button.config(state=tk.NORMAL if current_page > 1 else tk.DISABLED)
+        next_button.config(state=tk.NORMAL if current_page < total_pages else tk.DISABLED)
+
+
+    def load_bookings(page=1):
+        """Загрузка данных бронирований с учетом фильтров и пагинации."""
+        nonlocal current_page, total_pages
+        current_page = page
+
+        # Получение данных фильтров
+        name = name_filter.get().strip()
+        date = selected_date.get()
+        status = status_filter.get().strip()
+        cabin_name = cabin_filter.get().strip()
+        # Получаем ID кабинки или None, если выбрано "Все"
+        cabin_id = None if cabin_name == "Все" else cabin_map.get(cabin_name)
+
+        # Запрос данных из базы
+        bookings, total_count = fetch_filtered_bookings(name, date, status, cabin_id, records_per_page, current_page)
         bookings_table.delete(*bookings_table.get_children())
-        bookings = fetch_all_bookings()
         # Добавление данных в таблицу
         for booking in bookings:
             # Убедимся, что данные передаются в правильном порядке
@@ -47,12 +118,31 @@ def create_main_page(root):
                 booking[0],  # ID
                 booking[1],  # Имя клиента
                 booking[2],  # Телефон
-                booking[4],  # Кабинка (название)
-                booking[5],  # Дата бронирования
+                booking[3],  # Кабинка (название)
+                booking[4],  # Дата записи бронирования
                 booking[6],  # Начало брони
-                booking[9]   # Статус
+                booking[8]   # Статус
             )
             bookings_table.insert("", tk.END, values=row)
+            # Обновление параметров пагинации
+        total_pages = (total_count + records_per_page - 1) // records_per_page
+        update_pagination_controls()
+    
+         # Панель пагинации
+    pagination_frame = tk.Frame(frame_main)
+    pagination_frame.pack(fill=tk.X, pady=5)
+
+    prev_button = tk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
+    prev_button.pack(side=tk.LEFT, padx=5)
+
+    pagination_label = tk.Label(pagination_frame, text="Страница 1 из 1")
+    pagination_label.pack(side=tk.LEFT, padx=5)
+
+    next_button = tk.Button(pagination_frame, text=">>", command=lambda: load_bookings(current_page + 1))
+    next_button.pack(side=tk.LEFT, padx=5)
+
+
+            
     load_bookings()
 
     # Кнопки управления
@@ -99,6 +189,16 @@ def create_main_page(root):
                 return
 
             try:
+                # Преобразование строк в datetime
+                from datetime import datetime
+                start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
+                end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")
+
+                # Проверка на порядок времени
+                if start >= end:
+                    messagebox.showerror("Ошибка", "Время начала должно быть раньше времени окончания!")
+                    return
+
                 # Получение цены кабины
                 cabin_price = get_cabin_price(cabin_id)
                 if cabin_price is None:
@@ -106,9 +206,6 @@ def create_main_page(root):
                     return
 
                 # Рассчитать общее время бронирования (в часах)
-                from datetime import datetime
-                start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
-                end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")
                 duration_hours = (end - start).total_seconds() / 3600
 
                 # Рассчитать общую стоимость
@@ -118,7 +215,7 @@ def create_main_page(root):
                 if check_booking_conflict(cabin_id, start_datetime, end_datetime):
                     tk.messagebox.showerror("Ошибка", "Выбранное время уже занято. Пожалуйста, выберите другое время.")
                     return
-                
+
                 # Вызов функции добавления бронирования
                 booking_id = add_booking(name, phone, cabin_id, start, end, total_price)
                 if booking_id:
