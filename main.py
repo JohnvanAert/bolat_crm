@@ -84,7 +84,7 @@ def create_main_page(root):
         load_bookings(1)  # Перезагружает бронирования без фильтров
 
     # Таблица бронирований
-    columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Добавлено", "Начало брони", "Статус")
+    columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Добавлено", "Начало брони", "Конец брони", "Статус")
     bookings_table = ttk.Treeview(frame_main, columns=columns, show="headings", height=10)
     bookings_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -129,7 +129,8 @@ def create_main_page(root):
                 booking[2],  # Телефон
                 booking[3],  # Кабинка (название)
                 booking[4],  # Дата записи бронирования
-                booking[6],  # Начало брони
+                booking[5],  # Начало брони
+                booking[6],  # Конец брони
                 booking[8]   # Статус
             )
             bookings_table.insert("", tk.END, values=row)
@@ -159,7 +160,7 @@ def create_main_page(root):
     def add_booking_modal():
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
-        modal.geometry("700x400")
+        modal.geometry("600x600")
 
         tk.Label(modal, text="Имя клиента:").pack(pady=5)
         name_entry = tk.Entry(modal)
@@ -217,12 +218,16 @@ def create_main_page(root):
                 if cabin_price is None:
                     messagebox.showerror("Ошибка", "Кабина с указанным ID не найдена!")
                     return
+                
+                        # Расчет общего времени бронирования
+                total_seconds = (end - start).total_seconds()
+                full_hours = total_seconds // 3600  # Полные часы
+                remaining_minutes = (total_seconds % 3600) // 60  # Оставшиеся минуты
 
-                # Рассчитать общее время бронирования (в часах)
-                duration_hours = (end - start).total_seconds() / 3600
-
-                # Рассчитать общую стоимость
-                total_price = cabin_price * Decimal(duration_hours)
+                # Расчет стоимости
+                total_price = cabin_price * Decimal(full_hours)  # Стоимость за полные часы
+                if remaining_minutes > 0:  # Добавление стоимости за минуты
+                    total_price += cabin_price * Decimal(remaining_minutes / 60)
 
                 # Проверка конфликта
                 if check_booking_conflict(cabin_id, start_datetime, end_datetime):
