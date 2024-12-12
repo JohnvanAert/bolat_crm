@@ -643,7 +643,7 @@ def confirm_booking_to_sale(booking_id):
             total_price, 
             start_date
         FROM bookings
-        WHERE id = %s AND status = 'Pending';
+        WHERE id = %s AND status = 'Ожидание';
     """
     insert_sale_query = """
         INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
@@ -652,7 +652,7 @@ def confirm_booking_to_sale(booking_id):
     """
     update_booking_status_query = """
         UPDATE bookings
-        SET status = 'Confirmed'
+        SET status = 'Подтверждено'
         WHERE id = %s;
     """
     try:
@@ -714,7 +714,7 @@ def add_booking(customer_name, customer_phone, cabin_id, start_date, end_date, t
     """Добавляет новое бронирование."""
     query = """
         INSERT INTO bookings (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status)
-        VALUES (%s, %s, %s, %s, %s, %s, 'Pending')
+        VALUES (%s, %s, %s, %s, %s, %s, 'Ожидание')
         RETURNING id;
     """
     try:

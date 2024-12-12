@@ -73,6 +73,15 @@ def create_main_page(root):
     cabin_filter.pack(side=tk.LEFT, padx=5)
 
     tk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).pack(side=tk.LEFT, padx=10)
+    tk.Button(filter_frame, text="Очистить фильтры", command=lambda: clear_filters()).pack(side=tk.LEFT, padx=11)
+
+    def clear_filters():
+        """Сбрасывает все фильтры в исходное состояние."""
+        name_filter.delete(0, tk.END)  # Очищает поле имени
+        selected_date.set("")  # Сбрасывает выбранную дату
+        status_filter.set("Все")  # Сбрасывает статус на "Все"
+        cabin_filter.set("Все")  # Сбрасывает кабинку на "Все"
+        load_bookings(1)  # Перезагружает бронирования без фильтров
 
     # Таблица бронирований
     columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Добавлено", "Начало брони", "Статус")
@@ -150,7 +159,7 @@ def create_main_page(root):
     def add_booking_modal():
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
-        modal.geometry("600x400")
+        modal.geometry("700x400")
 
         tk.Label(modal, text="Имя клиента:").pack(pady=5)
         name_entry = tk.Entry(modal)
@@ -160,9 +169,11 @@ def create_main_page(root):
         phone_entry = tk.Entry(modal)
         phone_entry.pack(pady=5)
 
-        tk.Label(modal, text="ID кабинки:").pack(pady=5)
-        cabin_entry = tk.Entry(modal)
-        cabin_entry.pack(pady=5)
+        tk.Label(modal, text="Кабинка:").pack(pady=5)
+        cabins = get_cabins()  # Функция для получения списка кабинок из базы данных
+        cabin_choices = [f"{cabin['id']} - {cabin['name']}" for cabin in cabins]
+        cabin_combobox = ttk.Combobox(modal, values=cabin_choices)
+        cabin_combobox.pack(pady=5)
 
         # Выбор даты и времени начала бронирования
         tk.Label(modal, text="Дата и время начала бронирования:").pack(pady=5)
@@ -180,16 +191,18 @@ def create_main_page(root):
             """Сохранение нового бронирования."""
             name = name_entry.get()
             phone = phone_entry.get()
-            cabin_id = cabin_entry.get()
+            selected_cabin = cabin_combobox.get()
             start_datetime = start_datetime_var.get()
             end_datetime = end_datetime_var.get()
 
-            if not name or not phone or not cabin_id or not start_datetime or not end_datetime:
+            if not name or not phone or not selected_cabin or not start_datetime or not end_datetime:
                 messagebox.showerror("Ошибка", "Заполните все поля!")
                 return
 
             try:
                 # Преобразование строк в datetime
+                cabin_id = selected_cabin.split(" - ")[0]
+
                 from datetime import datetime
                 start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
                 end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")
