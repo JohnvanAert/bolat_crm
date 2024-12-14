@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_statuses
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
 from tkcalendar import Calendar
+from datetime import timedelta
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -610,7 +611,7 @@ def create_gui_page(root):
         tk.Label(add_window, text="Номер").grid(row=1, column=0)
         entry_number = tk.Entry(add_window)
         entry_number.grid(row=1, column=1)
-
+        
         tk.Label(add_window, text="Выберите кабинку").grid(row=2, column=0)
         cabins_combo_modal = ttk.Combobox(add_window, state="readonly")
         cabins_combo_modal.grid(row=2, column=1)
@@ -619,6 +620,44 @@ def create_gui_page(root):
         tk.Label(add_window, text="Общая продажа").grid(row=3, column=0)
         entry_sales = tk.Entry(add_window, state='readonly')
         entry_sales.grid(row=3, column=1)
+
+        # Поле для ввода времени аренды (в часах)
+        tk.Label(add_window, text="На сколько часов?").grid(row=4, column=0)
+        entry_hours = tk.Entry(add_window)
+        entry_hours.grid(row=4, column=1)
+        
+
+         # Обновление цены аренды на основе введенного времени
+        def update_rental_price(event=None):
+            try:
+                hours = float(entry_hours.get())
+                selected_cabin = cabins_combo_modal.get().split(" - ")[0]
+                cabins_data = get_cabins_data()
+                cabin_price = Decimal(0)
+                for cabin in cabins_data:
+                    if cabin['name'] == selected_cabin:
+                        cabin_price = Decimal(cabin['price'])
+                        break
+
+                # Минимальная стоимость за первый час и половина стоимости за каждые последующие 30 минут
+                total_rental_price = cabin_price * int(hours)  # Полные часы
+                if hours % 1 > 0:
+                    total_rental_price += (cabin_price / 2)  # Половина стоимости за дополнительные 30 минут
+
+                # Обновляем поле Общая продажа
+                total_price = total_rental_price + Decimal(total_product_price)
+                entry_sales.config(state='normal')
+                entry_sales.delete(0, tk.END)
+                entry_sales.insert(0, round(total_price, 2))
+                entry_sales.config(state='readonly')
+
+                global total_cabin_rental  # Use a global variable or other method to pass this value
+                total_cabin_rental = float(total_rental_price)
+            except ValueError:
+                messagebox.showerror("Ошибка", "Введите корректное количество часов.")
+
+        # Привязка обновления стоимости к изменению часов
+        entry_hours.bind("<KeyRelease>", update_rental_price)
 
         selected_products = {}
         total_product_price = 0
@@ -718,7 +757,7 @@ def create_gui_page(root):
             tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
             tk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
 
-        tk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=4, columnspan=2)
+        tk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=9, columnspan=2)
 
 
         def update_sales_price(event):
@@ -749,16 +788,36 @@ def create_gui_page(root):
                 selected_cabin = cabins_combo_modal.get().split(" - ")[0]
                 cabins_data = get_cabins_data()
                 selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
+
+                hours = float(entry_hours.get())
+                current_time = datetime.datetime.now()
+                end_date = current_time + timedelta(hours=hours)
+
+                # Проверяем занятость кабины
+                if is_cabin_busy(selected_cabin_id, current_time):
+                    messagebox.showerror("Ошибка", "Эта кабина уже занята в данный момент.")
+                    return
+
                 cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'] == selected_cabin), None)
 
                 # Преобразуем total_product_price в Decimal
                 total_product_price_decimal = Decimal(total_product_price)
 
+                 # Получаем количество часов аренды
+                hours = float(entry_hours.get())
+                total_rental_price = cabin_price * int(hours)
+                if hours % 1 > 0:
+                    total_rental_price += (cabin_price / 2)
+
                 # Общая сумма заказа
-                total_price = cabin_price + total_product_price_decimal
+                total_price = total_rental_price + total_product_price_decimal
+
+                # Вычисляем конечное время аренды
+                start_date = datetime.datetime.now()
+                end_date = start_date + timedelta(hours=hours)
                 print(f"Products total: {total_product_price_decimal}, Cabin price: {cabin_price}, Total: {total_price}")
                 # Сохраняем продажу и получаем ID
-                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, cabin_price)
+                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date)
                 
                 # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
                 for product_id, product_info in selected_products.items():

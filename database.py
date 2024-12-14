@@ -22,7 +22,7 @@ def connect():
         port=DB_PORT
     )
 
-def insert_sales_data(name, number, cabins_id, total_sales, cabin_price):
+def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_rental_price, end_date):
     """Функция для добавления новой записи о продажах."""
     try:
         # Устанавливаем соединение с базой данных
@@ -31,13 +31,13 @@ def insert_sales_data(name, number, cabins_id, total_sales, cabin_price):
         
         # SQL-запрос для вставки данных и получения id новой записи
         query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
-        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
         # Выполняем запрос
-        cursor.execute(query, (name, number, cabins_id, total_sales, cabin_price))
+        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date))
         
         # Получаем id вставленной записи
         sale_id = cursor.fetchone()[0]
@@ -641,13 +641,14 @@ def confirm_booking_to_sale(booking_id):
             customer_phone, 
             cabin_id, 
             total_price, 
-            start_date
+            start_date,
+            end_date
         FROM bookings
         WHERE id = %s AND status = 'Ожидание';
     """
     insert_sale_query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price)
-        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date)
+        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s, %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -672,7 +673,8 @@ def confirm_booking_to_sale(booking_id):
                     booking[1],  # customer_phone
                     booking[2],  # cabin_id
                     booking[3],  # total_price
-                    booking[3]   # cabin_price
+                    booking[3],   # cabin_price
+                    booking[5]   # end_date
                 )
             )
             sale_id = cursor.fetchone()[0]
@@ -803,3 +805,67 @@ def fetch_filtered_bookings(name, date, status, cabin, limit, page):
             total_count = cursor.fetchone()[0]
 
     return rows, total_count
+
+
+def is_cabin_busy(cabin_id, current_time):
+    """
+    Проверяет, занята ли кабина на момент времени current_time.
+    Возвращает True, если кабина занята, иначе False.
+    """
+    query = """
+        SELECT COUNT(*) 
+        FROM sales 
+        WHERE cabins_id = %s AND end_date > %s
+    """
+    try:
+        conn = connect()()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_id, current_time))
+            result = cursor.fetchone()
+            return result[0] > 0  # Если есть записи, значит кабина занята
+    finally:
+        if conn:
+            conn.close()
+
+def get_cabin_statuses():
+    query = """
+        SELECT 
+            c.id,
+            c.name,
+            CASE 
+                WHEN EXISTS (
+                    SELECT 1 
+                    FROM sales s
+                    WHERE s.cabins_id = c.id 
+                      AND CURRENT_TIMESTAMP BETWEEN s.date AND s.end_date
+                ) THEN TRUE
+                ELSE FALSE
+            END AS is_occupied
+        FROM cabins c
+        LEFT JOIN sales s ON c.id = s.cabins_id
+        GROUP BY c.id, c.name;
+    """
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        cursor.execute(query)
+        result = cursor.fetchall()
+        statuses = [{"id": row[0], "name": row[1], "is_occupied": row[2]} for row in result]
+        cursor.close()
+        conn.close()
+        return statuses
+    except Exception as e:
+        print(f"Ошибка при получении статуса кабинок: {e}")
+        return []
+    
+def get_cabin_status_from_sales(cabin_id):
+    query = """
+        SELECT COUNT(*) 
+        FROM sales 
+        WHERE cabins_id = %s AND date <= NOW() AND (end_date IS NULL OR end_date >= NOW())
+    """
+    conn = connect()
+    cursor = conn.cursor()
+    result = cursor.execute(query, (cabin_id,))
+    return "Занята" if result[0][0] > 0 else "Свободна"
+
