@@ -220,7 +220,6 @@ def create_gui_page(root):
         time_combo = ttk.Combobox(edit_window, state="readonly")
         time_combo.grid(row=5, column=1, padx=10, pady=10)
         time_combo['values'] = ["30 минут", "1 час", "1 час 30 минут", "2 часа"]
-        time_combo.set("30 минут")  # Устанавливаем значение по умолчанию
         def calculate_new_end_date(start_date, duration):
             if duration == "30 минут":
                 return start_date + timedelta(minutes=30)
@@ -562,7 +561,7 @@ def create_gui_page(root):
 
             try:
                  # Считаем старую дату завершения
-                old_end_date = datetime.datetime.strptime(selected_data[5], '%Y-%m-%d %H:%M:%S.%f')
+                old_end_date = datetime.datetime.strptime(selected_data[5], '%Y-%m-%d %H:%M:%S')
 
                 
                 new_end_date = calculate_new_end_date(old_end_date, duration)
