@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_statuses
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -195,31 +195,51 @@ def create_gui_page(root):
         selected_data = tree.item(item, "values")
 
         edit_window = tk.Toplevel(root)
+        edit_window.geometry("1000x800")  # Увеличьте размер окна
         edit_window.title("Редактирование заказа")
+        edit_window.grid_rowconfigure(4, weight=1)  # Для масштабирования таблицы
+        edit_window.grid_columnconfigure(1, weight=1)
 
-        tk.Label(edit_window, text="Имя").grid(row=0, column=0)
+        tk.Label(edit_window, text="Имя").grid(row=0, column=0, padx=10, pady=10)
         edit_name_entry = tk.Entry(edit_window)
-        edit_name_entry.grid(row=0, column=1)
+        edit_name_entry.grid(row=0, column=1, padx=10, pady=10)
         edit_name_entry.insert(0, selected_data[1])
 
-        tk.Label(edit_window, text="Номер").grid(row=1, column=0)
+        tk.Label(edit_window, text="Номер").grid(row=1, column=0, padx=10, pady=10)
         edit_number_entry = tk.Entry(edit_window)
-        edit_number_entry.grid(row=1, column=1)
+        edit_number_entry.grid(row=1, column=1, padx=10, pady=10)
         edit_number_entry.insert(0, selected_data[2])
 
-        tk.Label(edit_window, text="Выберите кабинку").grid(row=2, column=0)
+        tk.Label(edit_window, text="Выберите кабинку").grid(row=2, column=0, padx=10, pady=10)
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
-        edit_cabins_combo.grid(row=2, column=1)
+        edit_cabins_combo.grid(row=2, column=1, padx=10, pady=10)
         edit_cabins_combo['values'] = cabins_combo['values']
+
+        # Добавляем выпадающий список времени
+        tk.Label(edit_window, text="Продолжительность аренды").grid(row=5, column=0, padx=10, pady=10)
+        time_combo = ttk.Combobox(edit_window, state="readonly")
+        time_combo.grid(row=5, column=1, padx=10, pady=10)
+        time_combo['values'] = ["30 минут", "1 час", "1 час 30 минут", "2 часа"]
+        time_combo.set("30 минут")  # Устанавливаем значение по умолчанию
+        def calculate_new_end_date(start_date, duration):
+            if duration == "30 минут":
+                return start_date + timedelta(minutes=30)
+            elif duration == "1 час":
+                return start_date + timedelta(hours=1)
+            elif duration == "1 час 30 минут":
+                return start_date + timedelta(minutes=90)
+            elif duration == "2 часа":
+                return start_date + timedelta(hours=2)
+            return start_date
         
         # Установка текущей кабинки
         selected_cabin = selected_data[3]
         edit_cabins_combo.set(selected_cabin)
 
             # Раздел для отображения товаров
-        tk.Label(edit_window, text="Список заказов").grid(row=3, column=0, columnspan=2)
+        tk.Label(edit_window, text="Список заказов").grid(row=3, column=0, columnspan=2, padx=10, pady=10)
         products_frame = tk.Frame(edit_window)
-        products_frame.grid(row=4, column=0, columnspan=2, sticky="nsew")
+        products_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
         # Загрузка товаров из базы данных
         sale_id = selected_data[0]
@@ -236,13 +256,35 @@ def create_gui_page(root):
         products_tree.heading("Цена", text="Цена")
 
         products_tree.column("ID", width=50)
-        products_tree.column("Название", width=150)
+        products_tree.column("Название", width=200)
         products_tree.column("Количество", width=100)
         products_tree.column("Цена", width=100)
 
         # Заполнение данными
         for product in products_data:
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
+
+            # Новый раздел для продлений времени
+        tk.Label(edit_window, text="Продления времени").grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        extensions_frame = tk.Frame(edit_window)
+        extensions_frame.grid(row=7, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+
+        extensions_tree = ttk.Treeview(extensions_frame, columns=("ID", "Минуты", "Время"), show="headings")
+        extensions_tree.pack(fill="both", expand=True)
+
+            # Настройка столбцов для продлений
+        extensions_tree.heading("ID", text="ID")
+        extensions_tree.heading("Минуты", text="Добавленные минуты")
+        extensions_tree.heading("Время", text="Время продления")
+
+        extensions_tree.column("ID", width=50)
+        extensions_tree.column("Минуты", width=150)
+        extensions_tree.column("Время", width=200)
+
+        # Получение данных о продлениях из базы
+        extensions_data = get_extensions_for_sale(sale_id)
+        for extension in extensions_data:
+            extensions_tree.insert("", "end", values=extension)
 
           # Функция для добавления продуктов
         def open_add_product_window():
@@ -487,6 +529,27 @@ def create_gui_page(root):
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
             new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
 
+            selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
+            cabin_hourly_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
+            if not cabin_hourly_price:
+                messagebox.showerror("Ошибка", "Не удалось получить цену кабинки!")
+                return
+            # Рассчитываем новую дату завершения
+            duration = time_combo.get()
+            # Рассчитываем продолжительность в часах
+            duration_hours = {
+                "30 минут": 0.5,
+                "1 час": 1,
+                "1 час 30 минут": 1.5,
+                "2 часа": 2
+            }.get(duration, 0)
+
+            # Добавляем стоимость за дополнительное время к уже существующей цене
+            cabin_total_price = Decimal(selected_data[6]) + (cabin_hourly_price * Decimal(duration_hours))
+
+            # Логирование значений
+            print(f"Продолжительность: {duration}, Часы: {duration_hours}, Сумма аренды: {cabin_total_price}")
+
             print(f"Новая кабинка ID: {selected_cabin_id}, Новая цена: {new_cabin_price}")  # Лог ID и цены новой кабинки
 
             # Если кабинка не найдена, используем прежние данные
@@ -496,6 +559,32 @@ def create_gui_page(root):
                 print(f"Кабинка не найдена, используем прежние данные: ID={selected_cabin_id}, Цена={cabin_price}")
             else:
                 cabin_price = new_cabin_price  # Новая цена кабинки
+
+            try:
+                 # Считаем старую дату завершения
+                old_end_date = datetime.datetime.strptime(selected_data[5], '%Y-%m-%d %H:%M:%S.%f')
+
+                
+                new_end_date = calculate_new_end_date(old_end_date, duration)
+
+                # Вычисляем разницу во времени в минутах
+                extension_minutes = int((new_end_date - old_end_date).total_seconds() / 60)
+                add_rental_extension(
+                    order_id=selected_data[0],  # ID заказа
+                    extended_minutes=extension_minutes,  # Количество дополнительных минут
+                )
+            
+            except Exception as e:
+                    messagebox.showerror("Ошибка", f"Ошибка при расчете новой даты: {e}")
+                    return
+            
+                        # Логирование значений
+            print(f"Старая дата завершения: {old_end_date}, Новая дата завершения: {new_end_date}, Дополнительное время: {extension_minutes} минут")
+
+            # Проверка имени и номера на корректность
+            if not new_name:
+                messagebox.showerror("Ошибка", "Имя не может быть пустым!")
+                return
 
             # Получаем данные о продуктах
             products_data = get_products_for_sale(selected_data[0])
@@ -513,7 +602,7 @@ def create_gui_page(root):
                 cabin_price = Decimal(selected_data[6])  # Используем старую цену кабинки
                 print("Кабинка не изменилась, используем старую цену:", cabin_price)
 
-            total_price = total_products_price + cabin_price
+            total_price = total_products_price + cabin_total_price
             print(f"Общая сумма: {total_price}")  # Лог общей суммы
 
             # Проверяем корректность значения общей суммы в selected_data
@@ -540,7 +629,7 @@ def create_gui_page(root):
             # Обновляем данные в базе
             print(f"Обновление данных: ID={selected_data[0]}, Имя={new_name}, Номер={new_number}, Кабинка ID={selected_cabin_id}, "
                 f"Общая сумма={total_price}, Цена кабинки={cabin_price}")
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price, cabin_price)
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price, cabin_total_price, extension_minutes)
 
             # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -586,14 +675,20 @@ def create_gui_page(root):
                 messagebox.showinfo("Успех", "Запись успешно удалена!")
                 display_sales_data()  # Refresh the data displayed in the table
                 edit_window.destroy()
-                
+        
+        # Создаем фрейм для кнопок
+        button_frame = tk.Frame(edit_window)
+        button_frame.grid(row=8, column=0, columnspan=2, pady=10)  # Используем grid для размещения фрейма
+        
+        # Добавляем кнопки в фрейм
+        tk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
+        tk.Button(button_frame, text="Удалить товар", command=delete_product, fg="red").grid(row=0, column=1, padx=5)
+        tk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
+        tk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
+        tk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
 
-        tk.Button(edit_window, text="Добавить продукты", command=open_add_product_window).grid(row=8, column=0)
-        tk.Button(edit_window, text="Удалить товар", command=delete_product, fg="red").grid(row=5, column=0)
-        tk.Button(edit_window, text="Уменьшить количество", command=decrease_quantity).grid(row=5, column=1)
-        tk.Button(edit_window, text="Сохранить", command=save_changes).grid(row=6, columnspan=2)
-        tk.Button(edit_window, text="Удалить", command=delete_sale, fg="red").grid(row=7, columnspan=2)
 
+            
             
     tree.bind("<Double-1>", on_item_double_click)
 

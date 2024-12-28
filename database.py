@@ -70,17 +70,17 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes):
     conn = connect()
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
             UPDATE sales
-            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s
+            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute'
             WHERE id = %s
             """,
-            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, sale_id)
+            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, sale_id)
         )
         conn.commit()
     except Exception as e:
@@ -869,3 +869,30 @@ def get_cabin_status_from_sales(cabin_id):
     result = cursor.execute(query, (cabin_id,))
     return "Занята" if result[0][0] > 0 else "Свободна"
 
+def add_rental_extension(order_id, extended_minutes):
+    """
+    Добавляет запись о продлении времени аренды в таблицу rental_time_extensions.
+    """
+    query = """
+        INSERT INTO rental_time_extensions (sale_id, extended_minutes, timestamp)
+        VALUES (%s, %s, NOW())
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (order_id, extended_minutes))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        raise RuntimeError(f"Ошибка при добавлении данных о продлении времени: {e}")
+
+
+def get_extensions_for_sale(sale_id):
+    """Получить данные о продлениях для текущей продажи."""
+    conn = connect()
+    cursor = conn.cursor()
+    query = "SELECT extension_id, extended_minutes, timestamp FROM rental_time_extensions WHERE sale_id = %s"
+    cursor.execute(query, (sale_id,))
+    data = cursor.fetchall()
+    conn.close()
+    return data

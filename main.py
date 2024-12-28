@@ -358,7 +358,7 @@ def create_main_page(root):
 def main():
     root = tk.Tk()
     root.title("CRM Navigation Panel")
-    root.geometry("1024x768")  # Устанавливаем начальный размер окна
+    root.geometry("1200x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
 
