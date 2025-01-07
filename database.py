@@ -818,7 +818,7 @@ def is_cabin_busy(cabin_id, current_time):
         WHERE cabins_id = %s AND end_date > %s
     """
     try:
-        conn = connect()()
+        conn = connect()
         with conn.cursor() as cursor:
             cursor.execute(query, (cabin_id, current_time))
             result = cursor.fetchone()
@@ -871,10 +871,10 @@ def get_cabin_status_from_sales(cabin_id):
 
 def add_rental_extension(order_id, extended_minutes):
     """
-    Добавляет запись о продлении времени аренды в таблицу rental_time_extensions.
+    Добавляет запись о продлении времени аренды в таблицу rental_extensions.
     """
     query = """
-        INSERT INTO rental_time_extensions (sale_id, extended_minutes, timestamp)
+        INSERT INTO rental_extensions (sale_id, extended_minutes, timestamp)
         VALUES (%s, %s, NOW())
     """
     try:
@@ -886,12 +886,11 @@ def add_rental_extension(order_id, extended_minutes):
     except Exception as e:
         raise RuntimeError(f"Ошибка при добавлении данных о продлении времени: {e}")
 
-
 def get_extensions_for_sale(sale_id):
     """Получить данные о продлениях для текущей продажи."""
     conn = connect()
     cursor = conn.cursor()
-    query = "SELECT extension_id, extended_minutes, timestamp FROM rental_time_extensions WHERE sale_id = %s"
+    query = "SELECT extension_id, extended_minutes, timestamp FROM rental_extensions WHERE sale_id = %s"
     cursor.execute(query, (sale_id,))
     data = cursor.fetchall()
     conn.close()

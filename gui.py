@@ -907,7 +907,7 @@ def create_gui_page(root):
                 total_price = total_rental_price + total_product_price_decimal
 
                 # Вычисляем конечное время аренды
-                start_date = datetime.datetime.now()
+                start_date = datetime.datetime.now().replace(microsecond=0)
                 end_date = start_date + timedelta(hours=hours)
                 print(f"Products total: {total_product_price_decimal}, Cabin price: {cabin_price}, Total: {total_price}")
                 # Сохраняем продажу и получаем ID
