@@ -895,3 +895,39 @@ def get_extensions_for_sale(sale_id):
     data = cursor.fetchall()
     conn.close()
     return data
+
+def get_cabin_statistics(period):
+    """Функция для получения статистики по кабинкам за определенный период."""
+    try:
+        conn = connect()  # Соединение с БД
+        cursor = conn.cursor()
+
+        # SQL-запрос с параметризованным периодом
+        query = f"""
+        SELECT
+            c.id AS cabin_id,
+            c.name AS cabin_name,
+            COUNT(s.id) AS rental_count,
+            SUM(s.total_sales) AS total_profit,
+            AVG(s.total_sales) AS average_check
+        FROM
+            cabins c
+        LEFT JOIN
+            sales s ON c.id = s.cabins_id
+        WHERE
+            s.date >= CURRENT_DATE - INTERVAL '1 {period}'
+        GROUP BY
+            c.id, c.name
+        ORDER BY
+            rental_count DESC
+        """
+        cursor.execute(query)
+        result = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return result
+    except Exception as e:
+        print(f"Ошибка при выполнении запроса: {e}")
+        return []

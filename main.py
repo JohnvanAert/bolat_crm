@@ -4,6 +4,7 @@ from product_page import create_product_page
 from gui import create_gui_page
 from cabin_page import create_cabin_page  # Импорт новой страницы для кабин
 from expenses_page import create_expenses_page
+from statistic_page import create_statistics_page
 from tkcalendar import Calendar
 from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings  # Функции из базы данных
 from tkinter import messagebox
@@ -11,7 +12,7 @@ from datetime import datetime
 from tktimepicker import AnalogPicker, AnalogThemes, SpinTimePickerModern, constants
 from decimal import Decimal
 
-def create_navigation(root, show_main_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page):
+def create_navigation(root, show_main_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
     nav_frame = tk.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
@@ -20,6 +21,7 @@ def create_navigation(root, show_main_page, show_products_page, show_gui_page, s
     tk.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT)
     tk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT)  # Кнопка для кабин
     tk.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT)  # Кнопка для кабин
+    tk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT)  # Кнопка для кабин
 
 def create_main_page(root):
     frame_main = tk.Frame(root)
@@ -378,40 +380,59 @@ def main():
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_statistics.pack_forget()
         welcome_label.pack()
         frame_main.pack()
         root.update_idletasks()
+
     def show_products_page():
         welcome_label.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_statistics.pack_forget()
         frame_products.pack()
         frame_main.pack_forget()
         root.update_idletasks()
+
     def show_gui_page():
         welcome_label.pack_forget()
         frame_products.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_statistics.pack_forget()
         frame_main.pack_forget()
         frame_gui.pack()
         root.update_idletasks()
+
     def show_cabin_page():
         welcome_label.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
         frame_expenses.pack_forget()
+        frame_statistics.pack_forget()
         frame_main.pack_forget()
         frame_cabin.pack()
         root.update_idletasks()
+
     def show_expenses_page():
         welcome_label.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
+        frame_statistics.pack_forget()
         frame_main.pack_forget()
         frame_expenses.pack()
+        root.update_idletasks()
+
+    def show_statistics_page():
+        welcome_label.pack_forget()
+        frame_products.pack_forget()
+        frame_gui.pack_forget()
+        frame_cabin.pack_forget()
+        frame_expenses.pack_forget()
+        frame_main.pack_forget()
+        frame_statistics.pack()
         root.update_idletasks()
 
     welcome_label = tk.Label(root, text="Добро пожаловать на главную страницу!")
@@ -421,13 +442,15 @@ def main():
     frame_gui = create_gui_page(root)
     frame_cabin = create_cabin_page(root)  # Создаем новую страницу кабин
     frame_expenses = create_expenses_page(root)
+    frame_statistics = create_statistics_page(root)
     
     frame_products.pack_forget()
     frame_gui.pack_forget()
     frame_cabin.pack_forget()
     frame_expenses.pack_forget()
+    frame_statistics.pack_forget()
 
-    create_navigation(root, show_main_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page)
+    create_navigation(root, show_main_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page)
 
     root.mainloop()
 
