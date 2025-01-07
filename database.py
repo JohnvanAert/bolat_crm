@@ -931,3 +931,38 @@ def get_cabin_statistics(period):
     except Exception as e:
         print(f"Ошибка при выполнении запроса: {e}")
         return []
+
+def get_total_income(period):
+    """Получает общий доход за указанный период."""
+    query = f"""
+    SELECT SUM(total_sales)
+    FROM sales
+    WHERE date >= NOW() - INTERVAL '1 {period}';
+    """
+    return fetch_single_value(query)
+
+
+def get_total_expenses(period):
+    """Получает общие расходы за указанный период."""
+    query = f"""
+    SELECT SUM(amount)
+    FROM expenses
+    WHERE date >= NOW() - INTERVAL '1 {period}';
+    """
+    return fetch_single_value(query)
+
+def fetch_single_value(query):
+    """Выполняет запрос и возвращает единственное значение."""
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()[0] or 0.0  # Если None, возвращаем 0.0
+        return result
+    except Exception as e:
+        print(f"Ошибка при выполнении запроса: {e}")
+        return 0.0
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
