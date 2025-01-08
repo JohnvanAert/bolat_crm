@@ -967,7 +967,31 @@ def fetch_single_value(query):
             cursor.close()
             conn.close()
 
-def get_total_income_by_range(start_date, end_date):
+def get_cabin_statistics_by_date_range(start_date, end_date):
+    """
+    Получает статистику по кабинам за указанный диапазон дат.
+    """
+    query = """
+        SELECT c.name AS cabin_name,
+               COUNT(s.id) AS rentals_count,
+               SUM(s.total_sales) AS total_income,
+               CASE WHEN COUNT(s.id) > 0 THEN ROUND(SUM(s.total_sales) / COUNT(s.id), 2) ELSE 0 END AS avg_check
+        FROM cabins c
+        LEFT JOIN sales s ON c.id = s.cabin_id AND s.date BETWEEN %s AND %s
+        GROUP BY c.name
+        ORDER BY c.name
+    """
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        cursor.execute(query, (start_date, end_date))
+        result = cursor.fetchall()
+        return result
+    except Exception as e:
+        print(f"Ошибка при выполнении запроса get_cabin_statistics_by_date_range: {e}")
+        return []
+
+def get_total_income_by_date_range(start_date, end_date):
     """
     Получает общий доход за указанный диапазон дат.
     """
@@ -977,16 +1001,16 @@ def get_total_income_by_range(start_date, end_date):
         WHERE date BETWEEN %s AND %s
     """
     try:
-        conn = connect()  # Соединение с БД
+        conn = connect()
         cursor = conn.cursor()
         cursor.execute(query, (start_date, end_date))
         result = cursor.fetchone()[0]
         return float(result) if result else 0.0
     except Exception as e:
-        print(f"Ошибка при выполнении запроса get_total_income_by_range: {e}")
+        print(f"Ошибка при выполнении запроса get_total_income_by_date_range: {e}")
         return 0.0
 
-def get_total_expenses_by_range(start_date, end_date):
+def get_total_expenses_by_date_range(start_date, end_date):
     """
     Получает общие расходы за указанный диапазон дат.
     """
@@ -996,11 +1020,11 @@ def get_total_expenses_by_range(start_date, end_date):
         WHERE date BETWEEN %s AND %s
     """
     try:
-        conn = connect()  # Соединение с БД
+        conn = connect()
         cursor = conn.cursor()
         cursor.execute(query, (start_date, end_date))
         result = cursor.fetchone()[0]
         return float(result) if result else 0.0
     except Exception as e:
-        print(f"Ошибка при выполнении запроса get_total_expenses_by_range: {e}")
+        print(f"Ошибка при выполнении запроса get_total_expenses_by_date_range: {e}")
         return 0.0

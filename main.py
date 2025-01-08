@@ -382,6 +382,14 @@ def main():
     root.geometry("1200x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
+    root.configure(bg="#f9f9f9")
+     # Создаем стиль
+    style = ttk.Style()
+    style.theme_use("clam")  # Используем нейтральную тему
+    style.configure("TButton", font=("Helvetica", 12), padding=6, background="#4CAF50", foreground="#fff")
+    style.configure("TLabel", font=("Helvetica", 12), background="#f9f9f9", foreground="#333")
+    style.configure("TEntry", font=("Helvetica", 12), padding=4)
+    style.map("TButton", background=[("active", "#45A049")])
 
     # Главная страница
     

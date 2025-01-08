@@ -1,7 +1,8 @@
+from tkinter import Tk, ttk, Toplevel, Frame, Label, Button
 import tkinter as tk
-from tkinter import ttk
-from database import get_cabin_statistics, get_total_income, get_total_expenses
+from tkcalendar import Calendar
 from decimal import Decimal
+from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""
@@ -34,9 +35,13 @@ def create_statistics_page(root):
     button_frame = tk.Frame(frame)
     button_frame.pack(pady=10)
 
-    def update_cabin_statistics(period):
+    def update_cabin_statistics(period, date=None):
         """Обновляет данные по кабинкам."""
-        data = get_cabin_statistics(period)
+        if date:
+            data = get_cabin_statistics_by_date_range(date)
+        else:
+            data = get_cabin_statistics(period)
+
         # Очистка текущих данных
         for item in tree.get_children():
             tree.delete(item)
@@ -66,15 +71,19 @@ def create_statistics_page(root):
         tree.tag_configure("summary", font=("Helvetica", 10, "bold"))
         tree.tag_configure("spacer")
 
-    def update_financial_statistics(period):
+    def update_financial_statistics(period, date=None):
         """Обновляет данные финансовой статистики."""
         # Очистка текущих данных
         for item in finance_tree.get_children():
             finance_tree.delete(item)
 
-        # Получаем данные
-        total_income = get_total_income(period)
-        total_expenses = get_total_expenses(period)
+        if date:
+            total_income = get_total_income_by_date_range(date)
+            total_expenses = get_total_expenses_by_date_range(date)
+        else:
+            total_income = get_total_income(period)
+            total_expenses = get_total_expenses(period)
+
         net_profit = Decimal(total_income) - Decimal(total_expenses)
 
         # Добавляем строки с данными
@@ -95,15 +104,38 @@ def create_statistics_page(root):
             finance_tree.item(profit_item, tags="summary_positive")
         else:
             finance_tree.item(profit_item, tags="summary_neutral")
-    def update_statistics(period):
+
+    def open_date_picker():
+        def select_dates():
+            start_date = cal_start.get_date()
+            end_date = cal_end.get_date()
+            # Передать start_date и end_date в запрос
+            print(f"Выбранный диапазон: с {start_date} по {end_date}")
+            date_picker.destroy()
+
+        date_picker = Toplevel()
+        date_picker.title("Выбор диапазона дат")
+        
+        Label(date_picker, text="Дата с:").pack()
+        cal_start = Calendar(date_picker)
+        cal_start.pack()
+
+        Label(date_picker, text="Дата по:").pack()
+        cal_end = Calendar(date_picker)
+        cal_end.pack()
+
+        Button(date_picker, text="Применить", command=select_dates).pack()
+
+    def update_statistics(period, date=None):
         """Обновляет статистику по кабинкам и финансам."""
-        update_cabin_statistics(period)
-        update_financial_statistics(period)
+        update_cabin_statistics(period, date)
+        update_financial_statistics(period, date)
 
     # Кнопки переключения периода
     tk.Button(button_frame, text="День", command=lambda: update_statistics('day')).pack(side=tk.LEFT, padx=5)
     tk.Button(button_frame, text="Неделя", command=lambda: update_statistics('week')).pack(side=tk.LEFT, padx=5)
     tk.Button(button_frame, text="Месяц", command=lambda: update_statistics('month')).pack(side=tk.LEFT, padx=5)
+    tk.Button(button_frame, text="Выбрать дату", command=open_date_picker).pack(side=tk.LEFT, padx=5)
 
     # Загружаем статистику за день по умолчанию
     update_statistics('day')
