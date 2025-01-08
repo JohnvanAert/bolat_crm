@@ -249,7 +249,7 @@ def create_product_page(root):
     def open_edit_modal(product):
         modal = Toplevel(root)
         modal.title("Редактирование продукта")
-        modal.geometry("300x300")
+        modal.geometry("600x400")
 
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
@@ -288,7 +288,7 @@ def create_product_page(root):
         
         tk.Label(modal, text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
-        img_preview_label = tk.Label(modal, text="No Image", width=20, height=10)
+        img_preview_label = tk.Label(modal, text="No Image", width=150, height=200)
         img_preview_label.grid(row=3, column=1)
 
 
@@ -301,7 +301,7 @@ def create_product_page(root):
         def load_image_preview(file_path):
             try:
                 img = Image.open(file_path)
-                img = img.resize((100, 80), Image.LANCZOS)
+                img = img.resize((300, 200), Image.LANCZOS)
                 img_tk = ImageTk.PhotoImage(img)
                 img_preview_label.configure(image=img_tk, text="")
                 img_preview_label.image = img_tk
