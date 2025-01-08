@@ -966,3 +966,41 @@ def fetch_single_value(query):
         if conn:
             cursor.close()
             conn.close()
+
+def get_total_income_by_range(start_date, end_date):
+    """
+    Получает общий доход за указанный диапазон дат.
+    """
+    query = """
+        SELECT COALESCE(SUM(total_sales), 0)
+        FROM sales
+        WHERE date BETWEEN %s AND %s
+    """
+    try:
+        conn = connect()  # Соединение с БД
+        cursor = conn.cursor()
+        cursor.execute(query, (start_date, end_date))
+        result = cursor.fetchone()[0]
+        return float(result) if result else 0.0
+    except Exception as e:
+        print(f"Ошибка при выполнении запроса get_total_income_by_range: {e}")
+        return 0.0
+
+def get_total_expenses_by_range(start_date, end_date):
+    """
+    Получает общие расходы за указанный диапазон дат.
+    """
+    query = """
+        SELECT COALESCE(SUM(amount), 0)
+        FROM expenses
+        WHERE date BETWEEN %s AND %s
+    """
+    try:
+        conn = connect()  # Соединение с БД
+        cursor = conn.cursor()
+        cursor.execute(query, (start_date, end_date))
+        result = cursor.fetchone()[0]
+        return float(result) if result else 0.0
+    except Exception as e:
+        print(f"Ошибка при выполнении запроса get_total_expenses_by_range: {e}")
+        return 0.0

@@ -80,11 +80,21 @@ def create_statistics_page(root):
         # Добавляем строки с данными
         finance_tree.insert("", "end", values=("Общий доход", f"{total_income:.2f}"))
         finance_tree.insert("", "end", values=("Общие расходы", f"{total_expenses:.2f}"))
-        finance_tree.insert("", "end", values=("Чистая прибыль", f"{net_profit:.2f}"))
 
-        # Стилизация итоговой строки
-        finance_tree.tag_configure("summary", font=("Helvetica", 10, "bold"))
+        # Добавляем строку для "Чистой прибыли" с динамическим цветом
+        profit_item = finance_tree.insert("", "end", values=("Чистая прибыль", f"{net_profit:.2f}"))
 
+        # Настраиваем стиль для итоговой строки
+        finance_tree.tag_configure("summary_negative", foreground="red", font=("Helvetica", 10, "bold"))
+        finance_tree.tag_configure("summary_positive", foreground="green", font=("Helvetica", 10, "bold"))
+        finance_tree.tag_configure("summary_neutral", foreground="black", font=("Helvetica", 10, "bold"))
+
+        if net_profit < 0:
+            finance_tree.item(profit_item, tags="summary_negative")
+        elif net_profit > 0:
+            finance_tree.item(profit_item, tags="summary_positive")
+        else:
+            finance_tree.item(profit_item, tags="summary_neutral")
     def update_statistics(period):
         """Обновляет статистику по кабинкам и финансам."""
         update_cabin_statistics(period)
