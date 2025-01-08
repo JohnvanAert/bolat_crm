@@ -17,17 +17,38 @@ def create_product_page(root):
         modal.title("Добавление продукта")
         modal.geometry("400x400")
 
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
+
         tk.Label(modal, text="Название продукта").grid(row=0, column=0)
         entry_name = tk.Entry(modal)
         entry_name.grid(row=0, column=1)
+        entry_name.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(modal, text="Цена").grid(row=1, column=0)
         entry_price = tk.Entry(modal)
         entry_price.grid(row=1, column=1)
+        entry_price.bind("<KeyRelease>", validate_only_numbers)
 
         tk.Label(modal, text="Количество").grid(row=2, column=0)
         entry_quantity = tk.Entry(modal)
         entry_quantity.grid(row=2, column=1)
+        entry_quantity.bind("<KeyRelease>", validate_only_numbers)
+
 
         tk.Label(modal, text="Изображение").grid(row=3, column=0)
         img_path_var = tk.StringVar()
@@ -46,7 +67,7 @@ def create_product_page(root):
         tk.Label(modal, text="Сумма расхода").grid(row=5, column=0)
         entry_expense_amount = tk.Entry(modal, state="disabled")
         entry_expense_amount.grid(row=5, column=1)
-
+        entry_expense_amount.bind("<KeyRelease>", validate_only_numbers)
 
         def remove_image():
             img_preview_label.config(image="", text="No Image")
@@ -230,21 +251,41 @@ def create_product_page(root):
         modal.title("Редактирование продукта")
         modal.geometry("300x300")
 
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
+
         tk.Label(modal, text="Название продукта").grid(row=0, column=0)
         name_var = tk.StringVar(value=product['name'])
         entry_name = tk.Entry(modal, textvariable=name_var)
         entry_name.grid(row=0, column=1)
-
+        entry_name.bind("<KeyRelease>", validate_only_letters)
+        
         tk.Label(modal, text="Цена").grid(row=1, column=0)
         price_var = tk.StringVar(value=str(product['price']))
         entry_price = tk.Entry(modal, textvariable=price_var)
         entry_price.grid(row=1, column=1)
+        entry_price.bind("<KeyRelease>", validate_only_numbers)
 
         tk.Label(modal, text="Количество").grid(row=2, column=0)
         quantity_var = tk.StringVar(value=str(product['quantity']))
         entry_quantity = tk.Entry(modal, textvariable=quantity_var)
         entry_quantity.grid(row=2, column=1)
-
+        entry_quantity.bind("<KeyRelease>", validate_only_numbers)
+        
         tk.Label(modal, text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
         img_preview_label = tk.Label(modal, text="No Image", width=20, height=10)

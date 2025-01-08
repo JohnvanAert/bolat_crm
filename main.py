@@ -164,20 +164,39 @@ def create_main_page(root):
         modal.title("Добавить бронирование")
         modal.geometry("600x600")
 
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
+
         tk.Label(modal, text="Имя клиента:").pack(pady=5)
         name_entry = tk.Entry(modal)
         name_entry.pack(pady=5)
+        name_entry.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(modal, text="Телефон клиента:").pack(pady=5)
         phone_entry = tk.Entry(modal)
         phone_entry.pack(pady=5)
+        phone_entry.bind("<KeyRelease>", validate_only_numbers)
 
         tk.Label(modal, text="Кабинка:").pack(pady=5)
         cabins = get_cabins()  # Функция для получения списка кабинок из базы данных
         cabin_choices = [f"{cabin['id']} - {cabin['name']}" for cabin in cabins]
         cabin_combobox = ttk.Combobox(modal, values=cabin_choices)
         cabin_combobox.pack(pady=5)
-
+    
         # Выбор даты и времени начала бронирования
         tk.Label(modal, text="Дата и время начала бронирования:").pack(pady=5)
         start_datetime_var = tk.StringVar(value="")

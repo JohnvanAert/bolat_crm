@@ -101,6 +101,22 @@ def create_cabin_page(root):
     def open_edit_modal(cabin_id, current_name, current_price):
         modal_window = tk.Toplevel(frame)
         modal_window.title("Редактировать/Удалить кабинку")
+        
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
 
         tk.Label(modal_window, text="Имя кабинки").grid(row=0, column=0)
         name_var = tk.StringVar(value=current_name)
@@ -111,6 +127,7 @@ def create_cabin_page(root):
         price_var = tk.StringVar(value=current_price)
         entry_price = tk.Entry(modal_window, textvariable=price_var)
         entry_price.grid(row=1, column=1)
+        entry_price.bind("<KeyRelease>", validate_only_numbers)
 
         def save_changes():
             new_name = name_var.get()

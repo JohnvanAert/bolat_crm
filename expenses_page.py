@@ -60,17 +60,36 @@ def create_expenses_page(root):
     def open_edit_expense_modal(item_id, current_name, current_amount, current_datetime):
         edit_expense_modal = tk.Toplevel(frame)
         edit_expense_modal.title("Редактировать расход")
+        
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
 
         tk.Label(edit_expense_modal, text="Наименование:").pack()
         name_entry = tk.Entry(edit_expense_modal)
         name_entry.pack()
         name_entry.insert(0, current_name)
+        name_entry.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(edit_expense_modal, text="Сумма:").pack()
         amount_entry = tk.Entry(edit_expense_modal)
         amount_entry.pack()
         amount_entry.insert(0, current_amount)
-
+        amount_entry.bind("<KeyRelease>", validate_only_numbers)
+        
             # Поле для редактирования даты
         tk.Label(edit_expense_modal, text="Дата (гггг-мм-дд):").pack()
         date_entry = tk.Entry(edit_expense_modal)

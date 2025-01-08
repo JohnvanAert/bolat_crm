@@ -194,6 +194,22 @@ def create_gui_page(root):
         item = tree.selection()[0]
         selected_data = tree.item(item, "values")
 
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
         edit_window = tk.Toplevel(root)
         edit_window.geometry("1000x800")  # Увеличьте размер окна
         edit_window.title("Редактирование заказа")
@@ -204,12 +220,14 @@ def create_gui_page(root):
         edit_name_entry = tk.Entry(edit_window)
         edit_name_entry.grid(row=0, column=1, padx=10, pady=10)
         edit_name_entry.insert(0, selected_data[1])
-
+        edit_name_entry.bind("<KeyRelease>", validate_only_letters)
+        
         tk.Label(edit_window, text="Номер").grid(row=1, column=0, padx=10, pady=10)
         edit_number_entry = tk.Entry(edit_window)
         edit_number_entry.grid(row=1, column=1, padx=10, pady=10)
         edit_number_entry.insert(0, selected_data[2])
-
+        edit_number_entry.bind("<KeyRelease>", validate_only_numbers)
+        
         tk.Label(edit_window, text="Выберите кабинку").grid(row=2, column=0, padx=10, pady=10)
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
         edit_cabins_combo.grid(row=2, column=1, padx=10, pady=10)
@@ -698,14 +716,33 @@ def create_gui_page(root):
         add_window = tk.Toplevel(root)
         add_window.title("Добавить запись")
 
+        def validate_only_letters(event):
+            """Разрешает вводить только буквы."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isalpha():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isalpha, value)))
+
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
+
+
         tk.Label(add_window, text="Имя").grid(row=0, column=0)
         entry_name = tk.Entry(add_window)
         entry_name.grid(row=0, column=1)
+        entry_name.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(add_window, text="Номер").grid(row=1, column=0)
         entry_number = tk.Entry(add_window)
         entry_number.grid(row=1, column=1)
-        
+        entry_number.bind("<KeyRelease>", validate_only_numbers)
+
         tk.Label(add_window, text="Выберите кабинку").grid(row=2, column=0)
         cabins_combo_modal = ttk.Combobox(add_window, state="readonly")
         cabins_combo_modal.grid(row=2, column=1)
