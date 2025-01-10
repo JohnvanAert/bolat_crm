@@ -968,24 +968,33 @@ def fetch_single_value(query):
             conn.close()
 
 def get_cabin_statistics_by_date_range(start_date, end_date):
-    """
-    Получает статистику по кабинам за указанный диапазон дат.
-    """
+    """Получает статистику по кабинам за указанный диапазон дат."""
     query = """
-        SELECT c.name AS cabin_name,
-               COUNT(s.id) AS rentals_count,
-               SUM(s.total_sales) AS total_income,
-               CASE WHEN COUNT(s.id) > 0 THEN ROUND(SUM(s.total_sales) / COUNT(s.id), 2) ELSE 0 END AS avg_check
-        FROM cabins c
-        LEFT JOIN sales s ON c.id = s.cabin_id AND s.date BETWEEN %s AND %s
-        GROUP BY c.name
-        ORDER BY c.name
+    SELECT 
+        c.id AS cabin_id,
+        c.name AS cabin_name,
+        COUNT(s.id) AS rentals_count,
+        COALESCE(SUM(s.total_sales), 0) AS total_income,
+        CASE 
+            WHEN COUNT(s.id) > 0 THEN ROUND(COALESCE(SUM(s.total_sales), 0) / COUNT(s.id), 2) 
+            ELSE 0 
+        END AS avg_check
+    FROM cabins c
+    LEFT JOIN sales s ON c.id = s.cabins_id AND s.date BETWEEN %s AND %s
+    GROUP BY c.id, c.name
+    HAVING
+    COUNT(s.id) > 0 OR SUM(s.total_sales) > 0
+    ORDER BY rentals_count DESC;
     """
     try:
         conn = connect()
         cursor = conn.cursor()
         cursor.execute(query, (start_date, end_date))
         result = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
         return result
     except Exception as e:
         print(f"Ошибка при выполнении запроса get_cabin_statistics_by_date_range: {e}")
@@ -1028,3 +1037,55 @@ def get_total_expenses_by_date_range(start_date, end_date):
     except Exception as e:
         print(f"Ошибка при выполнении запроса get_total_expenses_by_date_range: {e}")
         return 0.0
+
+
+def fetch_statistics(start_date, end_date):
+    """
+    Функция для получения статистики за указанный диапазон дат.
+    """
+    # Пример SQL-запроса
+    query = f"""
+    SELECT * FROM statistics
+    WHERE date >= '{start_date}' AND date <= '{end_date}'
+    """
+    # Выполнение запроса и получение данных
+    # Например: cursor.execute(query) ...
+    return query  # или результат данных
+
+
+def fetch_products_from_db():
+    """Получение списка продуктов из базы данных."""
+    connection = connect()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name, price, quantity FROM products")
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def decrease_product_stock(product_id, quantity):
+    """Уменьшение количества продукта на складе."""
+    connection = connect()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE products SET quantity = quantity - %s WHERE id = %s AND quantity >= %s",
+                (quantity, product_id, quantity)
+            )
+            if cursor.rowcount == 0:
+                raise ValueError("Недостаточно товара на складе")
+        connection.commit()
+    finally:
+        connection.close()
+
+def increase_product_stock(product_id, quantity):
+    connection = connect()
+    cursor = connection.cursor()
+    cursor.execute(
+        "UPDATE products SET quantity = quantity + %s WHERE id = %s",
+        (quantity, product_id)
+    )
+    connection.commit()
+    cursor.close()
+    connection.close()

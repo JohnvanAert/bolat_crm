@@ -1,12 +1,13 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
 from tkcalendar import Calendar
 from datetime import timedelta
+
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -817,6 +818,17 @@ def create_gui_page(root):
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
 
+            def refresh_product_tree():
+                """Обновление таблицы с продуктами."""
+                # Очистка текущего дерева
+                for item in product_tree.get_children():
+                    product_tree.delete(item)
+
+                # Получение данных из базы
+                products = fetch_products_from_db()  # Вызов функции из database.py
+                for row in products:
+                    product_tree.insert("", tk.END, values=row)
+
             def add_product_to_order():
                 selected_item = product_tree.selection()
                 if selected_item:
@@ -835,6 +847,12 @@ def create_gui_page(root):
                             else:
                                 messagebox.showerror("Ошибка", "Недостаточно товара на складе.")
                                 return
+                            
+                        # Уменьшение количества в базе данных
+                        decrease_product_stock(product_id, 1)  
+
+                        # Обновление дерева продуктов
+                        refresh_product_tree()
                         
                         # Обновление отображения выбранных продуктов
                         selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
@@ -846,20 +864,31 @@ def create_gui_page(root):
                         messagebox.showerror("Ошибка", "Некорректные данные продукта!")
 
             def remove_product_from_order():
-                selected_item = product_tree.selection()
+                selected_item = selected_products_tree.selection()  # Выбор в таблице выбранных продуктов
                 if selected_item:
-                    item_data = product_tree.item(selected_item)["values"]
-                    product_id = item_data[0]
+                    item_data = selected_products_tree.item(selected_item)["values"]
+                    product_id = item_data[0]  # Предполагается, что ID продукта — первый элемент
                     if product_id in selected_products and selected_products[product_id]['quantity'] > 0:
                         selected_products[product_id]['quantity'] -= 1
+
+                        # Если количество становится 0, устанавливаем 0, но не удаляем продукт из списка
                         if selected_products[product_id]['quantity'] == 0:
-                            del selected_products[product_id]
+                            selected_products[product_id]['quantity'] = 0
+                        
+                        # Обновление количества в базе данных
+                        increase_product_stock(product_id, 1)  # Увеличиваем количество продукта в БД
+                        
                         update_total_price()
 
                         # Обновление отображения выбранных продуктов
                         selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
                         for prod_id, prod_info in selected_products.items():
-                            selected_products_tree.insert("", tk.END, values=(prod_info['name'], prod_info['price'], prod_info['quantity']))
+                            selected_products_tree.insert(
+                                "", tk.END,
+                                values=(prod_id, prod_info['name'], prod_info['price'], prod_info['quantity'])
+                            )
+                    else:
+                        messagebox.showerror("Ошибка", "Вы не выбрали продукт для удаления!")
 
 
             def update_total_price():

@@ -12,6 +12,16 @@ from datetime import datetime
 from tktimepicker import AnalogPicker, AnalogThemes, SpinTimePickerModern, constants
 from decimal import Decimal
 
+# Функция стилизации
+def style_frame(frame, bg_color="#f0f0f0", font_color="#333", button_color="#4CAF50"):
+    frame.configure(bg=bg_color)  # Устанавливаем фон фрейма
+    for widget in frame.winfo_children():
+        if isinstance(widget, tk.Label):  # Стили для меток
+            widget.configure(bg=bg_color, fg=font_color, font=("Helvetica", 14))
+        elif isinstance(widget, tk.Button):  # Стили для кнопок
+            widget.configure(bg=button_color, fg="#fff", font=("Helvetica", 12), relief=tk.FLAT)
+
+
 def create_navigation(root, show_main_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
     nav_frame = tk.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
@@ -470,6 +480,12 @@ def main():
     frame_cabin = create_cabin_page(root)  # Создаем новую страницу кабин
     frame_expenses = create_expenses_page(root)
     frame_statistics = create_statistics_page(root)
+
+     # Применяем стили к страницам
+    style_frame(frame_main, bg_color="#f9f9f9", font_color="#333", button_color="#4CAF50")
+    style_frame(frame_products, bg_color="#fff0e6", font_color="#994d00", button_color="#ff8000")
+    style_frame(frame_gui, bg_color="#e6f7ff", font_color="#004d99", button_color="#0073e6")
+
     
     frame_products.pack_forget()
     frame_gui.pack_forget()

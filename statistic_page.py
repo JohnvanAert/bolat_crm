@@ -2,14 +2,15 @@ from tkinter import Tk, ttk, Toplevel, Frame, Label, Button
 import tkinter as tk
 from tkcalendar import Calendar
 from decimal import Decimal
-from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range
+from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range, fetch_statistics
+from datetime import datetime, timedelta
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""
     frame = tk.Frame(root)
 
     # Заголовок
-    tk.Label(frame, text="Статистика по кабинкам и финансовая статистика", font=("Arial", 16)).pack(pady=10)
+    tk.Label(frame, text="Статистика по кабинкам", font=("Arial", 16)).pack(pady=10)
 
     # Таблица статистики по кабинкам
     columns = ("cabin_name", "rental_count", "total_income", "avg_check")
@@ -28,7 +29,7 @@ def create_statistics_page(root):
 
     finance_tree = ttk.Treeview(finance_frame, columns=("description", "value"), show="headings", height=5)
     finance_tree.heading("description", text="Описание")
-    finance_tree.heading("value", text="Сумма (₽)")
+    finance_tree.heading("value", text="Сумма (₸)")
     finance_tree.pack(padx=10, pady=10)
 
     # Кнопки для выбора периода
@@ -38,7 +39,7 @@ def create_statistics_page(root):
     def update_cabin_statistics(period, date=None):
         """Обновляет данные по кабинкам."""
         if date:
-            data = get_cabin_statistics_by_date_range(date)
+            data = get_cabin_statistics_by_date_range(date[0], date[1])
         else:
             data = get_cabin_statistics(period)
 
@@ -53,10 +54,19 @@ def create_statistics_page(root):
 
         # Заполнение таблицы данными
         for row in data:
-            tree.insert("", "end", values=(row[1], row[2], f"{float(row[3]):.2f}", f"{float(row[4]):.2f}"))
-            total_rentals += row[2]
-            total_income += float(row[3])
-            total_avg_check += float(row[4])
+            try:
+                cabin_name = row[1]  # Название кабинки
+                rentals_count = int(row[2]) if row[2] is not None else 0  # Количество аренд
+                total_income_row = float(row[3]) if row[3] is not None else 0.0  # Доход
+                avg_check = float(row[4]) if row[4] is not None else 0.0  # Средний чек
+
+                tree.insert("", "end", values=(cabin_name, rentals_count, f"{total_income_row:.2f}", f"{avg_check:.2f}"))
+                total_rentals += rentals_count
+                total_income += total_income_row
+                total_avg_check += avg_check
+
+            except Exception as e:
+                print(f"Ошибка при обработке строки {row}: {e}")
 
         # Рассчитать общий средний чек
         overall_avg_check = total_income / total_rentals if total_rentals > 0 else 0
@@ -78,8 +88,10 @@ def create_statistics_page(root):
             finance_tree.delete(item)
 
         if date:
-            total_income = get_total_income_by_date_range(date)
-            total_expenses = get_total_expenses_by_date_range(date)
+            # Передача двух параметров: start_date и end_date
+            start_date, end_date = date
+            total_income = get_total_income_by_date_range(start_date, end_date)
+            total_expenses = get_total_expenses_by_date_range(start_date, end_date)
         else:
             total_income = get_total_income(period)
             total_expenses = get_total_expenses(period)
@@ -107,10 +119,10 @@ def create_statistics_page(root):
 
     def open_date_picker():
         def select_dates():
-            start_date = cal_start.get_date()
-            end_date = cal_end.get_date()
-            # Передать start_date и end_date в запрос
+            start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
+            end_date = datetime.strptime(cal_end.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
             print(f"Выбранный диапазон: с {start_date} по {end_date}")
+            update_statistics(None, (start_date, end_date))
             date_picker.destroy()
 
         date_picker = Toplevel()
