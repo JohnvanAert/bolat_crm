@@ -915,7 +915,7 @@ def get_cabin_statistics(period):
         LEFT JOIN
             sales s ON c.id = s.cabins_id
         WHERE
-            s.date >= CURRENT_DATE - INTERVAL '1 {period}'
+            s.date >= NOW() - INTERVAL '1 {period}'
         GROUP BY
             c.id, c.name
         ORDER BY
