@@ -812,11 +812,12 @@ def create_gui_page(root):
             product_tree.heading("price", text="Цена")
             product_tree.heading("quantity", text="Количество")
             product_tree.pack(fill="both", expand=True)
-
+            
             # Получение списка продуктов и отображение их в таблице
             products = fetch_products()
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
+            
 
             def refresh_product_tree():
                 """Обновление таблицы с продуктами."""
@@ -864,32 +865,53 @@ def create_gui_page(root):
                         messagebox.showerror("Ошибка", "Некорректные данные продукта!")
 
             def remove_product_from_order():
-                selected_item = selected_products_tree.selection()  # Выбор в таблице выбранных продуктов
+                selected_item = product_tree.selection()  # Получаем выбранный элемент
                 if selected_item:
-                    item_data = selected_products_tree.item(selected_item)["values"]
-                    product_id = item_data[0]  # Предполагается, что ID продукта — первый элемент
-                    if product_id in selected_products and selected_products[product_id]['quantity'] > 0:
-                        selected_products[product_id]['quantity'] -= 1
+                    item_data = product_tree.item(selected_item)["values"]
+                    product_name = item_data[1]  # Название продукта (у вас второе значение — название)
 
-                        # Если количество становится 0, устанавливаем 0, но не удаляем продукт из списка
-                        if selected_products[product_id]['quantity'] == 0:
-                            selected_products[product_id]['quantity'] = 0
-                        
-                        # Обновление количества в базе данных
-                        increase_product_stock(product_id, 1)  # Увеличиваем количество продукта в БД
-                        
-                        update_total_price()
+                    for product_id, product_info in list(selected_products.items()):  # Проходим по копии словаря
+                        if product_info['name'] == product_name:  # Находим продукт по имени
+                            if product_info['quantity'] > 0:
+                                product_info['quantity'] -= 1  # Уменьшаем количество
 
-                        # Обновление отображения выбранных продуктов
-                        selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
-                        for prod_id, prod_info in selected_products.items():
-                            selected_products_tree.insert(
-                                "", tk.END,
-                                values=(prod_id, prod_info['name'], prod_info['price'], prod_info['quantity'])
-                            )
-                    else:
-                        messagebox.showerror("Ошибка", "Вы не выбрали продукт для удаления!")
+                                # Если количество равно 0, удаляем продукт из selected_products
+                                if product_info['quantity'] == 0:
+                                    del selected_products[product_id]
 
+                                # Увеличиваем количество продукта в базе данных (если нужно)
+                                increase_product_stock(product_id, 1)
+                                
+                                # Обновляем отображение выбранных продуктов
+                                update_selected_products_tree()
+                                update_product_table()
+                                update_total_price()  # Обновляем общую стоимость
+                                return
+                else:
+                    messagebox.showerror("Ошибка", "Вы не выбрали продукт для удаления!")
+
+            def update_selected_products_tree():
+                # Очистка таблицы
+                for i in selected_products_tree.get_children():
+                    selected_products_tree.delete(i)
+
+            def update_product_table():
+                # Очистка таблицы перед обновлением
+                product_tree.delete(*product_tree.get_children())
+
+                # Получение актуального списка продуктов из базы данных
+                updated_products = fetch_products()
+
+                # Обновление таблицы
+                for product in updated_products:
+                    product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
+
+                # Добавление актуальных данных
+                for product_id, product_info in selected_products.items():
+                    selected_products_tree.insert(
+                        "", tk.END,
+                        values=(product_info['name'], product_info['price'], product_info['quantity'])
+                    )
 
             def update_total_price():
                 nonlocal total_product_price
@@ -936,7 +958,14 @@ def create_gui_page(root):
                     break
 
         cabins_combo_modal.bind("<<ComboboxSelected>>", update_sales_price)
+        
+        def on_close():
+            """Сброс всех временных изменений."""
+            for product_id, product_info in selected_products.items():
+                increase_product_stock(product_id, product_info['quantity'])
+            add_window.destroy()
 
+        add_window.protocol("WM_DELETE_WINDOW", on_close)
         def submit_data():
             name = entry_name.get().strip()
             if not name:
