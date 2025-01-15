@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -283,7 +283,7 @@ def create_gui_page(root):
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
             # Новый раздел для продлений времени
-        tk.Label(edit_window, text="Продления времени").grid(row=6, column=0, columnspan=2, padx=10, pady=10)
+        tk.Label(edit_window, text="Изменения").grid(row=6, column=0, columnspan=2, padx=10, pady=10)
         extensions_frame = tk.Frame(edit_window)
         extensions_frame.grid(row=7, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
@@ -293,7 +293,7 @@ def create_gui_page(root):
             # Настройка столбцов для продлений
         extensions_tree.heading("ID", text="ID")
         extensions_tree.heading("Минуты", text="Добавленные минуты")
-        extensions_tree.heading("Время", text="Время продления")
+        extensions_tree.heading("Время", text="Время изменений")
 
         extensions_tree.column("ID", width=50)
         extensions_tree.column("Минуты", width=150)
@@ -376,6 +376,49 @@ def create_gui_page(root):
             product_list.tag_configure("existing", background="green")
             product_list.tag_configure("disabled", background="lightgray", foreground="gray")
 
+            # Функция для обработки выбора продукта
+            def on_product_select(event):
+                selected_item = product_list.selection()
+                if selected_item:
+                    # Разблокируем поле для ввода количества
+                    quantity_entry.config(state="normal")
+                else:
+                    # Заблокируем поле для ввода количества
+                    quantity_entry.config(state="disabled")
+                    add_button.config(state="disabled")
+
+            # Функция для обработки ввода количества
+            def on_quantity_change(*args):
+                try:
+                    quantity = int(quantity_var.get())
+                    if quantity > 0:
+                        # Если количество введено корректно, разблокируем кнопку
+                        add_button.config(state="normal")
+                    else:
+                        # Заблокируем кнопку, если количество <= 0
+                        add_button.config(state="disabled")
+                except ValueError:
+                    # Заблокируем кнопку, если введено некорректное значение
+                    add_button.config(state="disabled")
+            # Обновленная функция для добавления продуктов
+            def get_product_stock(product_id):
+                # Перебираем элементы в product_list
+                for child in product_list.get_children():
+                    product = product_list.item(child, "values")
+                    if int(product[0]) == product_id:
+                        return int(product[3])  # Возвращаем доступное количество (столбец 3)
+                return 0  # Если продукт не найден
+            def on_close_window():
+                # Возвращаем добавленные продукты в доступное количество
+                for product_id, product_info in added_products.items():
+                    original_stock = get_product_stock(product_id)  # Получаем текущее количество
+                    restored_stock = original_stock + product_info["quantity"]  # Возвращаем добавленные
+                    update_product_stocks(product_id, restored_stock)  # Обновляем доступное количество
+
+                # Закрываем окно
+                product_window.destroy()
+            product_window.protocol("WM_DELETE_WINDOW", on_close_window)
+            added_products = {}
             def add_or_update_product():
                 selected_item = product_list.selection()
                 if not selected_item:
@@ -387,30 +430,90 @@ def create_gui_page(root):
                 product_price = float(selected_product[2])
                 available_quantity = int(selected_product[3])
 
-                if available_quantity <= 0:
-                    messagebox.showerror("Ошибка", "Продукт недоступен для добавления!")
+                try:
+                    # Получаем количество из поля ввода
+                    quantity_to_add = int(quantity_entry.get())
+                except ValueError:
+                    messagebox.showerror("Ошибка", "Введите корректное количество!")
                     return
 
+                if quantity_to_add <= 0:
+                    messagebox.showerror("Ошибка", "Количество должно быть больше 0!")
+                    return
+
+                if quantity_to_add > available_quantity:
+                    messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
+                    return
+                            # Обновляем добавленные продукты
+                if product_id in added_products:
+                    added_products[product_id]["quantity"] += quantity_to_add
+                else:
+                    added_products[product_id] = {
+                        "name": product_name,
+                        "price": product_price,
+                        "quantity": quantity_to_add,
+                    }
+
                 if product_id in current_products:
-                    new_quantity = current_products[product_id] + 1
+                    new_quantity = current_products[product_id] + quantity_to_add
                     if new_quantity > available_quantity:
                         messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
                         return
 
                     update_product_quantity(sale_id, product_id, new_quantity)
+                    current_products[product_id] = new_quantity
                 else:
-                    add_product_to_sale(sale_id, product_id, 1, product_price)
-                    current_products[product_id] = 1
+                    add_product_to_sale(sale_id, product_id, quantity_to_add, product_price)
+                    current_products[product_id] = quantity_to_add
 
-                update_sale_total_price(sale_id, product_price)
+                # Уменьшаем количество доступного продукта
+                new_available_quantity = available_quantity - quantity_to_add
+                update_product_stocks(product_id, new_available_quantity)
+
+                update_sale_total_price(sale_id, product_price * quantity_to_add)
                 refresh_products_tree(products_tree, sale_id)
                 refresh_product_list(product_list, sale_id)
+                quantity_entry.delete(0, tk.END)  # Очищаем поле ввода после добавления
 
-            tk.Button(product_window, text="Добавить", command=add_or_update_product).grid(row=2, column=0, pady=10)
-            tk.Button(product_window, text="Закрыть", command=product_window.destroy).grid(row=2, column=1, pady=10)
+                        # Создаем переменную для отслеживания количества
+            quantity_var = tk.StringVar()
+            quantity_var.trace_add("write", on_quantity_change)
 
+            # Поле для ввода количества (изначально заблокировано)
+            quantity_entry = tk.Entry(product_window, textvariable=quantity_var, width=10, state="disabled")
+            quantity_entry.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
+            # Функция для обработки выбора продукта
+            def on_product_select(event):
+                selected_item = product_list.selection()
+                if selected_item:
+                    quantity_entry.config(state="normal")  # Разблокируем поле для ввода
+                else:
+                    quantity_entry.config(state="disabled")  # Заблокируем поле для ввода
+                    add_button.config(state="disabled")  # Заблокируем кнопку
 
+            # Функция для обработки изменения количества
+            def on_quantity_change():
+                try:
+                    quantity = int(quantity_var.get())
+                    if quantity > 0:
+                        add_button.config(state="normal")  # Разблокируем кнопку, если количество корректное
+                    else:
+                        add_button.config(state="disabled")  # Заблокируем кнопку
+                except ValueError:
+                    add_button.config(state="disabled")  # Заблокируем кнопку, если введено некорректное значение
+
+            # Привязываем обработчик события выбора продукта
+            product_list.bind("<<TreeviewSelect>>", on_product_select)
+            
+            # Кнопка "Добавить" (изначально заблокирована)
+            add_button = tk.Button(product_window, text="Добавить", command=add_or_update_product, state="disabled")
+            add_button.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
+            # Кнопка "Закрыть"
+            tk.Button(product_window, text="Закрыть", command=product_window.destroy).grid(row=2, column=2, padx=10, pady=10, sticky="ew")
+                        # Привязываем событие выбора продукта
+            product_list.bind("<<TreeviewSelect>>", on_product_select)
+        
         def delete_product():
             """Удаляет выбранный товар из заказа."""
             selected_item = products_tree.selection()
@@ -494,38 +597,40 @@ def create_gui_page(root):
                     product['id'], product['name'], product['price'], product['quantity']
                 )
 
-                # Проверяем, есть ли продукт в текущей продаже
+                # Уменьшаем доступное количество продукта, если он уже добавлен в текущую продажу
                 if product_id in current_products:
-                    if product_quantity == 0:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_price, product_quantity),
-                            tags=("disabled",)
-                        )
-                    else:
+                    product_quantity -= current_products[product_id]
+
+                # Проверяем, доступен ли продукт
+                if product_quantity <= 0:
+                    product_list.insert(
+                        "",
+                        "end",
+                        values=(product_id, product_name, product_price, product_quantity),
+                        tags=("disabled",)
+                    )
+                else:
+                    if product_id in current_products:
+                        # Если продукт уже есть в текущей продаже
                         product_list.insert(
                             "",
                             "end",
                             values=(product_id, product_name, product_price, product_quantity),
                             tags=("existing",)
                         )
-                else:
-                    if product_quantity == 0:
-                        product_list.insert(
-                            "",
-                            "end",
-                            values=(product_id, product_name, product_price, product_quantity),
-                            tags=("disabled",)
-                        )
                     else:
+                        # Продукт доступен, но ещё не добавлен в продажу
                         product_list.insert(
                             "",
                             "end",
                             values=(product_id, product_name, product_price, product_quantity)
                         )
 
- 
+            # Настройка тегов для отображения
+            product_list.tag_configure("existing", background="green")
+            product_list.tag_configure("disabled", background="lightgray", foreground="gray")
+
+
         def save_changes():
             new_name = edit_name_entry.get().strip()
             new_number = edit_number_entry.get().strip()
@@ -704,8 +809,6 @@ def create_gui_page(root):
         tk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
         tk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
         tk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
-
-
             
             
     tree.bind("<Double-1>", on_item_double_click)
@@ -817,7 +920,22 @@ def create_gui_page(root):
             products = fetch_products()
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
-            
+             # Поле для ввода количества
+            quantity_label = tk.Label(product_window, text="Количество:")
+            quantity_label.pack(side="left", padx=5, pady=5)
+
+            quantity_entry = tk.Entry(product_window, width=5)
+            quantity_entry.pack(side="left", padx=5, pady=5)
+
+            # Функция для обновления состояния кнопки
+            def update_add_button_state(*args):
+                if quantity_entry.get().isdigit() and int(quantity_entry.get()) > 0:
+                    add_button.config(state="normal")
+                else:
+                    add_button.config(state="disabled")
+
+            # Связываем событие изменения текста в поле ввода с проверкой
+            quantity_entry.bind("<KeyRelease>", update_add_button_state)
 
             def refresh_product_tree():
                 """Обновление таблицы с продуктами."""
@@ -836,57 +954,70 @@ def create_gui_page(root):
                     item_data = product_tree.item(selected_item)["values"]
                     if len(item_data) == 4:  # Проверка на наличие всех полей
                         product_id, product_name, price, stock = item_data
+                        try:
+                            quantity = int(quantity_entry.get())
+                        except ValueError:
+                            messagebox.showerror("Ошибка", "Введите корректное количество!")
+                            return
+                        
+                        if quantity > stock:
+                            messagebox.showerror("Ошибка", "Недостаточно товара на складе.")
+                            return
+
                         if product_id in selected_products:
-                            if selected_products[product_id]['quantity'] < stock:
-                                selected_products[product_id]['quantity'] += 1
+                            if selected_products[product_id]['quantity'] + quantity <= stock:
+                                selected_products[product_id]['quantity'] += quantity
                             else:
                                 messagebox.showerror("Ошибка", "Достигнуто максимальное количество для этого товара.")
                                 return
                         else:
-                            if stock > 0:
-                                selected_products[product_id] = {'name': product_name, 'price': price, 'quantity': 1, 'stock': stock}
-                            else:
-                                messagebox.showerror("Ошибка", "Недостаточно товара на складе.")
-                                return
-                            
+                            selected_products[product_id] = {
+                                'name': product_name,
+                                'price': price,
+                                'quantity': quantity,
+                                'stock': stock
+                            }
+
                         # Уменьшение количества в базе данных
-                        decrease_product_stock(product_id, 1)  
+                        decrease_product_stock(product_id, quantity)
 
                         # Обновление дерева продуктов
                         refresh_product_tree()
-                        
+
                         # Обновление отображения выбранных продуктов
                         selected_products_tree.delete(*selected_products_tree.get_children())  # Очистка таблицы
                         for prod_id, prod_info in selected_products.items():
                             selected_products_tree.insert("", tk.END, values=(prod_info['name'], prod_info['price'], prod_info['quantity']))
-                        
+
                         update_total_price()
+                        quantity_entry.delete(0, tk.END)  # Очистка поля после добавления
+                        add_button.config(state="disabled")  # Блокируем кнопку
                     else:
                         messagebox.showerror("Ошибка", "Некорректные данные продукта!")
+                else:
+                    messagebox.showerror("Ошибка", "Выберите продукт!")
+
 
             def remove_product_from_order():
                 selected_item = product_tree.selection()  # Получаем выбранный элемент
                 if selected_item:
                     item_data = product_tree.item(selected_item)["values"]
-                    product_name = item_data[1]  # Название продукта (у вас второе значение — название)
+                    product_name = item_data[1]  # Название продукта (второе значение в таблице)
 
-                    for product_id, product_info in list(selected_products.items()):  # Проходим по копии словаря
-                        if product_info['name'] == product_name:  # Находим продукт по имени
-                            if product_info['quantity'] > 0:
-                                product_info['quantity'] -= 1  # Уменьшаем количество
-
-                                # Если количество равно 0, удаляем продукт из selected_products
-                                if product_info['quantity'] == 0:
-                                    del selected_products[product_id]
-
-                                # Увеличиваем количество продукта в базе данных (если нужно)
-                                increase_product_stock(product_id, 1)
-                                
-                                # Обновляем отображение выбранных продуктов
-                                update_selected_products_tree()
-                                update_product_table()
-                                update_total_price()  # Обновляем общую стоимость
-                                return
+                    for product_id, product_info in list(selected_products.items()):  # Проходим по словарю выбранных продуктов
+                        if product_info['name'] == product_name:  # Находим нужный продукт по имени
+                            # Увеличиваем количество продукта на складе на всё количество, которое было выбрано
+                            increase_product_stock(product_id, product_info['quantity'])
+                            
+                            # Удаляем продукт из списка выбранных
+                            del selected_products[product_id]
+                            
+                            # Обновляем отображение выбранных продуктов и таблицу
+                            update_selected_products_tree()
+                            update_product_table()
+                            update_total_price()  # Обновляем общую стоимость
+                            
+                            return  # Завершаем выполнение после удаления продукта
                 else:
                     messagebox.showerror("Ошибка", "Вы не выбрали продукт для удаления!")
 
@@ -935,7 +1066,9 @@ def create_gui_page(root):
                 entry_sales.insert(0, round(total_price, 2))  # Округляем для точности
                 entry_sales.config(state='readonly')
 
-            tk.Button(product_window, text="+ Добавить", command=add_product_to_order).pack(side="left")
+             # Кнопки
+            add_button = tk.Button(product_window, text="+ Добавить", command=add_product_to_order, state="disabled")
+            add_button.pack(side="left", padx=5, pady=5)
             tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
             tk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
 
@@ -958,7 +1091,7 @@ def create_gui_page(root):
                     break
 
         cabins_combo_modal.bind("<<ComboboxSelected>>", update_sales_price)
-        
+
         def on_close():
             """Сброс всех временных изменений."""
             for product_id, product_info in selected_products.items():

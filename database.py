@@ -1089,3 +1089,12 @@ def increase_product_stock(product_id, quantity):
     connection.commit()
     cursor.close()
     connection.close()
+
+def update_product_stocks(product_id, new_quantity):
+    connection = connect()
+    cursor = connection.cursor()
+    """
+    Обновляет количество доступного продукта в базе данных.
+    """
+    query = "UPDATE products SET quantity = %s WHERE id = %s"
+    cursor.execute(query, (new_quantity, product_id))
