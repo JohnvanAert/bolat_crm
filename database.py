@@ -1098,3 +1098,40 @@ def update_product_stocks(product_id, new_quantity):
     """
     query = "UPDATE products SET quantity = %s WHERE id = %s"
     cursor.execute(query, (new_quantity, product_id))
+    connection.commit()
+    connection.close()
+
+
+def get_product_stock(product_id):
+    """Получает текущее количество товара на складе."""
+    connection = connect()
+    cursor = connection.cursor()
+    query = "SELECT quantity FROM products WHERE id = %s"
+    cursor.execute(query, (product_id,))
+    result = cursor.fetchone()
+    connection.close()
+
+    if result:
+        return result[0]
+    else:
+        return 0  # Если товара нет, возвращаем 0
+
+def get_available_quantity(product_id):
+    try:
+        # Установите соединение с базой данных PostgreSQL
+        connection = connect()
+        cursor = connection.cursor()
+        # Выполните запрос
+        query = "SELECT quantity FROM products WHERE id = %s;"
+        cursor.execute(query, (product_id,))
+        result = cursor.fetchone()
+        
+        # Возвратите результат
+        return result[0] if result else 0
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return 0
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()

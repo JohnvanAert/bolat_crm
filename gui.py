@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -418,6 +418,7 @@ def create_gui_page(root):
                 # Закрываем окно
                 product_window.destroy()
             product_window.protocol("WM_DELETE_WINDOW", on_close_window)
+            
             added_products = {}
             def add_or_update_product():
                 selected_item = product_list.selection()
@@ -441,9 +442,16 @@ def create_gui_page(root):
                     messagebox.showerror("Ошибка", "Количество должно быть больше 0!")
                     return
 
-                if quantity_to_add > available_quantity:
+                available_quantity_in_db = get_available_quantity(product_id)  # Реальное количество в базе данных
+                quantity_already_in_order = added_products.get(product_id, {}).get("quantity", 0)  # Уже добавленное количество в заказе
+
+                # Проверяем, хватает ли доступного количества
+                if quantity_to_add + quantity_already_in_order > available_quantity_in_db:
                     messagebox.showerror("Ошибка", "Недостаточно доступного количества!")
                     return
+
+                print(f"Добавляем: {quantity_to_add}, Уже в заказе: {quantity_already_in_order}, Доступно в базе: {available_quantity_in_db}")
+
                             # Обновляем добавленные продукты
                 if product_id in added_products:
                     added_products[product_id]["quantity"] += quantity_to_add
@@ -523,6 +531,7 @@ def create_gui_page(root):
 
             product_data = products_tree.item(selected_item[0], "values")
             product_id = product_data[0]  # ID товара
+            product_quantity = int(product_data[2])
             cabin_id, cabin_price = get_cabin_info_from_sale(sale_id)  # Получаем ID кабинки и её стоимость
 
             if cabin_id is None:
@@ -530,7 +539,10 @@ def create_gui_page(root):
                 return
 
             response = messagebox.askyesno("Подтверждение", "Вы уверены, что хотите удалить товар?")
-            if response:
+            if response:   
+                # Увеличиваем количество товара на складе перед удалением
+                increase_product_stock(product_id, product_quantity)
+                
                 delete_product_from_sale(sale_id, product_id)  # Удаление товара из базы данных
                 refresh_products_tree(products_tree, sale_id)  # Обновление списка товаров
                 recalculate_total_price(sale_id, cabin_price)  # Пересчет общей цены заказа
@@ -596,10 +608,6 @@ def create_gui_page(root):
                 product_id, product_name, product_price, product_quantity = (
                     product['id'], product['name'], product['price'], product['quantity']
                 )
-
-                # Уменьшаем доступное количество продукта, если он уже добавлен в текущую продажу
-                if product_id in current_products:
-                    product_quantity -= current_products[product_id]
 
                 # Проверяем, доступен ли продукт
                 if product_quantity <= 0:
