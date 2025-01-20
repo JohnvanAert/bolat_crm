@@ -61,7 +61,7 @@ def fetch_sales_data():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price FROM sales ORDER BY date DESC")
+        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date FROM sales ORDER BY date DESC")
         sales_data = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -70,17 +70,17 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied):
     conn = connect()
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
             UPDATE sales
-            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute'
+            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute', service_charge_applied = %s
             WHERE id = %s
             """,
-            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, sale_id)
+            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied,sale_id)
         )
         conn.commit()
     except Exception as e:
@@ -1135,3 +1135,24 @@ def get_available_quantity(product_id):
         if connection:
             cursor.close()
             connection.close()
+
+
+def fetch_rental_data():
+    connection = connect()
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date FROM sales ORDER BY date DESC")
+    rows = cursor.fetchall()
+    connection.close()
+    return [
+        {"id": row[0], "name": row[1], "number": row[2], "cabins_id": row[3],
+         "total_sales": row[4], "date": row[5], "cabin_price": row[6], "end_date": row[7]}
+        for row in rows
+    ]
+
+def get_service_state(sale_id):
+    connection = connect()
+    cursor = connection.cursor()
+    cursor.execute("SELECT service_charge_applied FROM sales WHERE id = %s", (sale_id,))
+    result = cursor.fetchone()
+    return result[0] if result else False
+
