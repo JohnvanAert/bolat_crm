@@ -619,7 +619,7 @@ def fetch_all_bookings():
             b.status
         FROM bookings b
         LEFT JOIN cabins c ON b.cabin_id = c.id
-        ORDER BY b.booking_date DESC;
+        ORDER BY b.booking_date ASC;
     """
     try:
         conn = connect()
@@ -783,6 +783,7 @@ def fetch_filtered_bookings(name, date, status, cabin, limit, page):
           AND (%s = '' OR booking_date::text LIKE %s)
           AND (%s = 'Все' OR status = %s)
           AND (%s IS NULL OR cabin_id = %s)
+        ORDER BY booking_date DESC
         LIMIT %s OFFSET %s
     """
     params = (name, f"%{name}%", date, f"%{date}%", status, status, cabin_id, cabin_id, limit, offset)
