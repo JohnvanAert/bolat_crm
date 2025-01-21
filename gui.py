@@ -1,13 +1,12 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_data, get_service_state
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
 from tkcalendar import Calendar
 from datetime import timedelta
-import threading
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -652,11 +651,8 @@ def create_gui_page(root):
             else:
                 new_cabin = selected_cabin.strip().lower()  # Используем старое значение, если новое не выбрано
 
-            print(f"Выбранная кабинка (после извлечения названия): {new_cabin}")  # Лог выбранной кабинки
-
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
-            print(f"Данные о кабинках: {cabins_data}")  # Лог данных кабинок
 
             # Определяем новую кабинку и её цену
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
@@ -680,16 +676,10 @@ def create_gui_page(root):
             # Добавляем стоимость за дополнительное время к уже существующей цене
             cabin_total_price = Decimal(selected_data[6]) + (cabin_hourly_price * Decimal(duration_hours))
 
-            # Логирование значений
-            print(f"Продолжительность: {duration}, Часы: {duration_hours}, Сумма аренды: {cabin_total_price}")
-
-            print(f"Новая кабинка ID: {selected_cabin_id}, Новая цена: {new_cabin_price}")  # Лог ID и цены новой кабинки
-
             # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
                 cabin_price = Decimal(selected_data[4])  # Прежняя цена кабинки
-                print(f"Кабинка не найдена, используем прежние данные: ID={selected_cabin_id}, Цена={cabin_price}")
             else:
                 cabin_price = new_cabin_price  # Новая цена кабинки
 
@@ -711,9 +701,6 @@ def create_gui_page(root):
                     messagebox.showerror("Ошибка", f"Ошибка при расчете новой даты: {e}")
                     return
             
-                        # Логирование значений
-            print(f"Старая дата завершения: {old_end_date}, Новая дата завершения: {new_end_date}, Дополнительное время: {extension_minutes} минут")
-
             # Проверка имени и номера на корректность
             if not new_name:
                 messagebox.showerror("Ошибка", "Имя не может быть пустым!")
@@ -721,19 +708,15 @@ def create_gui_page(root):
 
             # Получаем данные о продуктах
             products_data = get_products_for_sale(selected_data[0])
-            print(f"Данные о продуктах: {products_data}")  # Лог продуктов
 
             # Проверяем сумму продуктов
             total_products_price = sum(
                 Decimal(product['price']) * Decimal(product['quantity']) for product in products_data
             ) if products_data else Decimal(0)
 
-            print(f"Сумма продуктов: {total_products_price}")  # Лог суммы продуктов
-
             # Общая сумма = сумма продуктов + цена кабинки
             if new_cabin == selected_cabin.strip().lower():
                 cabin_price = Decimal(selected_data[6])  # Используем старую цену кабинки
-                print("Кабинка не изменилась, используем старую цену:", cabin_price)
 
             total_price = total_products_price + cabin_total_price
 
@@ -747,7 +730,6 @@ def create_gui_page(root):
             # Проверяем корректность значения общей суммы в selected_data
             try:
                 previous_total_price = Decimal(selected_data[4])
-                print(f"Старая общая сумма: {previous_total_price}")  # Лог старой суммы
             except (ValueError, TypeError, InvalidOperation):
                 messagebox.showerror("Ошибка", "Некорректное значение общей суммы в данных! Попробуйте еще раз.")
                 return
@@ -766,8 +748,6 @@ def create_gui_page(root):
                 return
 
             # Обновляем данные в базе
-            print(f"Обновление данных: ID={selected_data[0]}, Имя={new_name}, Номер={new_number}, Кабинка ID={selected_cabin_id}, "
-                f"Общая сумма={total_price}, Цена кабинки={cabin_price}")
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied)
 
             # Уведомление об успешном обновлении
@@ -828,9 +808,61 @@ def create_gui_page(root):
         tk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
         service_var = tk.BooleanVar(value=service_state)  # Переменная для отслеживания состояния галочки
         tk.Checkbutton(button_frame, text="Включить % услуг", variable=service_var).grid(row=0, column=5, padx=5)
+        finish_order_button = tk.Button(button_frame, text="Чек", bg="green", fg="white", command=lambda: show_final_receipt(selected_data, products_data, service_var.get()))
+        finish_order_button.grid(row=0, column=6, columnspan=2, pady=5)
+            
+        def show_final_receipt(selected_data, products_data, service_state):
+            # Создаем модальное окно для отображения чека
+            receipt_window = tk.Toplevel(edit_window)
+            receipt_window.title("Чек")
+            receipt_window.geometry("500x400")
 
-            
-            
+            # Общая информация
+            tk.Label(receipt_window, text=f"Клиент: {selected_data[1]}").pack(pady=5)
+            tk.Label(receipt_window, text=f"Номер телефона: {selected_data[2]}").pack(pady=5)
+            tk.Label(receipt_window, text=f"Кабинка: {selected_data[3]}").pack(pady=5)
+
+            # Подсчет общей суммы за продукты
+            total_product_cost = sum([
+                Decimal(product['quantity']) * Decimal(product['price']) for product in products_data
+            ])
+
+            # Получение данных о стоимости аренды из базы
+            try:
+                rental_cost = fetch_rental_cost(selected_data[0])  # Используем ID продажи для запроса
+                if rental_cost is None:
+                    messagebox.showerror("Ошибка", "Не удалось получить данные о стоимости аренды!")
+                    return
+            except Exception as e:
+                messagebox.showerror("Ошибка", f"Ошибка при получении данных из базы: {e}")
+                return
+
+            # Расчет общего чека
+            total_cost = total_product_cost + Decimal(rental_cost)
+            if service_state:  # Если включен процент услуг
+                service_fee = total_cost * Decimal('0.15')  # Используем Decimal для 10% услуги
+                total_cost += service_fee
+            else:
+                service_fee = Decimal('0')
+
+            # Отображение данных в чеке
+            tk.Label(receipt_window, text="Заказанные продукты:").pack(pady=5)
+            for product in products_data:
+                tk.Label(receipt_window, text=f"{product['name']} x {product['quantity']} = {Decimal(product['quantity']) * Decimal(product['price']):.2f}").pack()
+
+            tk.Label(receipt_window, text=f"Сумма за продукты: {total_product_cost:.2f}").pack(pady=5)
+            tk.Label(receipt_window, text=f"Сумма за аренду кабины: {Decimal(rental_cost):.2f}").pack(pady=5)
+
+            if service_state:
+                tk.Label(receipt_window, text=f"Процент за услуги: {service_fee:.2f}").pack(pady=5)
+            tk.Label(receipt_window, text=f"Итоговая сумма: {total_cost:.2f}", font=("Arial", 14, "bold")).pack(pady=10)
+
+            # Кнопка закрытия окна
+            close_button = tk.Button(receipt_window, text="Закрыть", command=receipt_window.destroy)
+            close_button.pack(pady=10)
+
+
+
     tree.bind("<Double-1>", on_item_double_click)
 
 

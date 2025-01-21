@@ -1156,3 +1156,20 @@ def get_service_state(sale_id):
     result = cursor.fetchone()
     return result[0] if result else False
 
+def fetch_rental_cost(rental_id):
+    try:
+        connection = connect()  # Функция для подключения к базе данных
+        cursor = connection.cursor()
+        query = """
+            SELECT cabin_price
+            FROM sales
+            WHERE id = %s;
+        """
+        cursor.execute(query, (rental_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return result[0] if result else None
+    except Exception as e:
+        print(f"Ошибка при получении суммы аренды: {e}")
+        return None
