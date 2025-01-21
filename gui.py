@@ -134,7 +134,9 @@ def create_gui_page(root):
         paginated_data = all_data[start_index:end_index]
 
         for row in paginated_data:
-            tree.insert("", tk.END, values=row)
+            id, name, number, cabins_id, total_sales, date, cabin_price, end_date = row
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date))
+
 
 
         update_pagination_buttons(total_pages)
