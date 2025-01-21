@@ -1182,3 +1182,54 @@ def fetch_rental_cost(rental_id):
     except Exception as e:
         print(f"Ошибка при получении суммы аренды: {e}")
         return None
+
+def get_occupied_cabins():
+    query = """
+        SELECT c.name AS cabin_name, s.end_date AS end_time
+        FROM sales s
+        JOIN cabins c ON s.cabins_id = c.id
+        WHERE CURRENT_TIMESTAMP BETWEEN s.date AND s.end_date;
+    """
+
+    with connect() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            # Возвращаем список словарей с названием кабины и временем окончания аренды
+            occupied_cabins = [
+                {"cabin_name": row[0], "end_time": row[1]} for row in cursor.fetchall()
+            ]
+
+    return occupied_cabins
+
+
+def get_sold_products(page=1, page_size=10):
+    offset = (page - 1) * page_size
+    query = f"""
+        SELECT 
+            products.name AS product_name,
+            cabins.name AS cabin_name,
+            sales.date AS order_time,
+            sales_products.quantity,
+            sales_products.price
+        FROM sales_products
+        JOIN sales ON sales_products.sale_id = sales.id
+        JOIN products ON sales_products.product_id = products.id
+        JOIN cabins ON sales.cabins_id = cabins.id
+        WHERE CURRENT_TIMESTAMP BETWEEN sales.date AND sales.end_date
+        ORDER BY sales.date DESC
+        LIMIT {page_size} OFFSET {offset};
+    """
+    with connect() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+            return [
+                {
+                    "product_name": row[0],
+                    "cabin_name": row[1],
+                    "order_time": row[2],
+                    "quantity": row[3],
+                    "price": row[4]
+                }
+                for row in results
+            ]
