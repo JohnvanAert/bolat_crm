@@ -70,17 +70,17 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied):
     conn = connect()
     cursor = conn.cursor()
     try:
         cursor.execute(
             """
             UPDATE sales
-            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute', service_charge_applied = %s
+            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute', service_charge_applied = %s, discount_applied = %s
             WHERE id = %s
             """,
-            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied,sale_id)
+            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied,sale_id)
         )
         conn.commit()
     except Exception as e:
@@ -1155,6 +1155,14 @@ def get_service_state(sale_id):
     cursor.execute("SELECT service_charge_applied FROM sales WHERE id = %s", (sale_id,))
     result = cursor.fetchone()
     return result[0] if result else False
+
+def get_discount_state(sale_id):
+    connection = connect()
+    cursor = connection.cursor()
+    cursor.execute("SELECT discount_applied FROM sales WHERE id = %s", (sale_id,))
+    result = cursor.fetchone()
+    return result[0] if result else False
+
 
 def fetch_rental_cost(rental_id):
     try:

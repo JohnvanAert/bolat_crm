@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -195,7 +195,7 @@ def create_gui_page(root):
 
         sale_id = selected_data[0]
         service_state = get_service_state(sale_id)
-
+        discount_state = get_discount_state(sale_id)
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -284,9 +284,8 @@ def create_gui_page(root):
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
             # Новый раздел для продлений времени
-        tk.Label(edit_window, text="Изменения").grid(row=7, column=0, columnspan=2, padx=10, pady=10)
         extensions_frame = tk.Frame(edit_window)
-        extensions_frame.grid(row=9, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+        extensions_frame.grid(row=7, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
 
         extensions_tree = ttk.Treeview(extensions_frame, columns=("ID", "Минуты", "Время"), show="headings")
         extensions_tree.pack(fill="both", expand=True)
@@ -644,6 +643,7 @@ def create_gui_page(root):
             new_name = edit_name_entry.get().strip()
             new_number = edit_number_entry.get().strip()
             service_charge_applied = bool(service_var.get())
+            discount_applied = bool(discount_var.get())
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
                 # Извлекаем только название кабинки (до дефиса)
@@ -720,13 +720,21 @@ def create_gui_page(root):
 
             total_price = total_products_price + cabin_total_price
 
-                # Добавляем или убираем 15% услуг
+            # Добавляем или убираем 15% услуг
             if service_charge_applied:
                 total_price *= Decimal(1.15)  # Прибавляем 15%
             else:
                 if 'service_charge' in selected_data and selected_data['service_charge']:
                     total_price /= Decimal(1.15)  # Убираем 15%, если ранее был добавлен
 
+            # Добавляем или убираем скидку 15%
+            if discount_applied:
+                total_price *= Decimal(0.85)  # Уменьшаем на 15%
+            else:
+                if 'discount_applied' in selected_data and selected_data['discount_applied']:
+                    total_price /= Decimal(0.85)  # Возвращаем стоимость, если ранее скидка была применена
+
+                    
             # Проверяем корректность значения общей суммы в selected_data
             try:
                 previous_total_price = Decimal(selected_data[4])
@@ -748,7 +756,7 @@ def create_gui_page(root):
                 return
 
             # Обновляем данные в базе
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied)
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get())
 
             # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -797,21 +805,30 @@ def create_gui_page(root):
         
         # Создаем фрейм для кнопок
         button_frame = tk.Frame(edit_window)
-        button_frame.grid(row=10, column=0, columnspan=2, pady=10)  # Используем grid для размещения фрейма
-        
+        button_frame.grid(row=9, column=0, columnspan=2, pady=10)  # Используем grid для размещения фрейма
 
-        # Добавляем кнопки в фрейм
+        # Добавляем первый ряд кнопок
         tk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
         tk.Button(button_frame, text="Удалить товар", command=delete_product, fg="red").grid(row=0, column=1, padx=5)
         tk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
         tk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
         tk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
-        service_var = tk.BooleanVar(value=service_state)  # Переменная для отслеживания состояния галочки
-        tk.Checkbutton(button_frame, text="Включить % услуг", variable=service_var).grid(row=0, column=5, padx=5)
-        finish_order_button = tk.Button(button_frame, text="Чек", bg="green", fg="white", command=lambda: show_final_receipt(selected_data, products_data, service_var.get()))
-        finish_order_button.grid(row=0, column=6, columnspan=2, pady=5)
-            
-        def show_final_receipt(selected_data, products_data, service_state):
+
+        # Боковая панель
+        checkbox_frame = tk.Frame(edit_window)
+        checkbox_frame.grid(row=10, column=0, columnspan=2, pady=5)  # Размещаем выше кнопок
+
+
+        # Добавляем второй ряд чекбоксов и кнопок
+        service_var = tk.BooleanVar(value=service_state)  # Переменная для состояния процента услуг
+        discount_var = tk.BooleanVar(value=discount_state)  # Переменная для состояния скидки 15%
+
+        tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var).grid(row=1, column=0, columnspan=2, padx=5)
+        tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var).grid(row=1, column=2, columnspan=2, padx=5)
+        finish_order_button = tk.Button(checkbox_frame, text="Чек", bg="green", fg="white", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
+        finish_order_button.grid(row=1, column=4, columnspan=3, pady=5)
+
+        def show_final_receipt(selected_data, products_data, service_state, discount_state):
             # Создаем модальное окно для отображения чека
             receipt_window = tk.Toplevel(edit_window)
             receipt_window.title("Чек")
@@ -844,6 +861,14 @@ def create_gui_page(root):
                 total_cost += service_fee
             else:
                 service_fee = Decimal('0')
+            
+            # Расчет скидки, если включена
+            if discount_state:
+                discount = total_cost * Decimal('0.15')  # Вычисляем 15% скидки
+                total_cost -= discount
+            else:
+                discount = Decimal('0')
+
 
             # Отображение данных в чеке
             tk.Label(receipt_window, text="Заказанные продукты:").pack(pady=5)
@@ -855,9 +880,11 @@ def create_gui_page(root):
 
             if service_state:
                 tk.Label(receipt_window, text=f"Процент за услуги: {service_fee:.2f}").pack(pady=5)
+            if discount_state:
+                tk.Label(receipt_window, text=f"Скидка: {discount:.2f}").pack(pady=5)    
             tk.Label(receipt_window, text=f"Итоговая сумма: {total_cost:.2f}", font=("Arial", 14, "bold")).pack(pady=10)
-
-            # Кнопка закрытия окна
+            
+            # Кнопка закрытия окна  
             close_button = tk.Button(receipt_window, text="Закрыть", command=receipt_window.destroy)
             close_button.pack(pady=10)
 
