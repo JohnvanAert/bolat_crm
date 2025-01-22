@@ -1253,3 +1253,59 @@ def fetch_low_stock_products():
         return [{"id": row[0], "name": row[1], "quantity": row[2]} for row in products]
     finally:
         connection.close()
+
+
+def get_product_sales_statistics_by_period(period):
+    """Получает статистику по проданным продуктам за указанный период."""
+    query = f"""
+    SELECT 
+        p.name AS product_name,
+        SUM(sp.quantity) AS total_sold,
+        SUM(sp.quantity * sp.price) AS total_income
+    FROM 
+        sales_products sp
+    JOIN 
+        products p ON sp.product_id = p.id
+    WHERE 
+        sp.created_at >= NOW() - INTERVAL '1 {period}'
+    GROUP BY 
+        p.name
+    ORDER BY 
+        total_sold DESC;
+    """
+    conn = connect()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            return cursor.fetchall()
+    finally:
+        conn.close()
+
+def get_product_sales_statistics_by_dates(start_date, end_date):
+    """Получает статистику по проданным продуктам за указанный диапазон дат."""
+    query = """
+    SELECT 
+        p.name AS product_name,
+        SUM(sp.quantity) AS total_sold,
+        SUM(sp.quantity * sp.price) AS total_income
+    FROM 
+        sales_products sp
+    JOIN 
+        products p ON sp.product_id = p.id
+    JOIN 
+        sales s ON sp.sale_id = s.id
+    WHERE 
+        sp.created_at >= %s AND sp.created_at <= %s
+        AND date_trunc('second', sp.created_at) <= %s
+    GROUP BY 
+        p.name
+    ORDER BY 
+        total_sold DESC;
+    """
+    conn = connect()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (start_date, end_date))
+            return cursor.fetchall()
+    finally:
+        conn.close()

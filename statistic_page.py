@@ -2,7 +2,7 @@ from tkinter import Tk, ttk, Toplevel, Frame, Label, Button
 import tkinter as tk
 from tkcalendar import Calendar
 from decimal import Decimal
-from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range, fetch_statistics
+from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range, fetch_statistics, get_product_sales_statistics_by_dates, get_product_sales_statistics_by_period
 from datetime import datetime, timedelta
 
 def create_statistics_page(root):
@@ -20,10 +20,12 @@ def create_statistics_page(root):
     tree.heading("total_income", text="Общий доход")
     tree.heading("avg_check", text="Средний чек")
     tree.pack(padx=10, pady=10)
-
+    # Финансовая и продуктовая статистика
+    stats_frame = tk.Frame(frame)
+    stats_frame.pack(pady=10, fill=tk.X)
     # Финансовая статистика
-    finance_frame = tk.Frame(frame)
-    finance_frame.pack(pady=10)
+    finance_frame = tk.Frame(stats_frame)
+    finance_frame.pack(side=tk.LEFT, pady=10)
 
     tk.Label(finance_frame, text="Финансовая статистика", font=("Arial", 14)).pack()
 
@@ -31,6 +33,18 @@ def create_statistics_page(root):
     finance_tree.heading("description", text="Описание")
     finance_tree.heading("value", text="Сумма (₸)")
     finance_tree.pack(padx=10, pady=10)
+
+     # Статистика по продуктам
+    product_frame = tk.Frame(stats_frame)
+    product_frame.pack(side=tk.RIGHT, padx=10)
+
+    tk.Label(product_frame, text="Статистика по продуктам", font=("Arial", 14)).pack()
+
+    product_tree = ttk.Treeview(product_frame, columns=("product_name", "total_sold", "total_income"), show="headings", height=10)
+    product_tree.heading("product_name", text="Название продукта")
+    product_tree.heading("total_sold", text="Продано (шт.)")
+    product_tree.heading("total_income", text="Доход (₸)")
+    product_tree.pack(padx=10, pady=10)
 
     # Кнопки для выбора периода
     button_frame = tk.Frame(frame)
@@ -117,6 +131,25 @@ def create_statistics_page(root):
         else:
             finance_tree.item(profit_item, tags="summary_neutral")
 
+    def update_product_statistics(period, date=None):
+        """Обновляет данные статистики по проданным продуктам."""
+        # Очистка текущих данных
+        for item in product_tree.get_children():
+            product_tree.delete(item)
+
+        # Получение данных в зависимости от периода или диапазона дат
+        if date:
+            start_date, end_date = date
+            product_data = get_product_sales_statistics_by_dates(start_date, end_date)
+        else:
+            product_data = get_product_sales_statistics_by_period(period)
+
+        # Добавление данных в виджет Treeview
+        for row in product_data:
+            product_name, total_sold, total_income = row
+            product_tree.insert("", "end", values=(product_name, total_sold, f"{total_income:.2f}"))
+
+
     def open_date_picker():
         def select_dates():
             start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
@@ -142,7 +175,8 @@ def create_statistics_page(root):
         """Обновляет статистику по кабинкам и финансам."""
         update_cabin_statistics(period, date)
         update_financial_statistics(period, date)
-
+        update_product_statistics(period, date)
+        
     # Кнопки переключения периода
     tk.Button(button_frame, text="День", command=lambda: update_statistics('day')).pack(side=tk.LEFT, padx=5)
     tk.Button(button_frame, text="Неделя", command=lambda: update_statistics('week')).pack(side=tk.LEFT, padx=5)
