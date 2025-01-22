@@ -55,7 +55,7 @@ def create_gui_page(root):
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "end_date"), show="headings")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Выбранная кабинка")
-    tree.heading("total_sales", text="Общая продажа")
+    tree.heading("total_sales", text="Общий чек")
     tree.heading("name", text="Имя")
     tree.heading("number", text="Номер")
     tree.heading("date", text="Дата и Время")
@@ -72,6 +72,63 @@ def create_gui_page(root):
 
     pagination_frame = tk.Frame(frame)
     pagination_frame.grid(row=11, column=0, columnspan=2)
+
+    # Создаем фрейм для квадратов кабинок
+    cabins_frame = tk.Frame(frame)
+    cabins_frame.grid(row=12, column=0, columnspan=2, pady=10)
+
+    def create_cabin_buttons():
+        """Создает кнопки-квадраты для всех кабинок из базы данных."""
+        # Очистка предыдущих кнопок
+        for widget in cabins_frame.winfo_children():
+            widget.destroy()
+
+        # Получаем данные о всех кабинках из базы
+        cabins_data = get_cabins_data()
+
+        # Создаем кнопки для каждой кабинки
+        for idx, cabin in enumerate(cabins_data):
+            cabin_name = cabin.get("name", f"Кабинка {idx+1}")  # Защита от отсутствия имени
+            cabin_price = cabin.get("price", 0)  # Цена кабинки (по умолчанию 0)
+            button_label = f"{cabin_name} - {cabin_price} $"  # Формируем строку с названием и ценой
+
+            # Создаем кнопку
+            cabin_button = tk.Button(
+                cabins_frame,
+                text=button_label,
+                width=10,
+                height=5,
+                relief=tk.RAISED,
+                bg="red",  # Кнопки с красным фоном
+                fg="white",
+                command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
+            )
+            # Располагаем кнопки в сетке
+            row, col = divmod(idx, 5)  # 5 - количество кнопок в строке
+            cabin_button.grid(row=row, column=col, padx=5, pady=5)
+
+
+    def handle_cabin_click(cabin):
+        """Обработчик нажатия на кнопку кабинки."""
+        cabin_name = cabin.get("name", "Неизвестная кабинка")
+        cabin_price = cabin.get("price", 0)
+        cabin_label = f"{cabin_name} - {cabin_price} $"  # Формируем строку в нужном формате
+
+        # Передаем название и цену кабинки в open_add_modal
+        open_add_modal(selected_cabin=cabin_label)
+
+
+
+    # Обновление интерфейса при изменении данных в базе
+    def on_cabin_data_update():
+        """Функция вызывается при изменении данных кабинок в базе."""
+        create_cabin_buttons()
+
+    # Подписываемся на обновления данных кабинок
+    add_observer(on_cabin_data_update)
+
+    # Инициализация кнопок при первом запуске
+    create_cabin_buttons()
 
     def update_cabins_combo():
         cabins_data = get_cabins_data()
@@ -897,7 +954,7 @@ def create_gui_page(root):
 
     display_sales_data()
 
-    def open_add_modal():
+    def open_add_modal(selected_cabin=None):
         add_window = tk.Toplevel(root)
         add_window.title("Добавить запись")
 
@@ -932,6 +989,14 @@ def create_gui_page(root):
         cabins_combo_modal = ttk.Combobox(add_window, state="readonly")
         cabins_combo_modal.grid(row=2, column=1)
         cabins_combo_modal['values'] = cabins_combo['values']
+
+        if selected_cabin:
+            # Устанавливаем выбранную кабинку и блокируем список
+            cabins_combo_modal.set(selected_cabin)
+            cabins_combo_modal.config(state="disabled")
+        else:
+            # Разблокируем список, если кабинка не выбрана
+            cabins_combo_modal.config(state="readonly")
 
         tk.Label(add_window, text="Общая продажа").grid(row=3, column=0)
         entry_sales = tk.Entry(add_window, state='readonly')
@@ -1238,7 +1303,7 @@ def create_gui_page(root):
 
         tk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
 
-    tk.Button(frame, text="Добавить запись", command=open_add_modal).grid(row=8, columnspan=2)
+    tk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2)
 
 
     return frame

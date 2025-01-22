@@ -239,7 +239,7 @@ def delete_cabin(cabin_id):
 
 # Function to fetch expenses data with optional filters
 def fetch_expenses_data(name=None, min_amount=None, max_amount=None, start_date=None, end_date=None):
-    query = "SELECT id, name, amount, date FROM expenses WHERE 1=1"
+    query = "SELECT id, name, amount, date FROM expenses WHERE 1=1 ORDER BY date DESC"
     params = []
 
     if name:
