@@ -95,7 +95,7 @@ def create_gui_page(root):
             # Создаем кнопку
             cabin_button = tk.Button(
                 cabins_frame,
-                text=button_label,
+                text=cabin_name,
                 width=10,
                 height=5,
                 relief=tk.RAISED,

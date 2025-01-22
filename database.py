@@ -189,8 +189,6 @@ def fetch_products():
         print("Ошибка при извлечении данных о продуктах:", e)
         return []
 
-
-
 # database.py
 
 def get_cabins():
@@ -648,7 +646,7 @@ def confirm_booking_to_sale(booking_id):
     """
     insert_sale_query = """
         INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date)
-        VALUES (%s, %s, %s, %s, NOW()::timestamp(0), %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -673,6 +671,7 @@ def confirm_booking_to_sale(booking_id):
                     booking[1],  # customer_phone
                     booking[2],  # cabin_id
                     booking[3],  # total_price
+                    booking[4],  # start_date
                     booking[3],   # cabin_price
                     booking[5]   # end_date
                 )
@@ -1185,18 +1184,22 @@ def fetch_rental_cost(rental_id):
 
 def get_occupied_cabins():
     query = """
-        SELECT c.name AS cabin_name, s.end_date AS end_time
+        SELECT c.name AS cabin_name, s.date AS start_time, s.end_date AS end_time
         FROM sales s
         JOIN cabins c ON s.cabins_id = c.id
-        WHERE CURRENT_TIMESTAMP BETWEEN s.date AND s.end_date;
+        WHERE CURRENT_TIMESTAMP <= s.end_date;
     """
 
     with connect() as conn:
         with conn.cursor() as cursor:
             cursor.execute(query)
-            # Возвращаем список словарей с названием кабины и временем окончания аренды
+            # Возвращаем список словарей с названием кабины, временем начала и окончания аренды
             occupied_cabins = [
-                {"cabin_name": row[0], "end_time": row[1]} for row in cursor.fetchall()
+                {
+                    "cabin_name": row[0],
+                    "start_time": row[1],
+                    "end_time": row[2]
+                } for row in cursor.fetchall()
             ]
 
     return occupied_cabins
