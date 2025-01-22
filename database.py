@@ -1236,3 +1236,20 @@ def get_sold_products(page=1, page_size=10):
                 }
                 for row in results
             ]
+
+def fetch_low_stock_products():
+    """
+    Получает список продуктов, у которых количество меньше 5.
+    """
+    connection = connect()  # Подключаемся к базе данных
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, quantity
+                FROM products
+                WHERE quantity < 5
+            """)
+            products = cursor.fetchall()
+        return [{"id": row[0], "name": row[1], "quantity": row[2]} for row in products]
+    finally:
+        connection.close()

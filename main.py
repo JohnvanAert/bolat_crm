@@ -6,7 +6,7 @@ from cabin_page import create_cabin_page  # Импорт новой страни
 from expenses_page import create_expenses_page
 from statistic_page import create_statistics_page
 from booking_page import create_booking_page
-from database import get_occupied_cabins, get_sold_products
+from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products
 from datetime import datetime
 
 def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99"):
@@ -230,13 +230,42 @@ def main():
     welcome_label = tk.Label(main_page, text="Добро пожаловать на главную страницу!", font=("Helvetica", 18), bg="#000")
     welcome_label.pack()
 
-    tk.Label(main_page, text="Занятые кабины:", font=("Helvetica", 16), bg="#000").pack(pady=5)
-    cabins_listbox = tk.Listbox(main_page, font=("Helvetica", 14), height=10, width=50)
-    cabins_listbox.pack()
+    # Создаем рамку для содержимого
+    content_frame = tk.Frame(main_page, bg="#000")
+    content_frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+    # Занятые кабины (левая колонка)
+    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#000", fg="#fff").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
+    cabins_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
+    cabins_listbox.grid(row=1, column=0, padx=10, pady=5, sticky="nw")
+
+    # Продукты для закупа (правая колонка)
+    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#000", fg="#fff").grid(row=0, column=1, padx=10, pady=5, sticky="nw")
+    restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
+    restock_listbox.grid(row=1, column=1, padx=10, pady=5, sticky="nw")
     # Интерфейс
     tk.Label(main_page, text="Заказы:", font=("Helvetica", 16)).pack(pady=5)
     sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), height=15, width=80)
     sold_listbox.pack()
+    
+
+    def update_restock_list():
+        """
+        Функция для обновления списка продуктов для пополнения.
+        """
+        restock_listbox.delete(0, tk.END)  # Очищаем текущий список
+
+        try:
+            low_stock_products = fetch_low_stock_products()  # Получаем продукты для закупа
+            for product in low_stock_products:
+                restock_listbox.insert(
+                    tk.END, f"{product['name']}, Количество: {product['quantity']}"
+                )
+        except Exception as e:
+            restock_listbox.insert(tk.END, f"Ошибка загрузки: {e}")
+
+    # Обновляем список продуктов для пополнения при загрузке страницы
+    update_restock_list()
 
     # Кнопки навигации
     pagination_frame = tk.Frame(main_page)
