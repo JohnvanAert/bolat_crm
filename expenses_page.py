@@ -56,6 +56,11 @@ def create_expenses_page(root):
     tree.heading("date", text="Дата")
     tree.pack()
 
+    def refresh_expenses_data():
+        # Здесь должен быть код обновления данных в таблице расходов
+        display_expenses_data()  # Обновляем данные в таблице
+        frame.after(300000, refresh_expenses_data)  # Повторяем вызов через 5 минут
+
     # Function for opening the edit expense modal
     def open_edit_expense_modal(item_id, current_name, current_amount, current_datetime):
         edit_expense_modal = tk.Toplevel(frame)
@@ -335,5 +340,6 @@ def create_expenses_page(root):
 
     display_expenses_data()
     add_observer(display_expenses_data)
-
+    refresh_expenses_data()
+    
     return frame

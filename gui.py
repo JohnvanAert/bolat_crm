@@ -1307,5 +1307,10 @@ def create_gui_page(root):
 
     ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2)
 
+    def refresh_gui_page():
+        display_sales_data()
+        fetch_products()
+        frame.after(200000, refresh_gui_page)
+        
 
     return frame

@@ -176,9 +176,12 @@ def create_cabin_page(root):
 
     cabin_table.bind('<Double-1>', on_table_double_click)
 
+    def auto_refresh():
+        load_and_update_cabins()
+        frame.after(300000, auto_refresh)  # 300000 миллисекунд = 5 минут
     # Регистрация функции отображения как наблюдателя
     add_observer(display_cabins)
-
+    auto_refresh()
     # Первоначальная загрузка данных кабинок
     load_and_update_cabins()
 

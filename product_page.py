@@ -16,7 +16,7 @@ def create_product_page(root):
         modal = Toplevel(root)
         modal.title("Добавление продукта")
         modal.geometry("400x400")
-
+        
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -344,5 +344,9 @@ def create_product_page(root):
         ttk.Button(modal, text="Сохранить изменения", command=save_changes).grid(row=5, columnspan=2, pady=10)
         ttk.Button(modal, text="Удалить продукт", command=delete_products, fg="red").grid(row=6, columnspan=2, pady=10)
 
+    def refresh_product_page():
+        display_products()
+        frame.after(300000, refresh_product_page)
+        
     display_products()
     return frame
