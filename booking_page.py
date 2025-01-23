@@ -126,7 +126,7 @@ def create_booking_page(root):
     
          # Панель пагинации
     pagination_frame = tk.Frame(frame_main)
-    pagination_frame.pack(fill=tk.X, pady=5)
+    pagination_frame.pack(pady=10)
 
     prev_button = ttk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
     prev_button.pack(side=tk.LEFT, padx=5)
@@ -137,47 +137,9 @@ def create_booking_page(root):
     next_button = ttk.Button(pagination_frame, text=">>", command=lambda: load_bookings(current_page + 1))
     next_button.pack(side=tk.LEFT, padx=5)
 
-    cabins_frame = tk.Frame(frame_main)
-    cabins_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-    def create_cabin_buttons():
-        """Создает квадратные кнопки для кабинок."""
-        for widget in cabins_frame.winfo_children():
-            widget.destroy()
-
-        cabins = get_cabins()  # Получаем данные кабинок
-
-        for idx, cabin in enumerate(cabins):
-            cabin_name = cabin.get("name", f"Кабинка {idx + 1}")
-
-            # Создаем кнопку
-            cabin_button = tk.Button(
-                cabins_frame,
-                text=cabin_name,
-                width=10,
-                height=5,
-                relief=tk.RAISED,
-                bg="red",
-                fg="white",
-                command=lambda c=cabin: handle_cabin_click(c)  # Передаем кабинку в обработчик
-            )
-
-            # Расположение кнопок в сетке
-            row, col = divmod(idx, 5)  # 5 кнопок в строке
-            cabin_button.grid(row=row, column=col, padx=5, pady=5)
-
-    def handle_cabin_click(cabin):
-        """Обработчик нажатия на кнопку кабинки."""
-        cabin_id = cabin.get("id")  # Получаем ID кабинки
-        if cabin_id is not None:
-            add_booking_modal(selected_cabin=cabin_id)
-        else:
-            tk.messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
-
-
-            
+    
     load_bookings()
-    create_cabin_buttons()
+    
     
     # Кнопки управления
     # Модальное окно для добавления бронирования
@@ -406,4 +368,44 @@ def create_booking_page(root):
     ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).pack(side=tk.LEFT, padx=5)
     ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).pack(side=tk.LEFT, padx=5)
 
+    cabins_frame = tk.Frame(frame_main)
+    cabins_frame.pack(pady=10)
+
+    def create_cabin_buttons():
+        """Создает квадратные кнопки для кабинок."""
+        for widget in cabins_frame.winfo_children():
+            widget.destroy()
+
+        cabins = get_cabins()  # Получаем данные кабинок
+
+        for idx, cabin in enumerate(cabins):
+            cabin_name = cabin.get("name", f"Кабинка {idx + 1}")
+
+            # Создаем кнопку
+            cabin_button = tk.Button(
+                cabins_frame,
+                text=cabin_name,
+                width=10,
+                height=5,
+                relief=tk.GROOVE,
+                bg="red",
+                fg="white",
+                bd=0.5,
+                command=lambda c=cabin: handle_cabin_click(c)  # Передаем кабинку в обработчик
+            )
+
+            # Расположение кнопок в сетке
+            row, col = divmod(idx, 5)  # 5 кнопок в строке
+            cabin_button.grid(row=row, column=col, padx=5, pady=5)
+
+    def handle_cabin_click(cabin):
+        """Обработчик нажатия на кнопку кабинки."""
+        cabin_id = cabin.get("id")  # Получаем ID кабинки
+        if cabin_id is not None:
+            add_booking_modal(selected_cabin=cabin_id)
+        else:
+            tk.messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
+
+
+    create_cabin_buttons()
     return frame_main

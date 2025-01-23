@@ -74,7 +74,7 @@ def create_gui_page(root):
     pagination_frame.grid(row=11, column=0, columnspan=2)
 
     # Создаем фрейм для квадратов кабинок
-    cabins_frame = ttk.Frame(frame)
+    cabins_frame = tk.Frame(frame)
     cabins_frame.grid(row=12, column=0, columnspan=2, pady=10)
 
     def create_cabin_buttons():
@@ -98,9 +98,11 @@ def create_gui_page(root):
                 text=cabin_name,
                 width=10,
                 height=5,
-                relief=tk.RAISED,
+                relief=tk.GROOVE,
                 bg="red",  # Кнопки с красным фоном
                 fg="white",
+                bd=0.5,
+                activebackground="#5A9BD3",
                 command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
             )
             # Располагаем кнопки в сетке

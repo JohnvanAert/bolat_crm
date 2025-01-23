@@ -35,11 +35,13 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     tk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT)  # Кнопка для кабин
 
 current_page = 1
+restock_page = 1
+occupied_cabins_page = 1
 page_size = 15  
 
 def main():
     root = tk.Tk()
-    root.title("CRM Navigation Panel")
+    root.title("Bublik")
     root.geometry("1200x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
@@ -130,11 +132,16 @@ def main():
         root.update_idletasks()
     
     def update_occupied_cabins():
+        global occupied_cabins_page
         cabins_listbox.delete(0, tk.END)  # Очистка текущего списка
         occupied_cabins = get_occupied_cabins()  # Получение данных о занятых кабинах
 
         if occupied_cabins:
-            for cabin in occupied_cabins:
+            start_idx = (occupied_cabins_page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_cabins = occupied_cabins[start_idx:end_idx]  # Пагинация данных
+
+            for cabin in paginated_cabins:
                 cabin_name = cabin["cabin_name"]
                 start_time = cabin["start_time"]
                 end_time = cabin["end_time"]
@@ -163,8 +170,34 @@ def main():
 
         # Запускаем функцию снова через 1 минуту (60 000 миллисекунд)
         cabins_listbox.after(60000, update_occupied_cabins)
+        check_cabins_buttons_state()
 
 
+    # Функции для управления пагинацией "Занятых кабин"
+    def next_cabins_page():
+        global occupied_cabins_page
+        occupied_cabins_page += 1
+        update_occupied_cabins()
+
+    def previous_cabins_page():
+        global occupied_cabins_page
+        if occupied_cabins_page > 1:
+            occupied_cabins_page -= 1
+            update_occupied_cabins()
+
+    def check_cabins_buttons_state():
+        global occupied_cabins_page
+        total_cabins = len(get_occupied_cabins())
+        if (occupied_cabins_page * page_size) >= total_cabins:
+            next_cabins_button.config(state=tk.DISABLED)
+        else:
+            next_cabins_button.config(state=tk.NORMAL)
+
+        if occupied_cabins_page == 1:
+            prev_cabins_button.config(state=tk.DISABLED)
+        else:
+            prev_cabins_button.config(state=tk.NORMAL)
+    
 
 
     def update_sold_products():
@@ -250,22 +283,70 @@ def main():
     
 
     def update_restock_list():
+        global restock_page
         """
         Функция для обновления списка продуктов для пополнения.
         """
         restock_listbox.delete(0, tk.END)  # Очищаем текущий список
-
+        
         try:
             low_stock_products = fetch_low_stock_products()  # Получаем продукты для закупа
-            for product in low_stock_products:
+            start_index = (restock_page - 1) * page_size
+            end_index = start_index + page_size
+            paginated_products = low_stock_products[start_index:end_index]
+            for product in paginated_products:
                 restock_listbox.insert(
                     tk.END, f"{product['name']}, Количество: {product['quantity']}"
                 )
         except Exception as e:
             restock_listbox.insert(tk.END, f"Ошибка загрузки: {e}")
+        
+        check_restock_buttons_state()
 
-    # Обновляем список продуктов для пополнения при загрузке страницы
+    # Функции для управления пагинацией "Продуктов для закупки"
+    def next_restock_page():
+        global restock_page
+        restock_page += 1
+        update_restock_list()
+
+    def previous_restock_page():
+        global restock_page
+        if restock_page > 1:
+            restock_page -= 1
+            update_restock_list()
+
+    def check_restock_buttons_state():
+        global restock_page
+        total_products = len(fetch_low_stock_products())
+        if (restock_page * page_size) >= total_products:
+            next_restock_button.config(state=tk.DISABLED)
+        else:
+            next_restock_button.config(state=tk.NORMAL)
+
+        if restock_page == 1:
+            prev_restock_button.config(state=tk.DISABLED)
+        else:
+            prev_restock_button.config(state=tk.NORMAL)
+
+
+       # Пагинация для "Продуктов для закупки"
+    prev_restock_button = ttk.Button(content_frame, text="<<", command=previous_restock_page)
+    prev_restock_button.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+    next_restock_button = ttk.Button(content_frame, text=">>", command=next_restock_page)
+    next_restock_button.grid(row=2, column=1, padx=5, pady=5, sticky="e")
+
     update_restock_list()
+    tk.Label(content_frame, text="").grid(row=2, column=1)
+
+        # Пагинация для "Занятых кабин"
+    prev_cabins_button = ttk.Button(content_frame, text="<<", command=previous_cabins_page)
+    prev_cabins_button.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+    next_cabins_button = ttk.Button(content_frame, text=">>", command=next_cabins_page)
+    next_cabins_button.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+
+    update_occupied_cabins()
+    # Обновляем список продуктов для пополнения при загрузке страницы
+    
     style = ttk.Style()
     style.configure("TButton", background="#7fc3bd", foreground="#ffffff", font=("Arial", 12))
 
@@ -279,7 +360,7 @@ def main():
     next_button = ttk.Button(pagination_frame, text="Следующая страница", command=next_page)
     next_button.pack(side=tk.LEFT, padx=1)
 
-
+    
 
     frame_products = create_product_page(root)
     frame_gui = create_gui_page(root)
