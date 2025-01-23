@@ -12,11 +12,11 @@ def create_expenses_page(root):
 
     # Search fields
     tk.Label(frame, text="Поиск по имени").pack()
-    search_name_entry = tk.Entry(frame)
+    search_name_entry = ttk.Entry(frame)
     search_name_entry.pack()
 
     tk.Label(frame, text="Поиск по номеру").pack()
-    search_price_entry = tk.Entry(frame)
+    search_price_entry = ttk.Entry(frame)
     search_price_entry.pack()
 
     # Переменные для хранения выбранных дат
@@ -42,10 +42,10 @@ def create_expenses_page(root):
 
     # Виджеты для выбора диапазона дат
     tk.Label(frame, text="Дата с").pack(padx=10, pady=5)
-    tk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).pack()
+    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).pack()
 
     tk.Label(frame, text="Дата по").pack(padx=10, pady=5)
-    tk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).pack()
+    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).pack()
 
 
     # Table for displaying expense data
@@ -79,25 +79,25 @@ def create_expenses_page(root):
 
 
         tk.Label(edit_expense_modal, text="Наименование:").pack()
-        name_entry = tk.Entry(edit_expense_modal)
+        name_entry = ttk.Entry(edit_expense_modal)
         name_entry.pack()
         name_entry.insert(0, current_name)
         name_entry.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(edit_expense_modal, text="Сумма:").pack()
-        amount_entry = tk.Entry(edit_expense_modal)
+        amount_entry = ttk.Entry(edit_expense_modal)
         amount_entry.pack()
         amount_entry.insert(0, current_amount)
         amount_entry.bind("<KeyRelease>", validate_only_numbers)
         
             # Поле для редактирования даты
         tk.Label(edit_expense_modal, text="Дата (гггг-мм-дд):").pack()
-        date_entry = tk.Entry(edit_expense_modal)
+        date_entry = ttk.Entry(edit_expense_modal)
         date_entry.pack()
 
         # Поле для редактирования времени
         tk.Label(edit_expense_modal, text="Время (чч:мм:сс):").pack()
-        time_entry = tk.Entry(edit_expense_modal)
+        time_entry = ttk.Entry(edit_expense_modal)
         time_entry.pack()
 
         # Предзаполнение полей текущими данными
@@ -215,7 +215,7 @@ def create_expenses_page(root):
         update_pagination_buttons(total_pages)
 
     # Filter and clear buttons
-    tk.Button(frame, text="Поиск", command=display_expenses_data).pack()
+    ttk.Button(frame, text="Поиск", command=display_expenses_data).pack()
 
     def clear_filters():
         search_name_entry.delete(0, tk.END)
@@ -224,7 +224,7 @@ def create_expenses_page(root):
         selected_end_date.set("Нажмите для выбора")
         display_expenses_data()
 
-    tk.Button(frame, text="Очистить фильтры", command=clear_filters).pack()
+    ttk.Button(frame, text="Очистить фильтры", command=clear_filters).pack()
 
     # Function to add a new expense
     # Function to add a new expense
@@ -233,17 +233,17 @@ def create_expenses_page(root):
         add_expense_modal.title("Добавить расход")
 
         tk.Label(add_expense_modal, text="Наименование:").pack()
-        name_entry = tk.Entry(add_expense_modal)
+        name_entry = ttk.Entry(add_expense_modal)
         name_entry.pack()
 
         tk.Label(add_expense_modal, text="Сумма:").pack()
-        amount_entry = tk.Entry(add_expense_modal)
+        amount_entry = ttk.Entry(add_expense_modal)
         amount_entry.pack()
 
         # Поле для выбора даты
         tk.Label(add_expense_modal, text="Дата:").pack()
         selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 
-        date_button = tk.Button(
+        date_button = ttk.Button(
             add_expense_modal,
             text="Выбрать дату",
             command=lambda: open_calendar(selected_date_var)  # Открыть календарь
@@ -254,7 +254,7 @@ def create_expenses_page(root):
         date_label.pack()
         
         tk.Label(add_expense_modal, text="Время (чч:мм:сс):").pack()
-        time_entry = tk.Entry(add_expense_modal)
+        time_entry = ttk.Entry(add_expense_modal)
         time_entry.pack()
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
 
@@ -273,7 +273,7 @@ def create_expenses_page(root):
             calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
             calendar.pack(pady=20)
 
-            tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+            ttk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
         
         def save_expense():
             name = name_entry.get()
@@ -295,10 +295,10 @@ def create_expenses_page(root):
             except ValueError:
                 messagebox.showerror("Некорректно", "Введите корректные дату и время, и сумма должна быть числом.")
 
-        tk.Button(add_expense_modal, text="Сохранить", command=save_expense).pack()
+        ttk.Button(add_expense_modal, text="Сохранить", command=save_expense).pack()
 
     # Button to open the add expense modal
-    tk.Button(frame, text="Добавить расход", command=open_add_expense_modal).pack()
+    ttk.Button(frame, text="Добавить расход", command=open_add_expense_modal).pack()
 
     # Update pagination buttons
     def update_pagination_buttons(total_pages):
@@ -312,20 +312,20 @@ def create_expenses_page(root):
         end_page = min(total_pages, start_page + max_buttons_to_display - 1)
         
         if start_page > 1:
-            tk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).grid(row=0, column=0)
-            tk.Button(pagination_frame, text="<", command=lambda: go_to_page(current - 1)).grid(row=0, column=1)
+            ttk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).grid(row=0, column=0)
+            ttk.Button(pagination_frame, text="<", command=lambda: go_to_page(current - 1)).grid(row=0, column=1)
         
         col = 2
         for page in range(start_page, end_page + 1):
-            button = tk.Button(pagination_frame, text=str(page), command=lambda page=page: go_to_page(page))
+            button = ttk.Button(pagination_frame, text=str(page), command=lambda page=page: go_to_page(page))
             button.grid(row=0, column=col)
             if page == current:
                 button.config(state="disabled")
             col += 1
 
         if end_page < total_pages:
-            tk.Button(pagination_frame, text=">", command=lambda: go_to_page(current + 1)).grid(row=0, column=col)
-            tk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
+            ttk.Button(pagination_frame, text=">", command=lambda: go_to_page(current + 1)).grid(row=0, column=col)
+            ttk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
     def go_to_page(page_number):
         current_page.set(page_number)
         display_expenses_data()

@@ -17,11 +17,11 @@ def create_gui_page(root):
     cabins_combo.grid(row=0, column=1)
     # Поля для поиска
     tk.Label(frame, text="Поиск по имени").grid(row=1, column=0)
-    search_name_entry = tk.Entry(frame)
+    search_name_entry = ttk.Entry(frame)
     search_name_entry.grid(row=1, column=1)
 
     tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0)
-    search_number_entry = tk.Entry(frame)
+    search_number_entry = ttk.Entry(frame)
     search_number_entry.grid(row=2, column=1)
 
         # Поля для выбора диапазона дат (модальное окно вместо DateEntry)
@@ -46,10 +46,10 @@ def create_gui_page(root):
         tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
 
     tk.Label(frame, text="Дата с").grid(row=3, column=0)
-    tk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1)
+    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1)
 
     tk.Label(frame, text="Дата по").grid(row=4, column=0)
-    tk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1)
+    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1)
 
 
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "end_date"), show="headings")
@@ -74,7 +74,7 @@ def create_gui_page(root):
     pagination_frame.grid(row=11, column=0, columnspan=2)
 
     # Создаем фрейм для квадратов кабинок
-    cabins_frame = tk.Frame(frame)
+    cabins_frame = ttk.Frame(frame)
     cabins_frame.grid(row=12, column=0, columnspan=2, pady=10)
 
     def create_cabin_buttons():
@@ -198,7 +198,7 @@ def create_gui_page(root):
 
         update_pagination_buttons(total_pages)
     # Кнопка для поиска
-        tk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2)
+        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2)
 
         # Кнопка для очистки полей поиска и фильтров
         def clear_filters():
@@ -209,7 +209,7 @@ def create_gui_page(root):
             selected_end_date.set("Нажмите для выбора")
             display_sales_data()
 
-        tk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2)
+        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2)
 
     
 
@@ -224,20 +224,20 @@ def create_gui_page(root):
         end_page = min(total_pages, start_page + max_buttons_to_display - 1)
         
         if start_page > 1:
-            tk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).grid(row=0, column=0)
-            tk.Button(pagination_frame, text="<", command=lambda: go_to_page(current - 1)).grid(row=0, column=1)
+            ttk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).grid(row=0, column=0)
+            ttk.Button(pagination_frame, text="<", command=lambda: go_to_page(current - 1)).grid(row=0, column=1)
         
         col = 2
         for page in range(start_page, end_page + 1):
-            button = tk.Button(pagination_frame, text=str(page), command=lambda page=page: go_to_page(page))
+            button = ttk.Button(pagination_frame, text=str(page), command=lambda page=page: go_to_page(page))
             button.grid(row=0, column=col)
             if page == current:
                 button.config(state="disabled")
             col += 1
 
         if end_page < total_pages:
-            tk.Button(pagination_frame, text=">", command=lambda: go_to_page(current + 1)).grid(row=0, column=col)
-            tk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
+            ttk.Button(pagination_frame, text=">", command=lambda: go_to_page(current + 1)).grid(row=0, column=col)
+            ttk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
 
     def go_to_page(page_number):
         current_page.set(page_number)
@@ -574,10 +574,10 @@ def create_gui_page(root):
             product_list.bind("<<TreeviewSelect>>", on_product_select)
             
             # Кнопка "Добавить" (изначально заблокирована)
-            add_button = tk.Button(product_window, text="Добавить", command=add_or_update_product, state="disabled")
+            add_button = ttk.Button(product_window, text="Добавить", command=add_or_update_product, state="disabled")
             add_button.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
             # Кнопка "Закрыть"
-            tk.Button(product_window, text="Закрыть", command=product_window.destroy).grid(row=2, column=2, padx=10, pady=10, sticky="ew")
+            ttk.Button(product_window, text="Закрыть", command=product_window.destroy).grid(row=2, column=2, padx=10, pady=10, sticky="ew")
                         # Привязываем событие выбора продукта
             product_list.bind("<<TreeviewSelect>>", on_product_select)
         
@@ -867,11 +867,11 @@ def create_gui_page(root):
         button_frame.grid(row=9, column=0, columnspan=2, pady=10)  # Используем grid для размещения фрейма
 
         # Добавляем первый ряд кнопок
-        tk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
-        tk.Button(button_frame, text="Удалить товар", command=delete_product, fg="red").grid(row=0, column=1, padx=5)
-        tk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
-        tk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
-        tk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
+        ttk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
+        ttk.Button(button_frame, text="Удалить товар", command=delete_product, fg="red").grid(row=0, column=1, padx=5)
+        ttk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
+        ttk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
+        ttk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
 
         # Боковая панель
         checkbox_frame = tk.Frame(edit_window)
@@ -976,12 +976,12 @@ def create_gui_page(root):
 
 
         tk.Label(add_window, text="Имя").grid(row=0, column=0)
-        entry_name = tk.Entry(add_window)
+        entry_name = ttk.Entry(add_window)
         entry_name.grid(row=0, column=1)
         entry_name.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(add_window, text="Номер").grid(row=1, column=0)
-        entry_number = tk.Entry(add_window)
+        entry_number = ttk.Entry(add_window)
         entry_number.grid(row=1, column=1)
         entry_number.bind("<KeyRelease>", validate_only_numbers)
 
@@ -999,12 +999,12 @@ def create_gui_page(root):
             cabins_combo_modal.config(state="readonly")
 
         tk.Label(add_window, text="Общая продажа").grid(row=3, column=0)
-        entry_sales = tk.Entry(add_window, state='readonly')
+        entry_sales = ttk.Entry(add_window, state='readonly')
         entry_sales.grid(row=3, column=1)
 
         # Поле для ввода времени аренды (в часах)
         tk.Label(add_window, text="На сколько часов?").grid(row=4, column=0)
-        entry_hours = tk.Entry(add_window)
+        entry_hours = ttk.Entry(add_window)
         entry_hours.grid(row=4, column=1)
         
 
@@ -1070,7 +1070,7 @@ def create_gui_page(root):
             quantity_label = tk.Label(product_window, text="Количество:")
             quantity_label.pack(side="left", padx=5, pady=5)
 
-            quantity_entry = tk.Entry(product_window, width=5)
+            quantity_entry = ttk.Entry(product_window, width=5)
             quantity_entry.pack(side="left", padx=5, pady=5)
 
             # Функция для обновления состояния кнопки
@@ -1213,12 +1213,12 @@ def create_gui_page(root):
                 entry_sales.config(state='readonly')
 
              # Кнопки
-            add_button = tk.Button(product_window, text="+ Добавить", command=add_product_to_order, state="disabled")
+            add_button = ttk.Button(product_window, text="+ Добавить", command=add_product_to_order, state="disabled")
             add_button.pack(side="left", padx=5, pady=5)
-            tk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
-            tk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
+            ttk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
+            ttk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
 
-        tk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=9, columnspan=2)
+        ttk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=9, columnspan=2)
 
 
         def update_sales_price(event):
@@ -1301,9 +1301,9 @@ def create_gui_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
-        tk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
+        ttk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
 
-    tk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2)
+    ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2)
 
 
     return frame

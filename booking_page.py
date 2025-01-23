@@ -19,13 +19,13 @@ def create_booking_page(root):
     filter_frame.pack(fill=tk.X, padx=10, pady=5)
 
     tk.Label(filter_frame, text="Имя:").pack(side=tk.LEFT, padx=5)
-    name_filter = tk.Entry(filter_frame)
+    name_filter = ttk.Entry(filter_frame)
     name_filter.pack(side=tk.LEFT, padx=5)
 
     # Фильтр по дате
     tk.Label(filter_frame, text="Дата:").pack(side=tk.LEFT, padx=5)
     selected_date = tk.StringVar()  # Переменная для хранения выбранной даты
-    date_button = tk.Button(filter_frame, text="Выбрать дату", command=lambda: open_calendar(selected_date, date_button))
+    date_button = ttk.Button(filter_frame, text="Выбрать дату", command=lambda: open_calendar(selected_date, date_button))
     date_button.pack(side=tk.LEFT, padx=5)
 
     def open_calendar(date_var, date_button):
@@ -58,8 +58,8 @@ def create_booking_page(root):
     cabin_filter.set("Все")
     cabin_filter.pack(side=tk.LEFT, padx=5)
 
-    tk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).pack(side=tk.LEFT, padx=10)
-    tk.Button(filter_frame, text="Очистить фильтры", command=lambda: clear_filters()).pack(side=tk.LEFT, padx=11)
+    ttk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).pack(side=tk.LEFT, padx=10)
+    ttk.Button(filter_frame, text="Очистить фильтры", command=lambda: clear_filters()).pack(side=tk.LEFT, padx=11)
 
     def clear_filters():
         """Сбрасывает все фильтры в исходное состояние."""
@@ -128,13 +128,13 @@ def create_booking_page(root):
     pagination_frame = tk.Frame(frame_main)
     pagination_frame.pack(fill=tk.X, pady=5)
 
-    prev_button = tk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
+    prev_button = ttk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
     prev_button.pack(side=tk.LEFT, padx=5)
 
     pagination_label = tk.Label(pagination_frame, text="Страница 1 из 1")
     pagination_label.pack(side=tk.LEFT, padx=5)
 
-    next_button = tk.Button(pagination_frame, text=">>", command=lambda: load_bookings(current_page + 1))
+    next_button = ttk.Button(pagination_frame, text=">>", command=lambda: load_bookings(current_page + 1))
     next_button.pack(side=tk.LEFT, padx=5)
 
     cabins_frame = tk.Frame(frame_main)
@@ -204,12 +204,12 @@ def create_booking_page(root):
 
 
         tk.Label(modal, text="Имя клиента:").pack(pady=5)
-        name_entry = tk.Entry(modal)
+        name_entry = ttk.Entry(modal)
         name_entry.pack(pady=5)
         name_entry.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(modal, text="Телефон клиента:").pack(pady=5)
-        phone_entry = tk.Entry(modal)
+        phone_entry = ttk.Entry(modal)
         phone_entry.pack(pady=5)
         phone_entry.bind("<KeyRelease>", validate_only_numbers)
 
@@ -402,8 +402,8 @@ def create_booking_page(root):
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
     button_frame.pack(pady=10)
-    tk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).pack(side=tk.LEFT, padx=5)
 
     return frame_main

@@ -9,7 +9,7 @@ from booking_page import create_booking_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products
 from datetime import datetime
 
-def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99"):
+def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99"):
     """Применение стилей ко всем фреймам и кнопкам рекурсивно."""
     if isinstance(widget, tk.Frame):  # Если это фрейм
         widget.configure(bg=frame_bg)
@@ -231,16 +231,16 @@ def main():
     welcome_label.pack()
 
     # Создаем рамку для содержимого
-    content_frame = tk.Frame(main_page, bg="#000")
+    content_frame = tk.Frame(main_page, bg="#7FC3BD")
     content_frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
     # Занятые кабины (левая колонка)
-    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#000", fg="#fff").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
+    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
     cabins_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
     cabins_listbox.grid(row=1, column=0, padx=10, pady=5, sticky="nw")
 
     # Продукты для закупа (правая колонка)
-    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#000", fg="#fff").grid(row=0, column=1, padx=10, pady=5, sticky="nw")
+    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=1, padx=10, pady=5, sticky="nw")
     restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
     restock_listbox.grid(row=1, column=1, padx=10, pady=5, sticky="nw")
     # Интерфейс
@@ -266,15 +266,17 @@ def main():
 
     # Обновляем список продуктов для пополнения при загрузке страницы
     update_restock_list()
+    style = ttk.Style()
+    style.configure("TButton", background="#7fc3bd", foreground="#ffffff", font=("Arial", 12))
 
     # Кнопки навигации
     pagination_frame = tk.Frame(main_page)
     pagination_frame.pack(pady=10)
 
-    prev_button = tk.Button(pagination_frame, text="Предыдущая страница", command=previous_page)
+    prev_button = ttk.Button(pagination_frame, text="Предыдущая страница", style="TButton", command=previous_page)
     prev_button.pack(side=tk.LEFT, padx=1)
 
-    next_button = tk.Button(pagination_frame, text="Следующая страница", command=next_page)
+    next_button = ttk.Button(pagination_frame, text="Следующая страница", command=next_page)
     next_button.pack(side=tk.LEFT, padx=1)
 
 
@@ -289,13 +291,13 @@ def main():
 
      
     # Применяем стили ко всем страницам и их содержимому
-    style_all_widgets(main_page, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_booking, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_products, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_gui, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_cabin, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_statistics, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
-    style_all_widgets(frame_expenses, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#0073e6", button_fg="#004d99")
+    style_all_widgets(main_page, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_booking, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_products, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_gui, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_cabin, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_statistics, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
+    style_all_widgets(frame_expenses, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
 
     
     

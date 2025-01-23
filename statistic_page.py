@@ -178,10 +178,10 @@ def create_statistics_page(root):
         update_product_statistics(period, date)
         
     # Кнопки переключения периода
-    tk.Button(button_frame, text="День", command=lambda: update_statistics('day')).pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Неделя", command=lambda: update_statistics('week')).pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Месяц", command=lambda: update_statistics('month')).pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Выбрать дату", command=open_date_picker).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="День", command=lambda: update_statistics('day')).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Неделя", command=lambda: update_statistics('week')).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Месяц", command=lambda: update_statistics('month')).pack(side=tk.LEFT, padx=5)
+    ttk.Button(button_frame, text="Выбрать дату", command=open_date_picker).pack(side=tk.LEFT, padx=5)
 
     # Загружаем статистику за день по умолчанию
     update_statistics('day')

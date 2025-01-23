@@ -10,11 +10,11 @@ def create_cabin_page(root):
 
     # Поля для добавления новой кабинки
     tk.Label(frame, text="Имя новой кабинки").grid(row=0, column=0)
-    entry_new_name = tk.Entry(frame)
+    entry_new_name = ttk.Entry(frame)
     entry_new_name.grid(row=0, column=1)
 
     tk.Label(frame, text="Цена новой кабинки").grid(row=1, column=0)
-    entry_new_price = tk.Entry(frame)
+    entry_new_price = ttk.Entry(frame)
     entry_new_price.grid(row=1, column=1)
 
     # Функция для добавления новой кабинки
@@ -38,7 +38,7 @@ def create_cabin_page(root):
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось добавить кабинку: {e}")
 
-    add_button = tk.Button(frame, text="Добавить кабинку", command=add_new_cabin)
+    add_button = ttk.Button(frame, text="Добавить кабинку", command=add_new_cabin)
     add_button.grid(row=2, column=0, columnspan=2)
 
     # Таблица для отображения кабинок
@@ -88,13 +88,13 @@ def create_cabin_page(root):
     pagination_frame = tk.Frame(frame)
     pagination_frame.grid(row=4, column=0, columnspan=3)
 
-    prev_button = tk.Button(pagination_frame, text="Предыдущая", command=prev_page)
+    prev_button = ttk.Button(pagination_frame, text="Предыдущая", command=prev_page)
     prev_button.pack(side='left')
 
     pagination_label = tk.Label(pagination_frame, text="Страница 1")
     pagination_label.pack(side='left')
 
-    next_button = tk.Button(pagination_frame, text="Следующая", command=next_page)
+    next_button = ttk.Button(pagination_frame, text="Следующая", command=next_page)
     next_button.pack(side='left')
 
     # Функция для редактирования и удаления кабинки в модальном окне
@@ -120,12 +120,12 @@ def create_cabin_page(root):
 
         tk.Label(modal_window, text="Имя кабинки").grid(row=0, column=0)
         name_var = tk.StringVar(value=current_name)
-        entry_name = tk.Entry(modal_window, textvariable=name_var)
+        entry_name = ttk.Entry(modal_window, textvariable=name_var)
         entry_name.grid(row=0, column=1)
 
         tk.Label(modal_window, text="Цена кабинки").grid(row=1, column=0)
         price_var = tk.StringVar(value=current_price)
-        entry_price = tk.Entry(modal_window, textvariable=price_var)
+        entry_price = ttk.Entry(modal_window, textvariable=price_var)
         entry_price.grid(row=1, column=1)
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
@@ -158,10 +158,10 @@ def create_cabin_page(root):
                 except Exception as e:
                     messagebox.showerror("Ошибка", f"Не удалось удалить кабинку: {e}")
 
-        save_button = tk.Button(modal_window, text="Сохранить", command=save_changes)
+        save_button = ttk.Button(modal_window, text="Сохранить", command=save_changes)
         save_button.grid(row=2, column=0, columnspan=2)
 
-        delete_button = tk.Button(modal_window, text="Удалить", command=delete_cabin_action)
+        delete_button = ttk.Button(modal_window, text="Удалить", command=delete_cabin_action)
         delete_button.grid(row=3, column=0, columnspan=2)
 
     # Обработчик двойного клика по таблице
