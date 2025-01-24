@@ -99,10 +99,7 @@ def create_gui_page(root):
                 width=10,
                 height=5,
                 relief=tk.GROOVE,
-                bg="red",  # Кнопки с красным фоном
-                fg="white",
                 bd=0.5,
-                activebackground="#5A9BD3",
                 command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
             )
             # Располагаем кнопки в сетке

@@ -213,7 +213,7 @@ def create_product_page(root):
             last_button.pack(side="left")
 
     def create_product_card(product, row, col):
-        card = tk.Frame(product_container, borderwidth=2, relief="groove", padx=10, pady=10)
+        card = ttk.Frame(product_container, borderwidth=2, relief="groove")
         
         def handle_click(event):
             open_edit_modal(product)
@@ -222,24 +222,24 @@ def create_product_page(root):
             img = Image.open(product["image_path"])
             img = img.resize((150, 100), Image.LANCZOS)
             img_tk = ImageTk.PhotoImage(img)
-            img_label = tk.Label(card, image=img_tk)
+            img_label = ttk.Label(card, image=img_tk)
             img_label.image = img_tk
             img_label.pack()
             img_label.bind("<Button-1>", handle_click)  # Привязка события к изображению
         except (FileNotFoundError, IOError):
-            img_label = tk.Label(card, text="No Image", width=10, height=5)
+            img_label = ttk.Label(card, text="No Image", width=10, height=5)
             img_label.pack()
             img_label.bind("<Button-1>", handle_click)  # Привязка события к метке с текстом
 
-        name_label = tk.Label(card, text=f"Название: {product['name']}")
+        name_label = ttk.Label(card, text=f"Название: {product['name']}")
         name_label.pack()
         name_label.bind("<Button-1>", handle_click)  # Привязка события к метке с названием
 
-        price_label = tk.Label(card, text=f"Цена: {product['price']}")
+        price_label = ttk.Label(card, text=f"Цена: {product['price']}")
         price_label.pack()
         price_label.bind("<Button-1>", handle_click)  # Привязка события к метке с ценой
 
-        quantity_label = tk.Label(card, text=f"Количество: {product['quantity']}")
+        quantity_label = ttk.Label(card, text=f"Количество: {product['quantity']}")
         quantity_label.pack()
         quantity_label.bind("<Button-1>", handle_click)  # Привязка события к метке с количеством
 
@@ -342,11 +342,11 @@ def create_product_page(root):
                 display_products()
 
         ttk.Button(modal, text="Сохранить изменения", command=save_changes).grid(row=5, columnspan=2, pady=10)
-        ttk.Button(modal, text="Удалить продукт", command=delete_products, fg="red").grid(row=6, columnspan=2, pady=10)
+        ttk.Button(modal, text="Удалить продукт", command=delete_products).grid(row=6, columnspan=2, pady=10)
 
     def refresh_product_page():
         display_products()
         frame.after(300000, refresh_product_page)
-        
+
     display_products()
     return frame

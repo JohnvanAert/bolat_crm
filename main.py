@@ -9,7 +9,7 @@ from booking_page import create_booking_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products
 from datetime import datetime
 
-def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99"):
+def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#6fa8dc", button_fg="#004d99"):
     """Применение стилей ко всем фреймам и кнопкам рекурсивно."""
     if isinstance(widget, tk.Frame):  # Если это фрейм
         widget.configure(bg=frame_bg)
@@ -50,7 +50,7 @@ def main():
     style = ttk.Style()
     style.theme_use("clam")  # Используем нейтральную тему
     style.configure("TButton", font=("Helvetica", 12), padding=6, background="#4CAF50", foreground="#fff")
-    style.configure("TLabel", font=("Helvetica", 12), background="#000000", foreground="#333")
+    style.configure("TLabel", font=("Helvetica", 12), background="#d7d7d7", foreground="#004d99")
     style.configure("TEntry", font=("Helvetica", 12), padding=4)
     style.map("TButton", background=[("active", "#45A049")])
 
