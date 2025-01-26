@@ -1,0 +1,1 @@
+([('main', '/Users/askaryerezhep/Desktop/bolat-crm/dist/main', 'EXECUTABLE')],)

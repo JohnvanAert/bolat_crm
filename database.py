@@ -194,25 +194,28 @@ def fetch_products():
 def get_cabins():
     conn = connect()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, price FROM cabins")
+    cursor.execute("SELECT id, name, price, capacity FROM cabins")
     cabins = cursor.fetchall()
     cursor.close()
     conn.close()
-    return [{"id": row[0], "name": row[1], "price": row[2]} for row in cabins]
+    return [{"id": row[0], "name": row[1], "price": row[2], "capacity": row[3]} for row in cabins]
 
-def add_cabin(name, price):
+def add_cabin(name, price, capacity):
     conn = connect()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO cabins (name, price) VALUES (%s, %s)", (name, price))
+    cursor.execute("INSERT INTO cabins (name, price, capacity) VALUES (%s, %s, %s)", (name, price, capacity))
     conn.commit()
     cursor.close()
     conn.close()
 
-def update_cabin(cabin_id, new_name, new_price):
+def update_cabin(cabin_id, new_name, new_price, new_capacity):
     conn = connect()
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE cabins SET name = %s, price = %s WHERE id = %s", (new_name, new_price, cabin_id))
+        cursor.execute(
+            "UPDATE cabins SET name = %s, price = %s, capacity = %s WHERE id = %s", 
+            (new_name, new_price, new_capacity, cabin_id)  # Исправлен порядок аргументов
+        )
         conn.commit()
     except Exception as e:
         print(f"Ошибка при обновлении кабинки: {e}")

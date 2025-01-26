@@ -9,24 +9,24 @@ from decimal import Decimal
 
 def create_booking_page(root):
     frame_main = tk.Frame(root)
-
     # Заголовок
-    tk.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).pack(pady=10)
+    tk.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).grid(row=0, column=0, columnspan=3, pady=10)
 
 
     # Панель фильтров
     filter_frame = tk.Frame(frame_main)
-    filter_frame.pack(fill=tk.X, padx=10, pady=5)
+    filter_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=10, pady=5)
 
-    tk.Label(filter_frame, text="Имя:").pack(side=tk.LEFT, padx=5)
+    tk.Label(filter_frame, text="Имя:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
     name_filter = ttk.Entry(filter_frame)
-    name_filter.pack(side=tk.LEFT, padx=5)
+    name_filter.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
     # Фильтр по дате
-    tk.Label(filter_frame, text="Дата:").pack(side=tk.LEFT, padx=5)
+    tk.Label(filter_frame, text="Дата:").grid(row=0, column=2, padx=5, pady=5, sticky="w")
     selected_date = tk.StringVar()  # Переменная для хранения выбранной даты
     date_button = ttk.Button(filter_frame, text="Выбрать дату", command=lambda: open_calendar(selected_date, date_button))
-    date_button.pack(side=tk.LEFT, padx=5)
+    date_button.grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
 
     def open_calendar(date_var, date_button):
         """Открывает модальное окно с календарем для выбора даты."""
@@ -43,23 +43,22 @@ def create_booking_page(root):
 
         tk.Button(calendar_window, text="Выбрать", command=select_date).pack(pady=5)
 
-    tk.Label(filter_frame, text="Статус:").pack(side=tk.LEFT, padx=5)
+    tk.Label(filter_frame, text="Статус:").grid(row=0, column=4, padx=5, pady=5, sticky="w")
     status_filter = ttk.Combobox(filter_frame, values=["Все", "Подтверждено", "Отменено", "Ожидание"])
     status_filter.set("Все")
-    status_filter.pack(side=tk.LEFT, padx=5)
+    status_filter.grid(row=0, column=5, padx=5, pady=5, sticky="w")
 
         # Создаем отображение ID -> имя кабинки
     cabins = get_cabins()  # Предполагается, что функция возвращает список кабинок из базы данных
     cabin_map = {cabin["name"]: cabin["id"] for cabin in cabins}  # Пример: {"Кабинка 1": 1, "Кабинка 2": 2}
     cabin_names = ["Все"] + list(cabin_map.keys())  # Список для выпадающего меню
 
-    tk.Label(filter_frame, text="Кабинка:").pack(side=tk.LEFT, padx=5)
+    tk.Label(filter_frame, text="Кабинка:").grid(row=0, column=6, padx=5, pady=5, sticky="w")
     cabin_filter = ttk.Combobox(filter_frame, values=cabin_names)
     cabin_filter.set("Все")
-    cabin_filter.pack(side=tk.LEFT, padx=5)
-
-    ttk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).pack(side=tk.LEFT, padx=10)
-    ttk.Button(filter_frame, text="Очистить фильтры", command=lambda: clear_filters()).pack(side=tk.LEFT, padx=11)
+    cabin_filter.grid(row=0, column=7, padx=5, pady=5, sticky="w")
+    ttk.Button(filter_frame, text="Применить фильтры", command=lambda: load_bookings(1)).grid(row=0, column=8, padx=10, pady=5, sticky="w")
+    ttk.Button(filter_frame, text="Очистить фильтры", command=lambda: clear_filters()).grid(row=0, column=9, padx=10, pady=5, sticky="w")
 
     def clear_filters():
         """Сбрасывает все фильтры в исходное состояние."""
@@ -72,7 +71,7 @@ def create_booking_page(root):
     # Таблица бронирований
     columns = ("ID", "Имя клиента", "Телефон", "Кабинка", "Добавлено", "Начало брони", "Конец брони", "Статус")
     bookings_table = ttk.Treeview(frame_main, columns=columns, show="headings", height=10)
-    bookings_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    bookings_table.grid(row=6, column=0, columnspan=3, sticky="nsew", padx=10, pady=10)
 
     for col in columns:
         bookings_table.heading(col, text=col)
@@ -126,16 +125,16 @@ def create_booking_page(root):
     
          # Панель пагинации
     pagination_frame = tk.Frame(frame_main)
-    pagination_frame.pack(pady=10)
+    pagination_frame.grid(row=7, column=0, columnspan=3, pady=10)
 
     prev_button = ttk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
-    prev_button.pack(side=tk.LEFT, padx=5)
+    prev_button.grid(row=0, column=0, padx=5)
 
     pagination_label = tk.Label(pagination_frame, text="Страница 1 из 1")
-    pagination_label.pack(side=tk.LEFT, padx=5)
+    pagination_label.grid(row=0, column=1, padx=5)
 
     next_button = ttk.Button(pagination_frame, text=">>", command=lambda: load_bookings(current_page + 1))
-    next_button.pack(side=tk.LEFT, padx=5)
+    next_button.grid(row=0, column=2, padx=5)
 
     
     load_bookings()
@@ -146,8 +145,8 @@ def create_booking_page(root):
     def add_booking_modal(selected_cabin=None):
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
-        modal.geometry("600x600")
-
+        modal.geometry("600x400")
+        modal.resizable(False, False)
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -165,21 +164,21 @@ def create_booking_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        tk.Label(modal, text="Имя клиента:").pack(pady=5)
+        tk.Label(modal, text="Имя клиента:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         name_entry = ttk.Entry(modal)
-        name_entry.pack(pady=5)
+        name_entry.grid(row=0, column=1, padx=10, pady=5, sticky="w")
         name_entry.bind("<KeyRelease>", validate_only_letters)
 
-        tk.Label(modal, text="Телефон клиента:").pack(pady=5)
+        tk.Label(modal, text="Телефон клиента:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         phone_entry = ttk.Entry(modal)
-        phone_entry.pack(pady=5)
+        phone_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         phone_entry.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(modal, text="Кабинка:").pack(pady=5)
+        tk.Label(modal, text="Кабинка:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         cabins = get_cabins()  # Функция для получения списка кабинок из базы данных
         cabin_choices = [f"{cabin['id']} - {cabin['name']}" for cabin in cabins]
         cabin_combobox = ttk.Combobox(modal, values=cabin_choices)
-        cabin_combobox.pack(pady=5)
+        cabin_combobox.grid(row=2, column=1, padx=10, pady=5, sticky="w")
 
         if selected_cabin:
             # Устанавливаем выбранную кабинку по ID и блокируем список
@@ -193,16 +192,16 @@ def create_booking_page(root):
             cabin_combobox.config(state="readonly")
 
         # Выбор даты и времени начала бронирования
-        tk.Label(modal, text="Дата и время начала бронирования:").pack(pady=5)
+        tk.Label(modal, text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
         start_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).pack(pady=5)
-        tk.Label(modal, textvariable=start_datetime_var).pack(pady=5)
+        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
+        tk.Label(modal, textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
 
         # Выбор даты и времени окончания бронирования
-        tk.Label(modal, text="Дата и время окончания бронирования:").pack(pady=5)
+        tk.Label(modal, text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
         end_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).pack(pady=5)
-        tk.Label(modal, textvariable=end_datetime_var).pack(pady=5)
+        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
+        tk.Label(modal, textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
 
         def save_booking():
             """Сохранение нового бронирования."""
@@ -262,7 +261,8 @@ def create_booking_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось добавить бронирование: {e}")
 
-        tk.Button(modal, text="Сохранить", command=save_booking).pack(pady=10)
+        tk.Button(modal, text="Сохранить", command=save_booking).grid(row=5, column=0, pady=10, padx=5)
+
 
     # Открытие календаря с выбором времени
     def open_calendar_with_time(datetime_var, title):
@@ -272,25 +272,26 @@ def create_booking_page(root):
 
         # Календарь для выбора даты
         calendar_frame = tk.Frame(calendar_window)
-        calendar_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+        calendar_frame.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         calendar = Calendar(calendar_frame, selectmode="day", date_pattern="yyyy-MM-dd")
-        calendar.pack(pady=10)
+        calendar.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         # Виджеты для выбора времени
         time_frame = tk.Frame(calendar_window)
-        time_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=10, pady=10)
+        time_frame.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
-        tk.Label(time_frame, text="Выбор времени").pack(pady=5)
+        tk.Label(time_frame, text="Выбор времени").grid(row=0, column=0, pady=5, sticky="n")
         time_picker = SpinTimePickerModern(time_frame)
         time_picker.addAll(constants.HOURS24)  # adds hours clock, minutes and period
         time_picker.configureAll(bg="#404040", height=2, fg="#ffffff", font=("Times", 16), hoverbg="#404040",
                                 hovercolor="#d73333", clickedbg="#2e2d2d", clickedcolor="#d73333")
         time_picker.configure_separator(bg="#404040", fg="#ffffff")
         time_picker.addHours24()
-        time_picker.pack(fill="both", expand=True)
+        time_picker.grid(row=1, column=0, padx=5, pady=10, sticky="n")
+
         button_frame = tk.Frame(calendar_window)
-        button_frame.pack(side=tk.BOTTOM, fill="x", pady=10)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
         def convert_am_pm_to_24h(time):
             """
@@ -328,7 +329,7 @@ def create_booking_page(root):
             calendar_window.destroy()
 
 
-        tk.Button(button_frame, text="Выбрать", command=set_datetime).pack()
+        tk.Button(button_frame, text="Выбрать", command=set_datetime).grid(row=5, pady=5)
 
 
     def confirm_booking():
@@ -363,13 +364,13 @@ def create_booking_page(root):
 
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
-    button_frame.pack(pady=10)
-    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).pack(side=tk.LEFT, padx=5)
-    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).pack(side=tk.LEFT, padx=5)
-    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).pack(side=tk.LEFT, padx=5)
+    button_frame.grid(row=9, column=0, pady=10, columnspan=2)
+    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
+    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
+    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
 
     cabins_frame = tk.Frame(frame_main)
-    cabins_frame.pack(pady=10)
+    cabins_frame.grid(row=10, column=0, columnspan=2, pady=10)
 
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""
@@ -388,8 +389,6 @@ def create_booking_page(root):
                 width=10,
                 height=5,
                 relief=tk.GROOVE,
-                bg="red",
-                fg="white",
                 bd=0.5,
                 command=lambda c=cabin: handle_cabin_click(c)  # Передаем кабинку в обработчик
             )
@@ -406,6 +405,12 @@ def create_booking_page(root):
         else:
             tk.messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
 
-
+    
     create_cabin_buttons()
+    def refresh_booking_page():
+        get_cabins()
+        fetch_filtered_bookings()
+        load_bookings()
+        frame_main.after(200000, refresh_booking_page)
+
     return frame_main
