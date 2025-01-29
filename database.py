@@ -22,7 +22,7 @@ def connect():
         port=DB_PORT
     )
 
-def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_rental_price, end_date):
+def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee):
     """Функция для добавления новой записи о продажах."""
     try:
         # Устанавливаем соединение с базой данных
@@ -31,13 +31,13 @@ def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_re
         
         # SQL-запрос для вставки данных и получения id новой записи
         query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
         # Выполняем запрос
-        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date))
+        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee))
         
         # Получаем id вставленной записи
         sale_id = cursor.fetchone()[0]
@@ -61,7 +61,7 @@ def fetch_sales_data():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date FROM sales ORDER BY date DESC")
+        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count FROM sales ORDER BY date DESC")
         sales_data = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -70,25 +70,51 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied, people_count, extra_charge):
     conn = connect()
     cursor = conn.cursor()
     try:
-        cursor.execute(
-            """
+        # Формируем SQL-запрос динамически
+        sql = """
             UPDATE sales
-            SET name = %s, number = %s, cabins_id = %s, total_sales = %s, cabin_price = %s, end_date = end_date + %s * INTERVAL '1 minute', service_charge_applied = %s, discount_applied = %s
-            WHERE id = %s
-            """,
-            (new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied,sale_id)
-        )
+            SET 
+                name = %s, 
+                number = %s, 
+                cabins_id = %s, 
+                total_sales = %s, 
+                cabin_price = %s, 
+                service_charge_applied = %s, 
+                discount_applied = %s, 
+                people_count = %s,
+                extra_charge = %s
+        """
+
+        # Если есть добавочные минуты, обновляем `end_date`
+        params = [new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, service_charge_applied, discount_applied, people_count, extra_charge]
+
+        if extension_minutes > 0:
+            sql += ", end_date = end_date + %s * INTERVAL '1 minute'"
+            params.append(extension_minutes)
+
+        sql += " WHERE id = %s"
+        params.append(sale_id)
+
+        cursor.execute(sql, params)
         conn.commit()
+
+        # Проверяем, были ли обновлены строки
+        if cursor.rowcount == 0:
+            print(f"⚠️ Запись с ID {sale_id} не найдена или данные не изменились.")
+        else:
+            print(f"✅ Успешно обновлена запись ID {sale_id} ({cursor.rowcount} строк изменено).")
+
     except Exception as e:
-        print(f"Ошибка при обновлении данных о продажах: {e}")
+        print(f"❌ Ошибка при обновлении данных о продажах: {e}")
         conn.rollback()
     finally:
         cursor.close()
         conn.close()
+
 
 def delete_sales(sale_id):
     try:
@@ -878,7 +904,7 @@ def add_rental_extension(order_id, extended_minutes):
     """
     query = """
         INSERT INTO rental_extensions (sale_id, extended_minutes, timestamp)
-        VALUES (%s, %s, NOW())
+        VALUES (%s, %s, DATE_TRUNC('second', NOW()))
     """
     try:
         conn = connect()
@@ -893,7 +919,7 @@ def get_extensions_for_sale(sale_id):
     """Получить данные о продлениях для текущей продажи."""
     conn = connect()
     cursor = conn.cursor()
-    query = "SELECT extension_id, extended_minutes, timestamp FROM rental_extensions WHERE sale_id = %s"
+    query = "SELECT extension_id, extended_minutes, timestamp FROM rental_extensions WHERE sale_id = %s ORDER BY extension_id DESC"
     cursor.execute(query, (sale_id,))
     data = cursor.fetchall()
     conn.close()

@@ -14,15 +14,15 @@ def create_gui_page(root):
     selected_cabin_id = tk.StringVar()
     tk.Label(frame, text="Выберите кабинку").grid(row=0, column=0)
     cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, state="readonly")
-    cabins_combo.grid(row=0, column=1)
+    cabins_combo.grid(row=0, column=1, pady=5)
     # Поля для поиска
     tk.Label(frame, text="Поиск по имени").grid(row=1, column=0)
     search_name_entry = ttk.Entry(frame)
-    search_name_entry.grid(row=1, column=1)
+    search_name_entry.grid(row=1, column=1,pady=5)
 
     tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0)
     search_number_entry = ttk.Entry(frame)
-    search_number_entry.grid(row=2, column=1)
+    search_number_entry.grid(row=2, column=1, pady=5)
 
         # Поля для выбора диапазона дат (модальное окно вместо DateEntry)
     selected_start_date = tk.StringVar(value="Нажмите для выбора")
@@ -46,19 +46,21 @@ def create_gui_page(root):
         tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
 
     tk.Label(frame, text="Дата с").grid(row=3, column=0)
-    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1)
+    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1, pady=5)
 
     tk.Label(frame, text="Дата по").grid(row=4, column=0)
-    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1)
+    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, pady=5)
 
 
-    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "end_date"), show="headings")
+    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count"), show="headings")
+    tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Выбранная кабинка")
     tree.heading("total_sales", text="Общий чек")
     tree.heading("name", text="Имя")
     tree.heading("number", text="Номер")
     tree.heading("date", text="Дата и Время")
+    tree.heading("cabins_price", text="Аренда кабинки")
     tree.heading("end_date", text="Дата окончания")
     tree.grid(row=7, column=0, columnspan=2)
 
@@ -190,14 +192,14 @@ def create_gui_page(root):
         paginated_data = all_data[start_index:end_index]
 
         for row in paginated_data:
-            id, name, number, cabins_id, total_sales, date, cabin_price, end_date = row
-            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date))
+            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count  = row
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count))
 
 
 
         update_pagination_buttons(total_pages)
     # Кнопка для поиска
-        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2)
+        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2, pady=5)
 
         # Кнопка для очистки полей поиска и фильтров
         def clear_filters():
@@ -208,7 +210,7 @@ def create_gui_page(root):
             selected_end_date.set("Нажмите для выбора")
             display_sales_data()
 
-        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2)
+        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2, pady=5)
 
     
 
@@ -271,7 +273,7 @@ def create_gui_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
         edit_window = tk.Toplevel(root)
-        edit_window.geometry("1000x800")  # Увеличьте размер окна
+        edit_window.geometry("800x600")  # Увеличьте размер окна
         edit_window.title("Редактирование заказа")
         edit_window.grid_rowconfigure(4, weight=1)  # Для масштабирования таблицы
         edit_window.grid_columnconfigure(1, weight=1)
@@ -287,16 +289,21 @@ def create_gui_page(root):
         edit_number_entry.grid(row=1, column=1, padx=10, pady=10)
         edit_number_entry.insert(0, selected_data[2])
         edit_number_entry.bind("<KeyRelease>", validate_only_numbers)
+
+        tk.Label(edit_window, text="Количество людей").grid(row=2, column=0, padx=10, pady=10)
+        people_entry = tk.Entry(edit_window)
+        people_entry.grid(row=2, column=1, padx=10, pady=10)
+        people_entry.insert(0, (selected_data[8]))
         
-        tk.Label(edit_window, text="Выберите кабинку").grid(row=2, column=0, padx=10, pady=10)
+        tk.Label(edit_window, text="Выберите кабинку").grid(row=3, column=0, padx=10, pady=10)
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
-        edit_cabins_combo.grid(row=2, column=1, padx=10, pady=10)
+        edit_cabins_combo.grid(row=3, column=1, padx=10, pady=10)
         edit_cabins_combo['values'] = cabins_combo['values']
 
         # Добавляем выпадающий список времени
-        tk.Label(edit_window, text="Продолжительность аренды").grid(row=3, column=0, padx=10, pady=10)
+        tk.Label(edit_window, text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
         time_combo = ttk.Combobox(edit_window, state="readonly")
-        time_combo.grid(row=3, column=1, padx=10, pady=10)
+        time_combo.grid(row=4, column=1, padx=10, pady=10)
         time_combo['values'] = ["30 минут", "1 час", "1 час 30 минут", "2 часа"]
         def calculate_new_end_date(start_date, duration):
             if duration == "30 минут":
@@ -313,14 +320,16 @@ def create_gui_page(root):
         selected_cabin = selected_data[3]
         edit_cabins_combo.set(selected_cabin)
 
-            # Раздел для отображения товаров
-        tk.Label(edit_window, text="Список заказов").grid(row=4, column=0, columnspan=2, padx=10, pady=10)
-        products_frame = tk.Frame(edit_window)
-        products_frame.grid(row=6, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
-
         # Загрузка товаров из базы данных
         sale_id = selected_data[0]
         products_data = get_products_for_sale(sale_id)  # Получение товаров для текущей продажи
+
+        # Создаём общий фрейм для двух таблиц
+        tables_frame = tk.Frame(edit_window)
+        tables_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        # Фрейм для товаров
+        products_frame = tk.Frame(tables_frame)
+        products_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
         products_tree = ttk.Treeview(products_frame, columns=("ID", "Название", "Количество", "Цена"), show="headings")
         products_tree.pack(fill="both", expand=True)
@@ -333,7 +342,7 @@ def create_gui_page(root):
         products_tree.heading("Цена", text="Цена")
 
         products_tree.column("ID", width=50)
-        products_tree.column("Название", width=200)
+        products_tree.column("Название", width=150)
         products_tree.column("Количество", width=100)
         products_tree.column("Цена", width=100)
 
@@ -342,8 +351,8 @@ def create_gui_page(root):
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
             # Новый раздел для продлений времени
-        extensions_frame = tk.Frame(edit_window)
-        extensions_frame.grid(row=7, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+        extensions_frame = tk.Frame(tables_frame)
+        extensions_frame.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
         extensions_tree = ttk.Treeview(extensions_frame, columns=("ID", "Минуты", "Время"), show="headings")
         extensions_tree.pack(fill="both", expand=True)
@@ -362,10 +371,11 @@ def create_gui_page(root):
         for extension in extensions_data:
             extensions_tree.insert("", "end", values=extension)
 
+        
           # Функция для добавления продуктов
         def open_add_product_window():
             add_product_window(sale_id, products_tree)
-
+        
         def add_product_window(sale_id, products_tree):
             """
             Модальное окно для добавления продуктов к продаже.
@@ -700,6 +710,7 @@ def create_gui_page(root):
         def save_changes():
             new_name = edit_name_entry.get().strip()
             new_number = edit_number_entry.get().strip()
+            new_people_count = int(people_entry.get().strip())  
             service_charge_applied = bool(service_var.get())
             discount_applied = bool(discount_var.get())
             # Проверяем, выбрано ли новое значение из комбобокса
@@ -711,13 +722,13 @@ def create_gui_page(root):
 
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
-
             # Определяем новую кабинку и её цену
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
             new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
 
             selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
             cabin_hourly_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
+            cabin_capacity = next((int(cabin['capacity']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             if not cabin_hourly_price:
                 messagebox.showerror("Ошибка", "Не удалось получить цену кабинки!")
                 return
@@ -734,6 +745,23 @@ def create_gui_page(root):
             # Добавляем стоимость за дополнительное время к уже существующей цене
             cabin_total_price = Decimal(selected_data[6]) + (cabin_hourly_price * Decimal(duration_hours))
 
+            previous_people_count = int(selected_data[8])
+            previous_extra_people = max(0, previous_people_count - cabin_capacity)
+            previous_extra_charge = previous_extra_people * 1000
+            # Количество "лишних" людей после изменения
+            extra_people = max(0, new_people_count - cabin_capacity)
+
+            # Если людей стало больше
+            if new_people_count > previous_people_count:
+                extra_charge = previous_extra_charge + (extra_people - previous_extra_people) * 1000
+            # Если людей стало меньше
+            elif new_people_count < previous_people_count:
+                extra_charge = max(0, previous_extra_charge - (previous_extra_people - extra_people) * 1000)
+            # Если количество людей не изменилось
+            else:
+                extra_charge = previous_extra_charge
+
+            cabin_total_price += extra_charge
             # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
@@ -778,6 +806,9 @@ def create_gui_page(root):
 
             total_price = total_products_price + cabin_total_price
 
+            if extra_charge < previous_extra_charge:
+                cabin_total_price -= (previous_extra_charge - extra_charge)
+                total_price -= (previous_extra_charge - extra_charge)
             # Добавляем или убираем 15% услуг
             if service_charge_applied:
                 total_price *= Decimal(1.15)  # Прибавляем 15%
@@ -814,7 +845,7 @@ def create_gui_page(root):
                 return
 
             # Обновляем данные в базе
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get())
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get(), people_count=new_people_count, extra_charge=extra_charge)
 
             # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -863,18 +894,18 @@ def create_gui_page(root):
         
         # Создаем фрейм для кнопок
         button_frame = tk.Frame(edit_window)
-        button_frame.grid(row=9, column=0, columnspan=2, pady=10)  # Используем grid для размещения фрейма
+        button_frame.grid(row=7, column=0, columnspan=2, pady=5)  # Используем grid для размещения фрейма
 
         # Добавляем первый ряд кнопок
         ttk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
-        ttk.Button(button_frame, text="Удалить товар", command=delete_product, fg="red").grid(row=0, column=1, padx=5)
+        ttk.Button(button_frame, text="Удалить товар", command=delete_product).grid(row=0, column=1, padx=5)
         ttk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
-        ttk.Button(button_frame, text="Сохранить", command=save_changes, bg="green").grid(row=0, column=3, padx=5)
-        ttk.Button(button_frame, text="Удалить", command=delete_sale, fg="red").grid(row=0, column=4, padx=5)
+        ttk.Button(button_frame, text="Сохранить", command=save_changes).grid(row=0, column=3, padx=5)
+        ttk.Button(button_frame, text="Удалить", command=delete_sale).grid(row=0, column=4, padx=5)
 
         # Боковая панель
         checkbox_frame = tk.Frame(edit_window)
-        checkbox_frame.grid(row=10, column=0, columnspan=2, pady=5)  # Размещаем выше кнопок
+        checkbox_frame.grid(row=8, column=0, columnspan=2, pady=5)  # Размещаем выше кнопок
 
 
         # Добавляем второй ряд чекбоксов и кнопок
@@ -883,7 +914,7 @@ def create_gui_page(root):
 
         tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var).grid(row=1, column=0, columnspan=2, padx=5)
         tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var).grid(row=1, column=2, columnspan=2, padx=5)
-        finish_order_button = tk.Button(checkbox_frame, text="Чек", bg="green", fg="white", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
+        finish_order_button = ttk.Button(checkbox_frame, text="Чек", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
         finish_order_button.grid(row=1, column=4, columnspan=3, pady=5)
 
         def show_final_receipt(selected_data, products_data, service_state, discount_state):
@@ -976,19 +1007,19 @@ def create_gui_page(root):
 
         tk.Label(add_window, text="Имя").grid(row=0, column=0)
         entry_name = ttk.Entry(add_window)
-        entry_name.grid(row=0, column=1)
+        entry_name.grid(row=0, column=1, pady=10)
         entry_name.bind("<KeyRelease>", validate_only_letters)
 
         tk.Label(add_window, text="Номер").grid(row=1, column=0)
         entry_number = ttk.Entry(add_window)
-        entry_number.grid(row=1, column=1)
+        entry_number.grid(row=1, column=1, pady=10)
         entry_number.bind("<KeyRelease>", validate_only_numbers)
 
         tk.Label(add_window, text="Выберите кабинку").grid(row=2, column=0)
         cabins_combo_modal = ttk.Combobox(add_window, state="readonly")
-        cabins_combo_modal.grid(row=2, column=1)
+        cabins_combo_modal.grid(row=2, column=1, pady=10)
         cabins_combo_modal['values'] = cabins_combo['values']
-
+        
         if selected_cabin:
             # Устанавливаем выбранную кабинку и блокируем список
             cabins_combo_modal.set(selected_cabin)
@@ -999,45 +1030,54 @@ def create_gui_page(root):
 
         tk.Label(add_window, text="Общая продажа").grid(row=3, column=0)
         entry_sales = ttk.Entry(add_window, state='readonly')
-        entry_sales.grid(row=3, column=1)
+        entry_sales.grid(row=3, column=1, pady=10)
 
         # Поле для ввода времени аренды (в часах)
         tk.Label(add_window, text="На сколько часов?").grid(row=4, column=0)
         entry_hours = ttk.Entry(add_window)
-        entry_hours.grid(row=4, column=1)
-        
+        entry_hours.grid(row=4, column=1, pady=10)
+        entry_hours.bind("<KeyRelease>", lambda event: update_total_price())
 
-         # Обновление цены аренды на основе введенного времени
-        def update_rental_price(event=None):
-            try:
-                hours = float(entry_hours.get())
-                selected_cabin = cabins_combo_modal.get().split(" - ")[0]
-                cabins_data = get_cabins_data()
-                cabin_price = Decimal(0)
-                for cabin in cabins_data:
-                    if cabin['name'] == selected_cabin:
-                        cabin_price = Decimal(cabin['price'])
-                        break
+        # Поле для ввода количества людей
+        tk.Label(add_window, text="Количество людей:").grid(row=5, column=0)
+        entry_people_count = ttk.Entry(add_window)
+        entry_people_count.grid(row=5, column=1, pady=10)
+        entry_people_count.bind("<KeyRelease>", lambda event: update_total_price())
 
-                # Минимальная стоимость за первый час и половина стоимости за каждые последующие 30 минут
-                total_rental_price = cabin_price * int(hours)  # Полные часы
-                if hours % 1 > 0:
-                    total_rental_price += (cabin_price / 2)  # Половина стоимости за дополнительные 30 минут
+        def format_price(price):
+            """Преобразует Decimal в строку с двумя знаками после запятой"""
+            return f"{float(price):.2f}"  # Из Decimal('3000.00') делает '3000.00'
 
-                # Обновляем поле Общая продажа
-                total_price = total_rental_price + Decimal(total_product_price)
-                entry_sales.config(state='normal')
-                entry_sales.delete(0, tk.END)
-                entry_sales.insert(0, round(total_price, 2))
-                entry_sales.config(state='readonly')
+        cabins_data = get_cabins_data()
+        cabins_dict = {f"{cabin['name']} - {format_price(cabin['price'])} $": cabin for cabin in cabins_data}  # Создаем словарь
 
-                global total_cabin_rental  # Use a global variable or other method to pass this value
-                total_cabin_rental = float(total_rental_price)
-            except ValueError:
-                messagebox.showerror("Ошибка", "Введите корректное количество часов.")
+        def normalize_cabin_name(cabin_name):
+            """Форматирует название кабинки так же, как в словаре."""
+            parts = cabin_name.rsplit(" - ", 1)  # Разделяем "Кабина 6 - 1200.00 $"
+            if len(parts) == 2:
+                name, price = parts
+                price = f"{float(price.replace(' $', '')):.2f} $"  # Приводим цену к нужному формату
+                return f"{name} - {price}"
+            return cabin_name.strip()  # Возвращаем без изменений, если формат странный
 
-        # Привязка обновления стоимости к изменению часов
-        entry_hours.bind("<KeyRelease>", update_rental_price)
+        def update_people_count(event):
+            selected = normalize_cabin_name(cabins_combo_modal.get().strip())  # Форматируем
+
+            if selected in cabins_dict:
+                capacity = cabins_dict[selected]["capacity"]
+
+                entry_people_count.config(state='normal')
+                entry_people_count.delete(0, tk.END)
+                entry_people_count.insert(0, capacity)
+            else:
+                print(f"Ошибка: кабинка '{selected}' не найдена!")
+
+        # Привязываем изменение значения в комбобоксе к функции
+        cabins_combo_modal.bind("<<ComboboxSelected>>", update_people_count)
+        if selected_cabin:
+            selected_cabin = normalize_cabin_name(selected_cabin)  # Форматируем перед установкой
+            cabins_combo_modal.set(selected_cabin)
+            update_people_count(None)
 
         selected_products = {}
         total_product_price = 0
@@ -1047,6 +1087,49 @@ def create_gui_page(root):
         selected_products_tree.heading("price", text="Цена")
         selected_products_tree.heading("quantity", text="Количество")
         selected_products_tree.grid(row=6, column=0, columnspan=2)
+        def update_total_price(event=None):
+                nonlocal total_product_price
+
+                # Пересчитываем сумму продуктов заново
+                total_product_price = sum(float(product['price']) * product['quantity'] for product in selected_products.values())
+
+                # Получаем данные о кабинке
+                selected_cabin = cabins_combo_modal.get().split(" - ")[0] if cabins_combo_modal.get() else None
+                people_count = int(entry_people_count.get()) if entry_people_count.get() else 0
+                hours = float(entry_hours.get()) if entry_hours.get() else 0
+
+                cabin_price = Decimal(0)
+                cabin_capacity = 0
+
+                # Ищем цену и вместимость выбранной кабинки
+                for cabin in get_cabins_data():
+                    if cabin['name'] == selected_cabin:
+                        cabin_price = Decimal(cabin['price'])
+                        cabin_capacity = cabin['capacity']
+                        break
+
+                # Рассчитываем стоимость аренды
+                total_rental_price = cabin_price * int(hours)
+                if hours % 1 > 0:
+                    total_rental_price += (cabin_price / 2)
+
+                # Штраф за превышение вместимости
+                extra_people = max(0, people_count - cabin_capacity)
+                extra_charge = extra_people * 1000
+
+                # Итоговая сумма: аренда + штраф за лишних людей + стоимость продуктов
+                total_price = total_rental_price + extra_charge + Decimal(total_product_price)
+
+                # Обновляем поле с общей суммой
+                entry_sales.config(state='normal')
+                entry_sales.delete(0, tk.END)
+                entry_sales.insert(0, round(total_price, 2))
+                entry_sales.config(state='readonly')
+
+            # Привязываем функцию обновления к изменению часов, количества людей и списка продуктов
+        entry_hours.bind("<KeyRelease>", lambda event: update_total_price())
+        entry_people_count.bind("<KeyRelease>", lambda event: update_total_price())
+        cabins_combo_modal.bind("<<ComboboxSelected>>", update_total_price)
 
         def open_product_list():
             nonlocal total_product_price
@@ -1187,29 +1270,7 @@ def create_gui_page(root):
                     selected_products_tree.insert(
                         "", tk.END,
                         values=(product_info['name'], product_info['price'], product_info['quantity'])
-                    )
-
-            def update_total_price():
-                nonlocal total_product_price
-
-                # Пересчитываем сумму продуктов заново, чтобы избежать дублирования
-                total_product_price = sum(float(product['price']) * product['quantity'] for product in selected_products.values())
-
-                # Получаем текущую цену кабинки (введенную при выборе) и используем ее только один раз
-                if cabins_combo_modal.get():
-                    selected_cabin_price_str = cabins_combo_modal.get().split(" - ")[1].replace(" $", "")
-                    selected_cabin_price = float(selected_cabin_price_str)
-                else:
-                    selected_cabin_price = 0
-
-                # Итоговая сумма включает одну цену кабинки и общую стоимость продуктов
-                total_price = selected_cabin_price + total_product_price
-
-                # Обновляем поле ввода с общей продажей
-                entry_sales.config(state='normal')
-                entry_sales.delete(0, tk.END)
-                entry_sales.insert(0, round(total_price, 2))  # Округляем для точности
-                entry_sales.config(state='readonly')
+                    )            
 
              # Кнопки
             add_button = ttk.Button(product_window, text="+ Добавить", command=add_product_to_order, state="disabled")
@@ -1255,7 +1316,7 @@ def create_gui_page(root):
                 selected_cabin = cabins_combo_modal.get().split(" - ")[0]
                 cabins_data = get_cabins_data()
                 selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
-
+                
                 hours = float(entry_hours.get())
                 current_time = datetime.datetime.now()
                 end_date = current_time + timedelta(hours=hours)
@@ -1266,15 +1327,30 @@ def create_gui_page(root):
                     return
 
                 cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'] == selected_cabin), None)
-
+                cabin_capacity = next((Decimal(cabin['capacity']) for cabin in cabins_data if cabin['name'] == selected_cabin), None)
                 # Преобразуем total_product_price в Decimal
                 total_product_price_decimal = Decimal(total_product_price)
 
+                
+                # Получаем количество людей
+                try:
+                    people_count = int(entry_people_count.get())
+                    if people_count < 1:
+                        raise ValueError
+                except ValueError:
+                    messagebox.showerror("Ошибка", "Поле 'Количество людей' должно быть числом больше 0.")
+                    return
+                
                  # Получаем количество часов аренды
                 hours = float(entry_hours.get())
                 total_rental_price = cabin_price * int(hours)
                 if hours % 1 > 0:
                     total_rental_price += (cabin_price / 2)
+
+                 # Добавляем доплату за превышение вместимости
+                extra_people = max(0, people_count - cabin_capacity)  # Сколько людей сверх вместимости
+                extra_fee = extra_people * 1000  # Доплата за каждого сверх вместимости
+                total_rental_price += extra_fee
 
                 # Общая сумма заказа
                 total_price = total_rental_price + total_product_price_decimal
@@ -1284,7 +1360,7 @@ def create_gui_page(root):
                 end_date = start_date + timedelta(hours=hours)
                 print(f"Products total: {total_product_price_decimal}, Cabin price: {cabin_price}, Total: {total_price}")
                 # Сохраняем продажу и получаем ID
-                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date)
+                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date, people_count, extra_fee)
                 
                 # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
                 for product_id, product_info in selected_products.items():
