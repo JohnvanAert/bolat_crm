@@ -61,7 +61,7 @@ def fetch_sales_data():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count FROM sales ORDER BY date DESC")
+        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge FROM sales ORDER BY date DESC")
         sales_data = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -1337,4 +1337,19 @@ def get_product_sales_statistics_by_dates(start_date, end_date):
             cursor.execute(query, (start_date, end_date))
             return cursor.fetchall()
     finally:
+        conn.close()
+
+def has_sales_records(cabin_id):
+    """Проверяет, есть ли у кабинки записи в таблице sales"""
+    conn = connect()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) FROM sales WHERE cabins_id = %s", (cabin_id,))
+        count = cursor.fetchone()[0]
+        return count > 0
+    except Exception as e:
+        print(f"Ошибка при проверке записей в продажах: {e}")
+        return False
+    finally:
+        cursor.close()
         conn.close()

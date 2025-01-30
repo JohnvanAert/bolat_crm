@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from database import get_cabins, update_cabin, add_cabin, delete_cabin
+from database import get_cabins, update_cabin, add_cabin, delete_cabin, has_sales_records
 from cabin_data import add_observer, update_cabins_data, get_cabins_data
 
 def create_cabin_page(root):
@@ -175,7 +175,11 @@ def create_cabin_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось обновить кабинку: {e}")
 
-        def delete_cabin_action():
+        def delete_cabin_action(cabin_id):
+            if has_sales_records(cabin_id):
+                messagebox.showwarning("Предупреждение", "У данной кабинки есть записи в продажах. Удаление невозможно.")
+                return
+            
             if messagebox.askyesno("Подтверждение", "Вы уверены, что хотите удалить кабинку?"):
                 try:
                     delete_cabin(cabin_id)
@@ -188,7 +192,7 @@ def create_cabin_page(root):
         save_button = ttk.Button(modal_window, text="Сохранить", command=save_changes)
         save_button.grid(row=3, column=0, columnspan=2)
 
-        delete_button = ttk.Button(modal_window, text="Удалить", command=delete_cabin_action)
+        delete_button = ttk.Button(modal_window, text="Удалить", command=lambda:delete_cabin_action(cabin_id))
         delete_button.grid(row=4, column=0, columnspan=2)
 
     # Обработчик двойного клика по таблице

@@ -52,7 +52,7 @@ def create_gui_page(root):
     ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, pady=5)
 
 
-    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count"), show="headings")
+    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge"), show="headings")
     tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Выбранная кабинка")
@@ -192,8 +192,8 @@ def create_gui_page(root):
         paginated_data = all_data[start_index:end_index]
 
         for row in paginated_data:
-            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count  = row
-            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count))
+            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge  = row
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge))
 
 
 
@@ -744,24 +744,14 @@ def create_gui_page(root):
 
             # Добавляем стоимость за дополнительное время к уже существующей цене
             cabin_total_price = Decimal(selected_data[6]) + (cabin_hourly_price * Decimal(duration_hours))
-
-            previous_people_count = int(selected_data[8])
-            previous_extra_people = max(0, previous_people_count - cabin_capacity)
-            previous_extra_charge = previous_extra_people * 1000
-            # Количество "лишних" людей после изменения
+            # Получаем предыдущую extra_charge
+            previous_extra_charge = Decimal(selected_data[9]) if len(selected_data) > 9 else Decimal(0)
+            
+            # Рассчитываем extra_charge на основе нового количества людей
             extra_people = max(0, new_people_count - cabin_capacity)
-
-            # Если людей стало больше
-            if new_people_count > previous_people_count:
-                extra_charge = previous_extra_charge + (extra_people - previous_extra_people) * 1000
-            # Если людей стало меньше
-            elif new_people_count < previous_people_count:
-                extra_charge = max(0, previous_extra_charge - (previous_extra_people - extra_people) * 1000)
-            # Если количество людей не изменилось
-            else:
-                extra_charge = previous_extra_charge
-
-            cabin_total_price += extra_charge
+            extra_charge = extra_people * 1000            
+            
+            cabin_total_price = cabin_total_price - previous_extra_charge + extra_charge
             # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
                 selected_cabin_id = selected_data[3]  # Прежний ID кабинки
@@ -806,9 +796,6 @@ def create_gui_page(root):
 
             total_price = total_products_price + cabin_total_price
 
-            if extra_charge < previous_extra_charge:
-                cabin_total_price -= (previous_extra_charge - extra_charge)
-                total_price -= (previous_extra_charge - extra_charge)
             # Добавляем или убираем 15% услуг
             if service_charge_applied:
                 total_price *= Decimal(1.15)  # Прибавляем 15%
@@ -1378,7 +1365,7 @@ def create_gui_page(root):
 
         ttk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
 
-    ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2)
+    ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2, pady=5)
 
     def refresh_gui_page():
         display_sales_data()
