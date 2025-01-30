@@ -364,13 +364,13 @@ def create_booking_page(root):
 
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
-    button_frame.grid(row=9, column=0, pady=10, columnspan=2)
+    button_frame.grid(row=9, column=0, pady=10, columnspan=2, sticky="ew")
     ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
     ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
     ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
 
     cabins_frame = tk.Frame(frame_main)
-    cabins_frame.grid(row=10, column=0, columnspan=2, pady=10)
+    cabins_frame.grid(row=10, column=0, pady=10, columnspan=2, sticky="ew")
 
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""

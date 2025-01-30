@@ -13,12 +13,13 @@ def create_statistics_page(root):
     tk.Label(frame, text="Статистика по кабинкам", font=("Arial", 16)).pack(pady=10)
 
     # Таблица статистики по кабинкам
-    columns = ("cabin_name", "rental_count", "total_income", "avg_check")
+    columns = ("cabin_name", "rental_count", "total_income", "avg_check", "total_people")
     tree = ttk.Treeview(frame, columns=columns, show="headings", height=10)
     tree.heading("cabin_name", text="Название кабинки")
     tree.heading("rental_count", text="Кол-во аренд")
     tree.heading("total_income", text="Общий доход")
     tree.heading("avg_check", text="Средний чек")
+    tree.heading("total_people", text="Обслужено людей")
     tree.pack(padx=10, pady=10)
     # Финансовая и продуктовая статистика
     stats_frame = tk.Frame(frame)
@@ -64,6 +65,7 @@ def create_statistics_page(root):
         total_rentals = 0
         total_income = 0.0
         total_avg_check = 0.0
+        total_people_served = 0
         total_cabins = len(data)
 
         # Заполнение таблицы данными
@@ -72,11 +74,13 @@ def create_statistics_page(root):
                 cabin_name = row[1]  # Название кабинки
                 rentals_count = int(row[2]) if row[2] is not None else 0  # Количество аренд
                 total_income_row = float(row[3]) if row[3] is not None else 0.0  # Доход
-                avg_check = float(row[4]) if row[4] is not None else 0.0  # Средний чек
+                total_people = int(row[4]) if row[4] is not None else 0
+                avg_check = float(row[5]) if row[5] is not None else 0.0  # Средний чек
 
-                tree.insert("", "end", values=(cabin_name, rentals_count, f"{total_income_row:.2f}", f"{avg_check:.2f}"))
+                tree.insert("", "end", values=(cabin_name, rentals_count, f"{total_income_row:.2f}", f"{avg_check:.2f}", total_people))
                 total_rentals += rentals_count
                 total_income += total_income_row
+                total_people_served += total_people
                 total_avg_check += avg_check
 
             except Exception as e:
@@ -89,7 +93,7 @@ def create_statistics_page(root):
         tree.insert("", "end", values=("", "", "", ""), tags=("spacer",))
 
         # Добавить строку с итогами
-        tree.insert("", "end", values=("Итого", total_rentals, f"{total_income:.2f}", f"{overall_avg_check:.2f}"), tags=("summary",))
+        tree.insert("", "end", values=("Итого", total_rentals, f"{total_income:.2f}", f"{overall_avg_check:.2f}", total_people_served), tags=("summary",))
 
         # Стилизация итоговой строки и отступа
         tree.tag_configure("summary", font=("Helvetica", 10, "bold"))

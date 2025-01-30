@@ -938,6 +938,7 @@ def get_cabin_statistics(period):
             c.name AS cabin_name,
             COUNT(s.id) AS rental_count,
             SUM(s.total_sales) AS total_profit,
+            COALESCE(SUM(s.people_count), 0) AS total_people,
             AVG(s.total_sales) AS average_check
         FROM
             cabins c
@@ -1004,6 +1005,7 @@ def get_cabin_statistics_by_date_range(start_date, end_date):
         c.name AS cabin_name,
         COUNT(s.id) AS rentals_count,
         COALESCE(SUM(s.total_sales), 0) AS total_income,
+        COALESCE(SUM(s.people_count), 0) AS total_people_served,
         CASE 
             WHEN COUNT(s.id) > 0 THEN ROUND(COALESCE(SUM(s.total_sales), 0) / COUNT(s.id), 2) 
             ELSE 0 
@@ -1324,7 +1326,8 @@ def get_product_sales_statistics_by_dates(start_date, end_date):
     JOIN 
         sales s ON sp.sale_id = s.id
     WHERE 
-        sp.created_at >= %s AND sp.created_at <= %s
+        sp.created_at >= %s 
+        AND sp.created_at <= %s
         AND date_trunc('second', sp.created_at) <= %s
     GROUP BY 
         p.name
@@ -1334,10 +1337,11 @@ def get_product_sales_statistics_by_dates(start_date, end_date):
     conn = connect()
     try:
         with conn.cursor() as cursor:
-            cursor.execute(query, (start_date, end_date))
+            cursor.execute(query, (start_date, end_date, end_date))  # Теперь 3 параметра!
             return cursor.fetchall()
     finally:
         conn.close()
+
 
 def has_sales_records(cabin_id):
     """Проверяет, есть ли у кабинки записи в таблице sales"""

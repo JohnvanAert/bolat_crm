@@ -45,7 +45,7 @@ def main():
     root.geometry("1200x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
-    root.configure(bg="#f9f9f9")
+    root.configure(bg="#e6f7ff")
      # Создаем стиль
     style = ttk.Style()
     style.theme_use("clam")  # Используем нейтральную тему
@@ -268,17 +268,17 @@ def main():
     content_frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
     # Занятые кабины (левая колонка)
-    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
-    cabins_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
+    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#7FC3BD", fg="#93c47d").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
+    cabins_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=50)
     cabins_listbox.grid(row=1, column=0, padx=10, pady=5, sticky="nw")
 
     # Продукты для закупа (правая колонка)
     tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=1, padx=10, pady=5, sticky="nw")
-    restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), height=10, width=50)
+    restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=50)
     restock_listbox.grid(row=1, column=1, padx=10, pady=5, sticky="nw")
     # Интерфейс
     tk.Label(main_page, text="Заказы:", font=("Helvetica", 16)).pack(pady=5)
-    sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), height=15, width=80)
+    sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=15, width=80)
     sold_listbox.pack()
     
 
