@@ -145,7 +145,7 @@ def main():
                 cabin_name = cabin["cabin_name"]
                 start_time = cabin["start_time"]
                 end_time = cabin["end_time"]
-
+                people_count = cabin["people"]
                 now = datetime.now()
 
                 if now < start_time:
@@ -154,14 +154,14 @@ def main():
                     hours, remainder = divmod(time_until_start.total_seconds(), 3600)
                     minutes = remainder // 60
                     time_left = f"{int(hours)} ч {int(minutes)} мин"
-                    cabins_listbox.insert(tk.END, f"{cabin_name} - до начала аренды: {time_left}")
+                    cabins_listbox.insert(tk.END, f"{cabin_name} - до начала аренды: {time_left}, людей: {people_count}")
                 elif start_time <= now <= end_time:
                     # Во время аренды
                     remaining_time = end_time - now
                     hours, remainder = divmod(remaining_time.total_seconds(), 3600)
                     minutes = remainder // 60
                     time_left = f"{int(hours)} ч {int(minutes)} мин"
-                    cabins_listbox.insert(tk.END, f"{cabin_name} - осталось: {time_left}")
+                    cabins_listbox.insert(tk.END, f"{cabin_name} - осталось: {time_left}, людей: {people_count}")
                 else:
                     # Аренда завершена
                     cabins_listbox.insert(tk.END, f"{cabin_name} - аренда завершена")
@@ -215,7 +215,7 @@ def main():
 
                 sold_listbox.insert(
                     tk.END,
-                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} | Цена: {price} руб."
+                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} | Цена: {price} тнг."
                 )
         else:
             sold_listbox.insert(tk.END, "Нет заказанных товаров")

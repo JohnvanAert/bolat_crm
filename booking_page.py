@@ -146,7 +146,7 @@ def create_booking_page(root):
     def add_booking_modal(selected_cabin=None):
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
-        modal.geometry("600x400")
+        modal.geometry("500x300")
         modal.resizable(False, False)
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
@@ -365,19 +365,14 @@ def create_booking_page(root):
 
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
-    frame_main.columnconfigure(0, weight=1)
-    button_frame.grid(row=9, column=0, pady=10, columnspan=2, sticky="ew")
+    button_frame.grid(row=9, column=0, pady=10, columnspan=3)
 
-    button_frame.columnconfigure(0, weight=1)
-    button_frame.columnconfigure(1, weight=1)
-    button_frame.columnconfigure(2, weight=1)
-
-    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5, sticky="ew")
-    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5, sticky="ew")
-    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5, sticky="ew")
+    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
+    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
+    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
 
     cabins_frame = tk.Frame(frame_main)
-    cabins_frame.grid(row=10, column=0, pady=10, columnspan=2, sticky="ew")
+    cabins_frame.grid(row=10, column=0, pady=10, columnspan=3)
     
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""

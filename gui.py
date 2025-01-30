@@ -199,7 +199,7 @@ def create_gui_page(root):
 
         update_pagination_buttons(total_pages)
     # Кнопка для поиска
-        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=5, column=0, columnspan=2, pady=5)
+        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=6, column=0, columnspan=2, pady=5)
 
         # Кнопка для очистки полей поиска и фильтров
         def clear_filters():
@@ -210,7 +210,7 @@ def create_gui_page(root):
             selected_end_date.set("Нажмите для выбора")
             display_sales_data()
 
-        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=2, pady=5)
+        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=1, columnspan=1, pady=5)
 
     
 

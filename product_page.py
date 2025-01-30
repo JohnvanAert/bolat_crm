@@ -250,7 +250,7 @@ def create_product_page(root):
     def open_edit_modal(product):
         modal = Toplevel(root)
         modal.title("Редактирование продукта")
-        modal.geometry("600x400")
+        modal.geometry("400x450")
 
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
@@ -272,24 +272,24 @@ def create_product_page(root):
         tk.Label(modal, text="Название продукта").grid(row=0, column=0)
         name_var = tk.StringVar(value=product['name'])
         entry_name = ttk.Entry(modal, textvariable=name_var)
-        entry_name.grid(row=0, column=1)
+        entry_name.grid(row=0, column=1, pady=5)
         entry_name.bind("<KeyRelease>", validate_only_letters)
         
         tk.Label(modal, text="Цена").grid(row=1, column=0)
         price_var = tk.StringVar(value=str(product['price']))
         entry_price = ttk.Entry(modal, textvariable=price_var)
-        entry_price.grid(row=1, column=1)
+        entry_price.grid(row=1, column=1, pady=5)
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
         tk.Label(modal, text="Количество").grid(row=2, column=0)
         quantity_var = tk.StringVar(value=str(product['quantity']))
         entry_quantity = ttk.Entry(modal, textvariable=quantity_var)
-        entry_quantity.grid(row=2, column=1)
+        entry_quantity.grid(row=2, column=1, pady=5)
         entry_quantity.bind("<KeyRelease>", validate_only_numbers)
         
         tk.Label(modal, text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
-        img_preview_label = tk.Label(modal, text="No Image", width=150, height=200)
+        img_preview_label = tk.Label(modal, text="No Image", width=200, height=200)
         img_preview_label.grid(row=3, column=1)
 
 

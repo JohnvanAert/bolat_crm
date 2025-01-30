@@ -1225,7 +1225,7 @@ def fetch_rental_cost(rental_id):
 
 def get_occupied_cabins():
     query = """
-        SELECT c.name AS cabin_name, s.date AS start_time, s.end_date AS end_time
+        SELECT c.name AS cabin_name, s.date AS start_time, s.end_date AS end_time, people_count AS people
         FROM sales s
         JOIN cabins c ON s.cabins_id = c.id
         WHERE CURRENT_TIMESTAMP <= s.end_date;
@@ -1239,7 +1239,8 @@ def get_occupied_cabins():
                 {
                     "cabin_name": row[0],
                     "start_time": row[1],
-                    "end_time": row[2]
+                    "end_time": row[2],
+                    "people": row[3]
                 } for row in cursor.fetchall()
             ]
 
