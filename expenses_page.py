@@ -1,8 +1,7 @@
 import tkinter as tk
-from tkcalendar import DateEntry
 from tkinter import ttk, messagebox
 from database import fetch_expenses_data, add_expense, update_expense, remove_expense
-from expenses_data import add_observer, update_expenses_data, get_expenses_data
+from expenses_data import add_observer
 from datetime import datetime
 from tkcalendar import Calendar
 

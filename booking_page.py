@@ -3,8 +3,7 @@ from tkinter import ttk
 from tkcalendar import Calendar
 from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings  # Функции из базы данных
 from tkinter import messagebox
-from datetime import datetime
-from tktimepicker import AnalogPicker, AnalogThemes, SpinTimePickerModern, constants
+from tktimepicker import SpinTimePickerModern, constants
 from decimal import Decimal
 from cabin_data import add_observer, get_cabins_data
 

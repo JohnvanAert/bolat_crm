@@ -1,9 +1,9 @@
-from tkinter import Tk, ttk, Toplevel, Frame, Label, Button
+from tkinter import ttk, Toplevel, Label, Button
 import tkinter as tk
 from tkcalendar import Calendar
 from decimal import Decimal
 from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range, fetch_statistics, get_product_sales_statistics_by_dates, get_product_sales_statistics_by_period
-from datetime import datetime, timedelta
+from datetime import datetime
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""

@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkcalendar import DateEntry
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, get_cabin_price, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
