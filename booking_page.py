@@ -6,6 +6,7 @@ from tkinter import messagebox
 from datetime import datetime
 from tktimepicker import AnalogPicker, AnalogThemes, SpinTimePickerModern, constants
 from decimal import Decimal
+from cabin_data import add_observer, get_cabins_data
 
 def create_booking_page(root):
     frame_main = tk.Frame(root)
@@ -364,20 +365,26 @@ def create_booking_page(root):
 
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
+    frame_main.columnconfigure(0, weight=1)
     button_frame.grid(row=9, column=0, pady=10, columnspan=2, sticky="ew")
-    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
-    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
-    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
+
+    button_frame.columnconfigure(0, weight=1)
+    button_frame.columnconfigure(1, weight=1)
+    button_frame.columnconfigure(2, weight=1)
+
+    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5, sticky="ew")
+    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5, sticky="ew")
+    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5, sticky="ew")
 
     cabins_frame = tk.Frame(frame_main)
     cabins_frame.grid(row=10, column=0, pady=10, columnspan=2, sticky="ew")
-
+    
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""
         for widget in cabins_frame.winfo_children():
             widget.destroy()
 
-        cabins = get_cabins()  # Получаем данные кабинок
+        cabins = get_cabins_data()  # Получаем данные кабинок
 
         for idx, cabin in enumerate(cabins):
             cabin_name = cabin.get("name", f"Кабинка {idx + 1}")
@@ -396,7 +403,7 @@ def create_booking_page(root):
             # Расположение кнопок в сетке
             row, col = divmod(idx, 5)  # 5 кнопок в строке
             cabin_button.grid(row=row, column=col, padx=5, pady=5)
-
+    
     def handle_cabin_click(cabin):
         """Обработчик нажатия на кнопку кабинки."""
         cabin_id = cabin.get("id")  # Получаем ID кабинки
@@ -405,7 +412,14 @@ def create_booking_page(root):
         else:
             tk.messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
 
-    
+        # Обновление интерфейса при изменении данных в базе
+    def on_cabin_data_update():
+        """Функция вызывается при изменении данных кабинок в базе."""
+        create_cabin_buttons()
+
+    # Подписываемся на обновления данных кабинок
+    add_observer(on_cabin_data_update)
+
     create_cabin_buttons()
     def refresh_booking_page():
         get_cabins()

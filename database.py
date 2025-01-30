@@ -196,6 +196,16 @@ def delete_product(product_id):
     cur.close()
     conn.close()
 
+def is_product_in_sales(product_id):
+    """ Проверяет, используется ли продукт в таблице sales_products """
+    conn = connect()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM sales_products WHERE product_id = %s", (product_id,))
+    count = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return count > 0  # Если продукт есть в продажах, возвращаем True
+
 # Функция для извлечения данных о продуктах
 def fetch_products():
     try:

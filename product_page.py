@@ -1,16 +1,17 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, Toplevel, ttk
 from PIL import Image, ImageTk
-from database import insert_product, fetch_products, update_product, delete_product, insert_expense
+from database import insert_product, fetch_products, update_product, delete_product, insert_expense, is_product_in_sales
 from datetime import datetime
 
 def create_product_page(root):
     frame = tk.Frame(root)
+    tk.Label(frame, text="Склад продуктов", font=("Arial", 16)).grid(row=0, column=0, columnspan=3, pady=10)
     items_per_page_var = tk.IntVar(value=10)
     current_page_var = tk.IntVar(value=1)
 
     pagination_frame = tk.Frame(frame)
-    pagination_frame.grid(row=2, column=0, columnspan=3)
+    pagination_frame.grid(row=3, column=0, columnspan=3)
 
     def open_add_product_modal():
         modal = Toplevel(root)
@@ -142,20 +143,20 @@ def create_product_page(root):
 
 
     add_product_button = ttk.Button(frame, text="Добавить продукт", command=open_add_product_modal)
-    add_product_button.grid(row=0, column=0, pady=10)
+    add_product_button.grid(row=1, column=0, pady=10)
 
-    tk.Label(frame, text="Записей на странице:").grid(row=0, column=1)
+    tk.Label(frame, text="Записей на странице:").grid(row=1, column=1)
     items_per_page_dropdown = ttk.Combobox(
         frame,
         textvariable=items_per_page_var,
         values=[10, 25, 50, 100],
         state="readonly"
     )
-    items_per_page_dropdown.grid(row=0, column=2)
+    items_per_page_dropdown.grid(row=1, column=2)
     items_per_page_dropdown.bind("<<ComboboxSelected>>", lambda e: [current_page_var.set(1), display_products()])
 
     product_container = tk.Frame(frame)
-    product_container.grid(row=1, column=0, columnspan=3, pady=10)
+    product_container.grid(row=2, column=0, columnspan=3, pady=10)
 
     def display_products():
         # Очистка контейнера продуктов
@@ -334,6 +335,9 @@ def create_product_page(root):
             display_products()
 
         def delete_products():
+            if is_product_in_sales(product['id']):
+                messagebox.showwarning("Ошибка", "Нельзя удалить продукт, так как он используется в продажах!")
+                return
             response = messagebox.askyesno("Подтверждение удаления", "Вы уверены, что хотите удалить этот продукт?")
             if response:
                 delete_product(product['id'])

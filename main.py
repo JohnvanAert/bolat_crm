@@ -41,8 +41,8 @@ page_size = 15
 
 def main():
     root = tk.Tk()
-    root.title("Bublik")
-    root.geometry("1200x800")  # Устанавливаем начальный размер окна
+    root.title("3B CRM")
+    root.geometry("1450x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
     root.configure(bg="#e6f7ff")

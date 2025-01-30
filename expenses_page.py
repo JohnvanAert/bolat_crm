@@ -9,7 +9,7 @@ from tkcalendar import Calendar
 def create_expenses_page(root):
     frame = tk.Frame(root)
     frame.pack(fill='both', expand=True)
-
+    tk.Label(frame, text="Расходы", font=("Arial", 20)).pack()
     # Search fields
     tk.Label(frame, text="Поиск по имени").pack()
     search_name_entry = ttk.Entry(frame)

@@ -5,6 +5,7 @@ from cabin_data import add_observer, update_cabins_data, get_cabins_data
 
 def create_cabin_page(root):
     frame = tk.Frame(root)
+    tk.Label(frame, text="Управление кабинками", font=("Arial", 16)).grid(row=0, column=0, columnspan=3, pady=10)
     rows_per_page = 10  # Количество строк на странице
     current_page = 1  # Текущая страница
 
@@ -17,18 +18,18 @@ def create_cabin_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
     # Поля для добавления новой кабинки
-    tk.Label(frame, text="Имя новой кабинки").grid(row=0, column=0)
+    tk.Label(frame, text="Имя новой кабинки").grid(row=1, column=0)
     entry_new_name = ttk.Entry(frame)
-    entry_new_name.grid(row=0, column=1)
+    entry_new_name.grid(row=1, column=1, pady=10)
 
-    tk.Label(frame, text="Цена новой кабинки").grid(row=1, column=0)
+    tk.Label(frame, text="Цена новой кабинки").grid(row=2, column=0)
     entry_new_price = ttk.Entry(frame)
-    entry_new_price.grid(row=1, column=1)
+    entry_new_price.grid(row=2, column=1, pady=10)
     entry_new_price.bind("<KeyRelease>", validate_only_numbers)
                             
-    tk.Label(frame, text="Вместимость").grid(row=2, column=0)
+    tk.Label(frame, text="Вместимость").grid(row=3, column=0)
     entry_new_capacity = ttk.Entry(frame)
-    entry_new_capacity.grid(row=2, column=1)
+    entry_new_capacity.grid(row=3, column=1, pady=10)
     entry_new_capacity.bind("<KeyRelease>", validate_only_numbers)
     
     # Функция для добавления новой кабинки
@@ -60,14 +61,14 @@ def create_cabin_page(root):
             messagebox.showerror("Ошибка", f"Не удалось добавить кабинку: {e}")
 
     add_button = ttk.Button(frame, text="Добавить кабинку", command=add_new_cabin)
-    add_button.grid(row=3, column=0, columnspan=2)
+    add_button.grid(row=4, column=0, columnspan=2, pady=10)
 
     # Таблица для отображения кабинок
     columns = ('ID', 'Имя кабинки', 'Цена кабинки', 'Вместимость')
     cabin_table = ttk.Treeview(frame, columns=columns, show='headings')
     for col in columns:
         cabin_table.heading(col, text=col)
-    cabin_table.grid(row=4, column=0, columnspan=3, pady=10)
+    cabin_table.grid(row=5, column=0, columnspan=3, pady=10)
 
     # Функция для загрузки и обновления данных кабинок
     def load_and_update_cabins():
@@ -107,7 +108,7 @@ def create_cabin_page(root):
 
     # Кнопки управления пагинацией
     pagination_frame = tk.Frame(frame)
-    pagination_frame.grid(row=5, column=0, columnspan=3)
+    pagination_frame.grid(row=6, column=0, columnspan=3)
 
     prev_button = ttk.Button(pagination_frame, text="Предыдущая", command=prev_page)
     prev_button.pack(side='left')

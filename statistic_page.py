@@ -148,12 +148,29 @@ def create_statistics_page(root):
         else:
             product_data = get_product_sales_statistics_by_period(period)
 
+        # Инициализация переменных для подсчета итогов
+        total_products_sold = 0
+        total_income = 0
+
         # Добавление данных в виджет Treeview
         for row in product_data:
-            product_name, total_sold, total_income = row
-            product_tree.insert("", "end", values=(product_name, total_sold, f"{total_income:.2f}"))
+            product_name, total_sold, income = row
+            product_tree.insert("", "end", values=(product_name, total_sold, f"{income:.2f}"))
+            
+            # Суммирование общего количества проданных товаров и дохода
+            total_products_sold += total_sold
+            total_income += income
 
+        # Добавить пустую строку для отступа
+        product_tree.insert("", "end", values=("", "", ""), tags=("spacer",))
 
+        # Добавить строку с итогами
+        product_tree.insert("", "end", values=("Итого", total_products_sold, f"{total_income:.2f}"), tags=("summary",))
+
+        # Стилизация итоговой строки и отступа
+        product_tree.tag_configure("summary", font=("Helvetica", 10, "bold"))
+        product_tree.tag_configure("spacer")
+        
     def open_date_picker():
         def select_dates():
             start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
