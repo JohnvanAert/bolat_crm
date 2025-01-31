@@ -7,16 +7,15 @@ from tkcalendar import Calendar
 
 def create_expenses_page(root):
     frame = tk.Frame(root)
-    frame.pack(fill='both', expand=True)
-    tk.Label(frame, text="Расходы", font=("Arial", 20)).pack()
-    # Search fields
-    tk.Label(frame, text="Поиск по имени").pack()
-    search_name_entry = ttk.Entry(frame)
-    search_name_entry.pack()
 
-    tk.Label(frame, text="Поиск по номеру").pack()
+    tk.Label(frame, text="Расходы", font=("Arial", 20)).grid(row=0, column=0, columnspan=3, pady=10)
+    # Search fields
+    tk.Label(frame, text="Поиск по имени").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+    search_name_entry = ttk.Entry(frame)
+    search_name_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+    tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     search_price_entry = ttk.Entry(frame)
-    search_price_entry.pack()
+    search_price_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
     # Переменные для хранения выбранных дат
     selected_start_date = tk.StringVar(value="Нажмите для выбора")
@@ -31,20 +30,20 @@ def create_expenses_page(root):
         # Создаем модальное окно для выбора даты
         calendar_window = tk.Toplevel(root)
         calendar_window.title("Выбор даты")
-        calendar_window.geometry("300x300")
+        calendar_window.geometry("250x200")
         calendar_window.grab_set()  # Делаем окно модальным
 
         calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-        calendar.pack(pady=20)
+        calendar.grid(row=0, column=0)
 
-        tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+        tk.Button(calendar_window, text="Выбрать", command=set_date).grid(row=1, column=0)
 
     # Виджеты для выбора диапазона дат
-    tk.Label(frame, text="Дата с").pack(padx=10, pady=5)
-    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).pack()
+    tk.Label(frame, text="Дата с").grid(row=3, column=0, padx=5, pady=5, sticky="w")
+    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1, padx=5, pady=5, sticky="ew")
 
-    tk.Label(frame, text="Дата по").pack(padx=10, pady=5)
-    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).pack()
+    tk.Label(frame, text="Дата по").grid(row=4, column=0, padx=5, pady=5, sticky="w")
+    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, padx=5, pady=5, sticky="ew")
 
 
     # Table for displaying expense data
@@ -53,7 +52,8 @@ def create_expenses_page(root):
     tree.heading("name", text="Наименование")
     tree.heading("price", text="Сумма")
     tree.heading("date", text="Дата")
-    tree.pack()
+    tree.grid(row=7, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
+
 
     def refresh_expenses_data():
         # Здесь должен быть код обновления данных в таблице расходов
@@ -82,27 +82,27 @@ def create_expenses_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        tk.Label(edit_expense_modal, text="Наименование:").pack()
+        tk.Label(edit_expense_modal, text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
         name_entry = ttk.Entry(edit_expense_modal)
-        name_entry.pack()
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
         name_entry.insert(0, current_name)
         name_entry.bind("<KeyRelease>", validate_only_letters)
 
-        tk.Label(edit_expense_modal, text="Сумма:").pack()
+        tk.Label(edit_expense_modal, text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
         amount_entry = ttk.Entry(edit_expense_modal)
-        amount_entry.pack()
+        amount_entry.grid(row=1, column=1, padx=5, pady=5)
         amount_entry.insert(0, current_amount)
         amount_entry.bind("<KeyRelease>", validate_only_numbers)
         
             # Поле для редактирования даты
-        tk.Label(edit_expense_modal, text="Дата (гггг-мм-дд):").pack()
+        tk.Label(edit_expense_modal, text="Дата (гггг-мм-дд):").grid(row=2, column=0, padx=5, pady=5)
         date_entry = ttk.Entry(edit_expense_modal)
-        date_entry.pack()
+        date_entry.grid(row=2, column=1, padx=5, pady=5)
 
         # Поле для редактирования времени
-        tk.Label(edit_expense_modal, text="Время (чч:мм:сс):").pack()
+        tk.Label(edit_expense_modal, text="Время (чч:мм:сс):").grid(row=3, column=0, padx=5, pady=5)
         time_entry = ttk.Entry(edit_expense_modal)
-        time_entry.pack()
+        time_entry.grid(row=3, column=1, padx=5, pady=5)
 
         # Предзаполнение полей текущими данными
         if isinstance(current_datetime, str):
@@ -140,8 +140,8 @@ def create_expenses_page(root):
                 edit_expense_modal.destroy()
                 display_expenses_data()
 
-        tk.Button(edit_expense_modal, text="Сохранить", command=save_edits).pack()
-        tk.Button(edit_expense_modal, text="Удалить", command=delete_expense, fg="red").pack()
+        tk.Button(edit_expense_modal, text="Сохранить", command=save_edits).grid(row=4, column=0, padx=5, pady=5)
+        tk.Button(edit_expense_modal, text="Удалить", command=delete_expense, fg="red").grid(row=4, column=1, padx=5, pady=5)
     # Event for double-click to edit
     def on_double_click(event):
         selected_item = tree.selection()
@@ -163,12 +163,12 @@ def create_expenses_page(root):
     current_page = tk.IntVar(value=1)
     records_per_page = tk.IntVar(value=10)
 
-    tk.Label(frame, text="Записей на страницу:").pack()
+    tk.Label(frame, text="Записей на страницу:").grid(row=8, column=0, padx=5, pady=5, sticky="w")
     records_per_page_combobox = ttk.Combobox(frame, textvariable=records_per_page, state="readonly", values=[10, 25, 50, 100])
-    records_per_page_combobox.pack()
+    records_per_page_combobox.grid(row=8, column=1, padx=5, pady=5, sticky="ew")
 
     pagination_frame = tk.Frame(frame)
-    pagination_frame.pack()
+    pagination_frame.grid(row=9, column=0, columnspan=3, pady=10)
 
     def display_expenses_data():
         for item in tree.get_children():
@@ -219,7 +219,7 @@ def create_expenses_page(root):
         update_pagination_buttons(total_pages)
 
     # Filter and clear buttons
-    ttk.Button(frame, text="Поиск", command=display_expenses_data).pack()
+    ttk.Button(frame, text="Поиск", command=display_expenses_data).grid(row=6, column=0, padx=5, pady=5, sticky="ew")
 
     def clear_filters():
         search_name_entry.delete(0, tk.END)
@@ -228,7 +228,7 @@ def create_expenses_page(root):
         selected_end_date.set("Нажмите для выбора")
         display_expenses_data()
 
-    ttk.Button(frame, text="Очистить фильтры", command=clear_filters).pack()
+    ttk.Button(frame, text="Очистить фильтры", command=clear_filters).grid(row=6, column=1, padx=5, pady=5, sticky="ew")
 
     # Function to add a new expense
     # Function to add a new expense
@@ -236,30 +236,31 @@ def create_expenses_page(root):
         add_expense_modal = tk.Toplevel(frame)
         add_expense_modal.title("Добавить расход")
 
-        tk.Label(add_expense_modal, text="Наименование:").pack()
+        tk.Label(add_expense_modal, text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
         name_entry = ttk.Entry(add_expense_modal)
-        name_entry.pack()
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        tk.Label(add_expense_modal, text="Сумма:").pack()
+
+        tk.Label(add_expense_modal, text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
         amount_entry = ttk.Entry(add_expense_modal)
-        amount_entry.pack()
+        amount_entry.grid(row=1, column=1, padx=5, pady=5)
 
         # Поле для выбора даты
-        tk.Label(add_expense_modal, text="Дата:").pack()
+        tk.Label(add_expense_modal, text="Дата:").grid(row=2, column=0, padx=5, pady=5)
         selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 
         date_button = ttk.Button(
             add_expense_modal,
             text="Выбрать дату",
             command=lambda: open_calendar(selected_date_var)  # Открыть календарь
         )
-        date_button.pack()
+        date_button.grid(row=2, column=1, padx=5, pady=5)
         # Отображение выбранной даты
         date_label = tk.Label(add_expense_modal, textvariable=selected_date_var)
-        date_label.pack()
+        date_label.grid(row=3, column=1, padx=5, pady=5)
         
-        tk.Label(add_expense_modal, text="Время (чч:мм:сс):").pack()
+        tk.Label(add_expense_modal, text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
         time_entry = ttk.Entry(add_expense_modal)
-        time_entry.pack()
+        time_entry.grid(row=4, column=1, padx=5, pady=5)
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
 
         def open_calendar(entry_variable):
@@ -271,13 +272,13 @@ def create_expenses_page(root):
             # Создаем модальное окно для выбора даты
             calendar_window = tk.Toplevel(root)
             calendar_window.title("Выбор даты")
-            calendar_window.geometry("300x300")
+            calendar_window.geometry("250x200")
             calendar_window.grab_set()  # Делаем окно модальным
 
             calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-            calendar.pack(pady=20)
+            calendar.grid(row=0, column=0)
 
-            ttk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
+            ttk.Button(calendar_window, text="Выбрать", command=set_date).grid(row=1, column=0)
         
         def save_expense():
             name = name_entry.get()
@@ -299,10 +300,10 @@ def create_expenses_page(root):
             except ValueError:
                 messagebox.showerror("Некорректно", "Введите корректные дату и время, и сумма должна быть числом.")
 
-        ttk.Button(add_expense_modal, text="Сохранить", command=save_expense).pack()
+        ttk.Button(add_expense_modal, text="Сохранить", command=save_expense).grid(row=5, column=0, columnspan=2, padx=5, pady=5)
 
     # Button to open the add expense modal
-    ttk.Button(frame, text="Добавить расход", command=open_add_expense_modal).pack()
+    ttk.Button(frame, text="Добавить расход", command=open_add_expense_modal).grid(row=6, column=2, padx=5, pady=5, sticky="ew")
 
     # Update pagination buttons
     def update_pagination_buttons(total_pages):
