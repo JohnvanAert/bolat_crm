@@ -22,17 +22,18 @@ def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_b
     for child in widget.winfo_children():
         style_all_widgets(child, frame_bg, font_color, button_bg, button_fg)
 
+
 def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
-    nav_frame = tk.Frame(root)
+    nav_frame = tk.Frame(root, bg="#e6f7ff")
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
-    tk.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT)
-    tk.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT)
-    tk.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT)
-    tk.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT)
-    tk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT)  # Кнопка для кабин
-    tk.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT)  # Кнопка для кабин
-    tk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT)  # Кнопка для кабин
+    ttk.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
+    ttk.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
+    ttk.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
+    ttk.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT, padx=5)
+    ttk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+    ttk.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+    ttk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
 
 current_page = 1
 restock_page = 1
