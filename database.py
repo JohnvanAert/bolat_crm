@@ -1120,6 +1120,17 @@ def decrease_product_stock(product_id, quantity):
     finally:
         connection.close()
 
+def restore_product_quantity(product_id, quantity_to_add):
+    conn = connect()
+    cursor = conn.cursor()
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            UPDATE products
+            SET quantity = quantity + %s
+            WHERE id = %s
+        """, (quantity_to_add, product_id))
+        conn.commit()
+
 def increase_product_stock(product_id, quantity):
     connection = connect()
     cursor = connection.cursor()

@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -632,8 +632,10 @@ def create_gui_page(root):
 
             if current_quantity <= 1:
                 delete_product()  # Удалить товар, если количество становится 0
+                restore_product_quantity(product_id, 1)  
             else:
                 update_product_quantity(sale_id, product_id, current_quantity - 1)  # Уменьшение количества
+                restore_product_quantity(product_id, 1)
                 refresh_products_tree(products_tree, sale_id)  # Обновление списка товаров
                 recalculate_total_price(sale_id, cabin_price)  # Пересчет общей цены заказа
                 recalculate_cabin_price(cabin_id)  # Пересчет стоимости кабинки
@@ -1369,6 +1371,8 @@ def create_gui_page(root):
     def refresh_gui_page():
         display_sales_data()
         fetch_products()
+        fetch_products_from_db()
+        get_all_products()
         frame.after(200000, refresh_gui_page)
         
 
