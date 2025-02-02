@@ -146,6 +146,7 @@ def create_booking_page(root):
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
         modal.geometry("500x300")
+        modal.configure(bg="#e6f7ff")
         modal.resizable(False, False)
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
@@ -163,18 +164,19 @@ def create_booking_page(root):
                 entry.delete(0, tk.END)
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
-
-        tk.Label(modal, text="Имя клиента:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        style = ttk.Style()
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+        ttk.Label(modal, style="Custom.TLabel", text="Имя клиента:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
         name_entry = ttk.Entry(modal)
         name_entry.grid(row=0, column=1, padx=10, pady=5, sticky="w")
         name_entry.bind("<KeyRelease>", validate_only_letters)
 
-        tk.Label(modal, text="Телефон клиента:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        ttk.Label(modal, style="Custom.TLabel", text="Телефон клиента:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
         phone_entry = ttk.Entry(modal)
         phone_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         phone_entry.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(modal, text="Кабинка:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+        ttk.Label(modal, style="Custom.TLabel", text="Кабинка:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         cabins = get_cabins()  # Функция для получения списка кабинок из базы данных
         cabin_choices = [f"{cabin['id']} - {cabin['name']}" for cabin in cabins]
         cabin_combobox = ttk.Combobox(modal, values=cabin_choices)
@@ -192,16 +194,16 @@ def create_booking_page(root):
             cabin_combobox.config(state="readonly")
 
         # Выбор даты и времени начала бронирования
-        tk.Label(modal, text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
+        ttk.Label(modal, style="Custom.TLabel", text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
         start_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
-        tk.Label(modal, textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
+        ttk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
+        ttk.Label(modal, style="Custom.TLabel", textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
 
         # Выбор даты и времени окончания бронирования
-        tk.Label(modal, text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
+        ttk.Label(modal, style="Custom.TLabel", text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
         end_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
-        tk.Label(modal, textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
+        ttk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
+        ttk.Label(modal, style="Custom.TLabel", textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
 
         def save_booking():
             """Сохранение нового бронирования."""
@@ -261,7 +263,7 @@ def create_booking_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось добавить бронирование: {e}")
 
-        tk.Button(modal, text="Сохранить", command=save_booking).grid(row=5, column=0, pady=10, padx=5)
+        ttk.Button(modal, text="Сохранить", command=save_booking).grid(row=5, column=0, pady=10, padx=5)
 
 
     # Открытие календаря с выбором времени

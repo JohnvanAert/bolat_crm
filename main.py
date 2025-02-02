@@ -216,7 +216,7 @@ def main():
 
                 sold_listbox.insert(
                     tk.END,
-                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} | Цена: {price} тнг."
+                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} шт. | Цена: {price} тнг."
                 )
         else:
             sold_listbox.insert(tk.END, "Нет заказанных товаров")

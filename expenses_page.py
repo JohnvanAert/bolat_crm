@@ -235,18 +235,21 @@ def create_expenses_page(root):
     def open_add_expense_modal():
         add_expense_modal = tk.Toplevel(frame)
         add_expense_modal.title("Добавить расход")
-
-        tk.Label(add_expense_modal, text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
+        add_expense_modal.geometry("400x300")
+        add_expense_modal.configure(bg="#e6f7ff")
+        style = ttk.Style()
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
         name_entry = ttk.Entry(add_expense_modal)
         name_entry.grid(row=0, column=1, padx=5, pady=5)
 
 
-        tk.Label(add_expense_modal, text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
         amount_entry = ttk.Entry(add_expense_modal)
         amount_entry.grid(row=1, column=1, padx=5, pady=5)
 
         # Поле для выбора даты
-        tk.Label(add_expense_modal, text="Дата:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Дата:").grid(row=2, column=0, padx=5, pady=5)
         selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 
         date_button = ttk.Button(
             add_expense_modal,
@@ -258,7 +261,7 @@ def create_expenses_page(root):
         date_label = tk.Label(add_expense_modal, textvariable=selected_date_var)
         date_label.grid(row=3, column=1, padx=5, pady=5)
         
-        tk.Label(add_expense_modal, text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
         time_entry = ttk.Entry(add_expense_modal)
         time_entry.grid(row=4, column=1, padx=5, pady=5)
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
@@ -273,6 +276,7 @@ def create_expenses_page(root):
             calendar_window = tk.Toplevel(root)
             calendar_window.title("Выбор даты")
             calendar_window.geometry("250x200")
+            calendar_window.configure(bg="#e6f7ff")
             calendar_window.grab_set()  # Делаем окно модальным
 
             calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
