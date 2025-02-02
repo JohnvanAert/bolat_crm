@@ -272,35 +272,39 @@ def create_gui_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
         edit_window = tk.Toplevel(root)
-        edit_window.geometry("800x600")  # Увеличьте размер окна
+        edit_window.geometry("850x600")  # Увеличьте размер окна
         edit_window.title("Редактирование заказа")
+        edit_window.configure(bg="#e6f7ff")
         edit_window.grid_rowconfigure(4, weight=1)  # Для масштабирования таблицы
         edit_window.grid_columnconfigure(1, weight=1)
-
-        tk.Label(edit_window, text="Имя").grid(row=0, column=0, padx=10, pady=10)
-        edit_name_entry = tk.Entry(edit_window)
+        # Создаем стили для Label и Entry
+        style = ttk.Style()
+        # Стиль для Label
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+        ttk.Label(edit_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0, padx=10, pady=10)
+        edit_name_entry = ttk.Entry(edit_window)
         edit_name_entry.grid(row=0, column=1, padx=10, pady=10)
         edit_name_entry.insert(0, selected_data[1])
         edit_name_entry.bind("<KeyRelease>", validate_only_letters)
         
-        tk.Label(edit_window, text="Номер").grid(row=1, column=0, padx=10, pady=10)
-        edit_number_entry = tk.Entry(edit_window)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Номер").grid(row=1, column=0, padx=10, pady=10)
+        edit_number_entry = ttk.Entry(edit_window)
         edit_number_entry.grid(row=1, column=1, padx=10, pady=10)
         edit_number_entry.insert(0, selected_data[2])
         edit_number_entry.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(edit_window, text="Количество людей").grid(row=2, column=0, padx=10, pady=10)
-        people_entry = tk.Entry(edit_window)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Количество людей").grid(row=2, column=0, padx=10, pady=10)
+        people_entry = ttk.Entry(edit_window)
         people_entry.grid(row=2, column=1, padx=10, pady=10)
         people_entry.insert(0, (selected_data[8]))
         
-        tk.Label(edit_window, text="Выберите кабинку").grid(row=3, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Выберите кабинку").grid(row=3, column=0, padx=10, pady=10)
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
         edit_cabins_combo.grid(row=3, column=1, padx=10, pady=10)
         edit_cabins_combo['values'] = cabins_combo['values']
 
         # Добавляем выпадающий список времени
-        tk.Label(edit_window, text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
         time_combo = ttk.Combobox(edit_window, state="readonly")
         time_combo.grid(row=4, column=1, padx=10, pady=10)
         time_combo['values'] = ["30 минут", "1 час", "1 час 30 минут", "2 часа"]
@@ -322,12 +326,17 @@ def create_gui_page(root):
         # Загрузка товаров из базы данных
         sale_id = selected_data[0]
         products_data = get_products_for_sale(sale_id)  # Получение товаров для текущей продажи
+        # Стиль для фреймов
+        style.configure("Custom.TFrame", background="#e6f7ff",borderwidth=0, relief="groove")
 
+        # Стиль для Treeview (таблиц)
+        style.configure("Custom.Treeview", font=("Arial", 10), background="#ffffff", fieldbackground="#ffffff")
+        style.configure("Custom.Treeview.Heading", font=("Arial", 12, "bold"), background="#4CAF50", foreground="white")
         # Создаём общий фрейм для двух таблиц
-        tables_frame = tk.Frame(edit_window)
+        tables_frame = ttk.Frame(edit_window, style="Custom.TFrame")
         tables_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         # Фрейм для товаров
-        products_frame = tk.Frame(tables_frame)
+        products_frame = ttk.Frame(tables_frame, style="Custom.TFrame")
         products_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
 
         products_tree = ttk.Treeview(products_frame, columns=("ID", "Название", "Количество", "Цена"), show="headings")
@@ -350,7 +359,7 @@ def create_gui_page(root):
             products_tree.insert("", "end", values=(product['id'], product['name'], product['quantity'], product['price']))
 
             # Новый раздел для продлений времени
-        extensions_frame = tk.Frame(tables_frame)
+        extensions_frame = ttk.Frame(tables_frame)
         extensions_frame.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
         extensions_tree = ttk.Treeview(extensions_frame, columns=("ID", "Минуты", "Время"), show="headings")
@@ -381,7 +390,7 @@ def create_gui_page(root):
             """
             product_window = tk.Toplevel(root)
             product_window.title("Добавить продукты")
-
+            product_window.configure(bg="#e6f7ff")
             tk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
 
             product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена", "Количество"), show="headings")
@@ -880,7 +889,7 @@ def create_gui_page(root):
                 edit_window.destroy()
         
         # Создаем фрейм для кнопок
-        button_frame = tk.Frame(edit_window)
+        button_frame = tk.Frame(edit_window, bg="#e0f7fa")
         button_frame.grid(row=7, column=0, columnspan=2, pady=5)  # Используем grid для размещения фрейма
 
         # Добавляем первый ряд кнопок
@@ -891,7 +900,7 @@ def create_gui_page(root):
         ttk.Button(button_frame, text="Удалить", command=delete_sale).grid(row=0, column=4, padx=5)
 
         # Боковая панель
-        checkbox_frame = tk.Frame(edit_window)
+        checkbox_frame = tk.Frame(edit_window, bg="#e0f7fa")
         checkbox_frame.grid(row=8, column=0, columnspan=2, pady=5)  # Размещаем выше кнопок
 
 
@@ -899,8 +908,8 @@ def create_gui_page(root):
         service_var = tk.BooleanVar(value=service_state)  # Переменная для состояния процента услуг
         discount_var = tk.BooleanVar(value=discount_state)  # Переменная для состояния скидки 15%
 
-        tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var).grid(row=1, column=0, columnspan=2, padx=5)
-        tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var).grid(row=1, column=2, columnspan=2, padx=5)
+        tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var, bg="#e0f7fa", fg="black").grid(row=1, column=0, columnspan=2, padx=5)
+        tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var, bg="#e0f7fa", fg="black").grid(row=1, column=2, columnspan=2, padx=5)
         finish_order_button = ttk.Button(checkbox_frame, text="Чек", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
         finish_order_button.grid(row=1, column=4, columnspan=3, pady=5)
 
@@ -974,6 +983,7 @@ def create_gui_page(root):
     def open_add_modal(selected_cabin=None):
         add_window = tk.Toplevel(root)
         add_window.title("Добавить запись")
+        add_window.configure(bg="#e6f7ff")
 
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
@@ -1120,10 +1130,10 @@ def create_gui_page(root):
 
         def open_product_list():
             nonlocal total_product_price
-
+            
             product_window = tk.Toplevel(add_window)
             product_window.title("Выбор продуктов")
-
+            product_window.configure(bg="#f0f0f0")
             product_tree = ttk.Treeview(product_window, columns=("product_id", "product_name", "price", "quantity"), show="headings")
             product_tree.heading("product_id", text="ID")
             product_tree.heading("product_name", text="Название")
@@ -1135,8 +1145,8 @@ def create_gui_page(root):
             products = fetch_products()
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
-             # Поле для ввода количества
-            quantity_label = tk.Label(product_window, text="Количество:")
+            # Поле для ввода количества
+            quantity_label = ttk.Label(product_window, text="Количество:")
             quantity_label.pack(side="left", padx=5, pady=5)
 
             quantity_entry = ttk.Entry(product_window, width=5)

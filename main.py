@@ -47,10 +47,10 @@ def main():
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
     root.configure(bg="#e6f7ff")
-     # Создаем стиль
+    # Создаем стиль
     style = ttk.Style()
     style.theme_use("clam")  # Используем нейтральную тему
-    style.configure("TButton", font=("Helvetica", 12), padding=6, background="#4CAF50", foreground="#fff")
+    style.configure("TButton", font=("Helvetica", 12), padding=6, background="#4CAF50", foreground="#fff", relief="flat")
     style.configure("TLabel", font=("Helvetica", 12), background="#d7d7d7", foreground="#004d99")
     style.configure("TEntry", font=("Helvetica", 12), padding=4)
     style.map("TButton", background=[("active", "#45A049")])
@@ -297,7 +297,7 @@ def main():
             paginated_products = low_stock_products[start_index:end_index]
             for product in paginated_products:
                 restock_listbox.insert(
-                    tk.END, f"{product['name']}, Количество: {product['quantity']}"
+                    tk.END, f"{product['name']}, Количество: {product['quantity']} шт."
                 )
         except Exception as e:
             restock_listbox.insert(tk.END, f"Ошибка загрузки: {e}")
