@@ -302,7 +302,7 @@ def create_gui_page(root):
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
         edit_cabins_combo.grid(row=3, column=1, padx=10, pady=10)
         edit_cabins_combo['values'] = cabins_combo['values']
-
+        edit_cabins_combo.config(state="disabled")
         # Добавляем выпадающий список времени
         ttk.Label(edit_window, style="Custom.TLabel", text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
         time_combo = ttk.Combobox(edit_window, state="readonly")
@@ -391,7 +391,7 @@ def create_gui_page(root):
             product_window = tk.Toplevel(root)
             product_window.title("Добавить продукты")
             product_window.configure(bg="#e6f7ff")
-            tk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
+            ttk.Label(product_window, style="Custom.TLabel", text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
 
             product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена", "Количество"), show="headings")
             product_list.grid(row=1, column=0, columnspan=2)
@@ -914,24 +914,32 @@ def create_gui_page(root):
         finish_order_button.grid(row=1, column=4, columnspan=3, pady=5)
 
         def show_final_receipt(selected_data, products_data, service_state, discount_state):
-            # Создаем модальное окно для отображения чека
-            receipt_window = tk.Toplevel(edit_window)
+            receipt_window = tk.Toplevel()
             receipt_window.title("Чек")
-            receipt_window.geometry("500x400")
+            receipt_window.geometry("400x500")
+            receipt_window.configure(bg="white")
+
+            receipt_text = tk.Text(receipt_window, font=("Courier", 12), bg="white", fg="black", wrap="word", height=20)
+            receipt_text.pack(padx=10, pady=10, fill="both", expand=True)
+
+            # Заголовок
+            receipt_text.insert("end", "        *** ЧЕК ***\n")
+            receipt_text.insert("end", "----------------------\n")
 
             # Общая информация
-            tk.Label(receipt_window, text=f"Клиент: {selected_data[1]}").pack(pady=5)
-            tk.Label(receipt_window, text=f"Номер телефона: {selected_data[2]}").pack(pady=5)
-            tk.Label(receipt_window, text=f"Кабинка: {selected_data[3]}").pack(pady=5)
+            receipt_text.insert("end", f"Клиент: {selected_data[1]}\n")
+            receipt_text.insert("end", f"Телефон: {selected_data[2]}\n")
+            receipt_text.insert("end", f"Кабинка: {selected_data[3]}\n")
+            receipt_text.insert("end", "----------------------\n")
 
             # Подсчет общей суммы за продукты
             total_product_cost = sum([
                 Decimal(product['quantity']) * Decimal(product['price']) for product in products_data
             ])
 
-            # Получение данных о стоимости аренды из базы
+            # Получение данных о стоимости аренды
             try:
-                rental_cost = fetch_rental_cost(selected_data[0])  # Используем ID продажи для запроса
+                rental_cost = fetch_rental_cost(selected_data[0])  
                 if rental_cost is None:
                     messagebox.showerror("Ошибка", "Не удалось получить данные о стоимости аренды!")
                     return
@@ -939,40 +947,44 @@ def create_gui_page(root):
                 messagebox.showerror("Ошибка", f"Ошибка при получении данных из базы: {e}")
                 return
 
-            # Расчет общего чека
+            # Расчет общей стоимости
             total_cost = total_product_cost + Decimal(rental_cost)
-            if service_state:  # Если включен процент услуг
-                service_fee = total_cost * Decimal('0.15')  # Используем Decimal для 10% услуги
+            if service_state:
+                service_fee = total_cost * Decimal('0.15')  
                 total_cost += service_fee
             else:
                 service_fee = Decimal('0')
-            
-            # Расчет скидки, если включена
+
             if discount_state:
-                discount = total_cost * Decimal('0.15')  # Вычисляем 15% скидки
+                discount = total_cost * Decimal('0.15')  
                 total_cost -= discount
             else:
                 discount = Decimal('0')
 
-
-            # Отображение данных в чеке
-            tk.Label(receipt_window, text="Заказанные продукты:").pack(pady=5)
+            # Отображение товаров
+            receipt_text.insert("end", "Товары:\n")
             for product in products_data:
-                tk.Label(receipt_window, text=f"{product['name']} x {product['quantity']} = {Decimal(product['quantity']) * Decimal(product['price']):.2f}").pack()
+                receipt_text.insert("end", f"{product['name']} x {product['quantity']} = {Decimal(product['quantity']) * Decimal(product['price']):.2f}\n")
 
-            tk.Label(receipt_window, text=f"Сумма за продукты: {total_product_cost:.2f}").pack(pady=5)
-            tk.Label(receipt_window, text=f"Сумма за аренду кабины: {Decimal(rental_cost):.2f}").pack(pady=5)
+            receipt_text.insert("end", "----------------------\n")
+            receipt_text.insert("end", f"Сумма за продукты: {total_product_cost:.2f}\n")
+            receipt_text.insert("end", f"Аренда кабинки: {Decimal(rental_cost):.2f}\n")
 
             if service_state:
-                tk.Label(receipt_window, text=f"Процент за услуги: {service_fee:.2f}").pack(pady=5)
+                receipt_text.insert("end", f"Процент за услуги: {service_fee:.2f}\n")
             if discount_state:
-                tk.Label(receipt_window, text=f"Скидка: {discount:.2f}").pack(pady=5)    
-            tk.Label(receipt_window, text=f"Итоговая сумма: {total_cost:.2f}", font=("Arial", 14, "bold")).pack(pady=10)
-            
-            # Кнопка закрытия окна  
-            close_button = tk.Button(receipt_window, text="Закрыть", command=receipt_window.destroy)
-            close_button.pack(pady=10)
+                receipt_text.insert("end", f"Скидка: -{discount:.2f}\n")
 
+            receipt_text.insert("end", "======================\n")
+            receipt_text.insert("end", f"ИТОГО: {total_cost:.2f} тнг.\n")
+            receipt_text.insert("end", "======================\n")
+
+            # Отключаем редактирование
+            receipt_text.config(state="disabled")
+
+            # Кнопка закрытия
+            close_button = ttk.Button(receipt_window, text="Закрыть", command=receipt_window.destroy)
+            close_button.pack(pady=10)
 
 
     tree.bind("<Double-1>", on_item_double_click)
@@ -984,7 +996,9 @@ def create_gui_page(root):
         add_window = tk.Toplevel(root)
         add_window.title("Добавить запись")
         add_window.configure(bg="#e6f7ff")
-
+        add_window.geometry("700x600")
+        style = ttk.Style()
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -1002,17 +1016,17 @@ def create_gui_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        tk.Label(add_window, text="Имя").grid(row=0, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0)
         entry_name = ttk.Entry(add_window)
         entry_name.grid(row=0, column=1, pady=10)
         entry_name.bind("<KeyRelease>", validate_only_letters)
 
-        tk.Label(add_window, text="Номер").grid(row=1, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Номер").grid(row=1, column=0)
         entry_number = ttk.Entry(add_window)
         entry_number.grid(row=1, column=1, pady=10)
         entry_number.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(add_window, text="Выберите кабинку").grid(row=2, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Выберите кабинку").grid(row=2, column=0)
         cabins_combo_modal = ttk.Combobox(add_window, state="readonly")
         cabins_combo_modal.grid(row=2, column=1, pady=10)
         cabins_combo_modal['values'] = cabins_combo['values']
@@ -1025,18 +1039,18 @@ def create_gui_page(root):
             # Разблокируем список, если кабинка не выбрана
             cabins_combo_modal.config(state="readonly")
 
-        tk.Label(add_window, text="Общая продажа").grid(row=3, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Общая продажа").grid(row=3, column=0)
         entry_sales = ttk.Entry(add_window, state='readonly')
         entry_sales.grid(row=3, column=1, pady=10)
 
         # Поле для ввода времени аренды (в часах)
-        tk.Label(add_window, text="На сколько часов?").grid(row=4, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="На сколько часов?").grid(row=4, column=0)
         entry_hours = ttk.Entry(add_window)
         entry_hours.grid(row=4, column=1, pady=10)
         entry_hours.bind("<KeyRelease>", lambda event: update_total_price())
 
         # Поле для ввода количества людей
-        tk.Label(add_window, text="Количество людей:").grid(row=5, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Количество людей:").grid(row=5, column=0)
         entry_people_count = ttk.Entry(add_window)
         entry_people_count.grid(row=5, column=1, pady=10)
         entry_people_count.bind("<KeyRelease>", lambda event: update_total_price())
@@ -1133,7 +1147,7 @@ def create_gui_page(root):
             
             product_window = tk.Toplevel(add_window)
             product_window.title("Выбор продуктов")
-            product_window.configure(bg="#f0f0f0")
+            product_window.configure(bg="#e6f7ff")
             product_tree = ttk.Treeview(product_window, columns=("product_id", "product_name", "price", "quantity"), show="headings")
             product_tree.heading("product_id", text="ID")
             product_tree.heading("product_name", text="Название")
@@ -1146,7 +1160,7 @@ def create_gui_page(root):
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
             # Поле для ввода количества
-            quantity_label = ttk.Label(product_window, text="Количество:")
+            quantity_label = ttk.Label(product_window, style="Custom.TLabel", text="Количество:")
             quantity_label.pack(side="left", padx=5, pady=5)
 
             quantity_entry = ttk.Entry(product_window, width=5)
