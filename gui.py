@@ -635,7 +635,6 @@ def create_gui_page(root):
                 restore_product_quantity(product_id, 1)  
             else:
                 update_product_quantity(sale_id, product_id, current_quantity - 1)  # Уменьшение количества
-                restore_product_quantity(product_id, 1)
                 refresh_products_tree(products_tree, sale_id)  # Обновление списка товаров
                 recalculate_total_price(sale_id, cabin_price)  # Пересчет общей цены заказа
                 recalculate_cabin_price(cabin_id)  # Пересчет стоимости кабинки
@@ -1354,9 +1353,6 @@ def create_gui_page(root):
                 for product_id, product_info in selected_products.items():
                     insert_order_product(sale_id, product_id, product_info['quantity'], product_info['price'])
 
-                # Обновление количества на складе
-                for product_id, product_info in selected_products.items():
-                    update_product_stock(product_id, product_info['quantity'])
 
                 messagebox.showinfo("Успех", "Данные успешно добавлены!")
                 display_sales_data()
@@ -1370,9 +1366,6 @@ def create_gui_page(root):
 
     def refresh_gui_page():
         display_sales_data()
-        fetch_products()
-        fetch_products_from_db()
-        get_all_products()
         frame.after(200000, refresh_gui_page)
         
 
