@@ -16,8 +16,10 @@ def create_product_page(root):
     def open_add_product_modal():
         modal = Toplevel(root)
         modal.title("Добавление продукта")
-        modal.geometry("400x400")
-        
+        modal.geometry("400x450")
+        modal.configure(bg="#e6f7ff")
+        style = ttk.Style()
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -35,39 +37,39 @@ def create_product_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        tk.Label(modal, text="Название продукта").grid(row=0, column=0)
+        ttk.Label(modal,style="Custom.TLabel", text="Название продукта").grid(row=0, column=0)
         entry_name = ttk.Entry(modal)
-        entry_name.grid(row=0, column=1)
+        entry_name.grid(row=0, column=1, pady="5")
         entry_name.bind("<KeyRelease>", validate_only_letters)
 
-        tk.Label(modal, text="Цена").grid(row=1, column=0)
+        ttk.Label(modal,style="Custom.TLabel", text="Цена").grid(row=1, column=0)
         entry_price = ttk.Entry(modal)
-        entry_price.grid(row=1, column=1)
+        entry_price.grid(row=1, column=1, pady="5")
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(modal, text="Количество").grid(row=2, column=0)
+        ttk.Label(modal,style="Custom.TLabel", text="Количество").grid(row=2, column=0)
         entry_quantity = ttk.Entry(modal)
-        entry_quantity.grid(row=2, column=1)
+        entry_quantity.grid(row=2, column=1, pady="5")
         entry_quantity.bind("<KeyRelease>", validate_only_numbers)
 
 
-        tk.Label(modal, text="Изображение").grid(row=3, column=0)
+        ttk.Label(modal,style="Custom.TLabel", text="Изображение").grid(row=3, column=0)
         img_path_var = tk.StringVar()
         # Frame to hold the image preview and the close button
-        img_frame = tk.Frame(modal)
+        img_frame = tk.Frame(modal, bg="#e6f7ff")
         img_frame.grid(row=3, column=1, sticky="w")
-        img_preview_label = tk.Label(modal, text="No Image", width=20, height=10)
+        img_preview_label = tk.Label(modal,bg="#e6f7ff", fg="black", text="Нет изображения", width=20, height=10)
         img_preview_label.grid(row=3, column=1)
 
             # Checkbox for expense
         is_expense = tk.BooleanVar()
-        expense_checkbox = tk.Checkbutton(modal, text="Добавить как расход", variable=is_expense, command=lambda: toggle_expense_field())
-        expense_checkbox.grid(row=7, column=0, columnspan=2)
+        expense_checkbox = tk.Checkbutton(modal, bg="#e0f7fa", fg="black", text="Добавить как расход", variable=is_expense, command=lambda: toggle_expense_field())
+        expense_checkbox.grid(row=7, column=0, columnspan=2, pady="5")
 
         # Expense amount entry (initially disabled)
-        tk.Label(modal, text="Сумма расхода").grid(row=5, column=0)
+        ttk.Label(modal,style="Custom.TLabel", text="Сумма расхода").grid(row=5, column=0)
         entry_expense_amount = ttk.Entry(modal, state="disabled")
-        entry_expense_amount.grid(row=5, column=1)
+        entry_expense_amount.grid(row=5, column=1, pady="5")
         entry_expense_amount.bind("<KeyRelease>", validate_only_numbers)
 
         def remove_image():
@@ -251,7 +253,9 @@ def create_product_page(root):
         modal = Toplevel(root)
         modal.title("Редактирование продукта")
         modal.geometry("400x450")
-
+        modal.configure(bg="#e0f7fa")
+        style = ttk.Style()
+        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -269,27 +273,27 @@ def create_product_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        tk.Label(modal, text="Название продукта").grid(row=0, column=0)
+        ttk.Label(modal, style="Custom.TLabel", text="Название продукта").grid(row=0, column=0)
         name_var = tk.StringVar(value=product['name'])
         entry_name = ttk.Entry(modal, textvariable=name_var)
         entry_name.grid(row=0, column=1, pady=5)
         entry_name.bind("<KeyRelease>", validate_only_letters)
         
-        tk.Label(modal, text="Цена").grid(row=1, column=0)
+        ttk.Label(modal, style="Custom.TLabel", text="Цена").grid(row=1, column=0)
         price_var = tk.StringVar(value=str(product['price']))
         entry_price = ttk.Entry(modal, textvariable=price_var)
         entry_price.grid(row=1, column=1, pady=5)
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
-        tk.Label(modal, text="Количество").grid(row=2, column=0)
+        ttk.Label(modal, style="Custom.TLabel", text="Количество").grid(row=2, column=0)
         quantity_var = tk.StringVar(value=str(product['quantity']))
         entry_quantity = ttk.Entry(modal, textvariable=quantity_var)
         entry_quantity.grid(row=2, column=1, pady=5)
         entry_quantity.bind("<KeyRelease>", validate_only_numbers)
         
-        tk.Label(modal, text="Изображение").grid(row=3, column=0)
+        ttk.Label(modal, style="Custom.TLabel", text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
-        img_preview_label = tk.Label(modal, text="No Image", width=200, height=200)
+        img_preview_label = tk.Label(modal, bg="#e6f7ff", text="No Image", width=200, height=200)
         img_preview_label.grid(row=3, column=1)
 
 
@@ -309,7 +313,7 @@ def create_product_page(root):
             except (FileNotFoundError, IOError):
                 messagebox.showerror("Ошибка", "Не удалось загрузить изображение.")
 
-        select_img_button = tk.Button(modal, text="Выбрать изображение", command=select_image)
+        select_img_button = ttk.Button(modal, text="Выбрать изображение", command=select_image)
         select_img_button.grid(row=4, column=0, columnspan=2)
 
         load_image_preview(product["image_path"])

@@ -243,11 +243,18 @@ def create_expenses_page(root):
         name_entry = ttk.Entry(add_expense_modal)
         name_entry.grid(row=0, column=1, padx=5, pady=5)
 
+        def validate_only_numbers(event):
+            """Разрешает вводить только цифры."""
+            entry = event.widget
+            value = entry.get()
+            if not value.isdigit():
+                entry.delete(0, tk.END)
+                entry.insert(0, ''.join(filter(str.isdigit, value)))
 
         ttk.Label(add_expense_modal, style="Custom.TLabel", text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
         amount_entry = ttk.Entry(add_expense_modal)
         amount_entry.grid(row=1, column=1, padx=5, pady=5)
-
+        amount_entry.bind("<KeyRelease>", validate_only_numbers)
         # Поле для выбора даты
         ttk.Label(add_expense_modal, style="Custom.TLabel", text="Дата:").grid(row=2, column=0, padx=5, pady=5)
         selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 

@@ -171,26 +171,27 @@ def create_statistics_page(root):
         product_tree.tag_configure("summary", font=("Helvetica", 10, "bold"))
         product_tree.tag_configure("spacer")
         
-    def open_date_picker():
+    def open_date_picker(): 
         def select_dates():
             start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
             end_date = datetime.strptime(cal_end.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
             print(f"Выбранный диапазон: с {start_date} по {end_date}")
             update_statistics(None, (start_date, end_date))
             date_picker.destroy()
-
+            
         date_picker = Toplevel()
         date_picker.title("Выбор диапазона дат")
+        date_picker.configure(bg="#e0f7fa")
         
-        Label(date_picker, text="Дата с:").pack()
+        Label(date_picker, bg="#e6f7ff", fg="black", text="Дата с:").pack()
         cal_start = Calendar(date_picker)
         cal_start.pack()
 
-        Label(date_picker, text="Дата по:").pack()
+        Label(date_picker, bg="#e6f7ff", fg="black", text="Дата по:").pack()
         cal_end = Calendar(date_picker)
         cal_end.pack()
 
-        Button(date_picker, text="Применить", command=select_dates).pack()
+        ttk.Button(date_picker, text="Применить", command=select_dates).pack()
 
     def update_statistics(period, date=None):
         """Обновляет статистику по кабинкам и финансам."""
