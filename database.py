@@ -679,13 +679,14 @@ def confirm_booking_to_sale(booking_id):
             cabin_id, 
             total_price, 
             start_date,
-            end_date
+            end_date,
+            num_people
         FROM bookings
         WHERE id = %s AND status = 'Ожидание';
     """
     insert_sale_query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -712,7 +713,8 @@ def confirm_booking_to_sale(booking_id):
                     booking[3],  # total_price
                     booking[4],  # start_date
                     booking[3],   # cabin_price
-                    booking[5]   # end_date
+                    booking[5],   # end_date
+                    booking[6] #people_count
                 )
             )
             sale_id = cursor.fetchone()[0]
@@ -750,17 +752,17 @@ def update_booking_status(booking_id, new_status):
         conn.close()
 
 
-def add_booking(customer_name, customer_phone, cabin_id, start_date, end_date, total_price):
+def add_booking(customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge):
     """Добавляет новое бронирование."""
     query = """
-        INSERT INTO bookings (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status)
-        VALUES (%s, %s, %s, %s, %s, %s, 'Ожидание')
+        INSERT INTO bookings (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status, num_people, extra_charge)
+        VALUES (%s, %s, %s, %s, %s, %s, 'Ожидание', %s, %s)
         RETURNING id;
     """
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (customer_name, customer_phone, cabin_id, start_date, end_date, total_price))
+            cursor.execute(query, (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge))
             booking_id = cursor.fetchone()[0]
             conn.commit()
             return booking_id
@@ -795,6 +797,7 @@ def check_booking_conflict(cabin_id, start_date, end_date):
         SELECT COUNT(*)
         FROM bookings
         WHERE cabin_id = %s 
+          AND status != 'Отменено' 
           AND (start_date < %s AND end_date > %s)
     """
     try:

@@ -145,7 +145,7 @@ def create_booking_page(root):
     def add_booking_modal(selected_cabin=None):
         modal = tk.Toplevel(root)
         modal.title("Добавить бронирование")
-        modal.geometry("500x300")
+        modal.geometry("600x300")
         modal.configure(bg="#e6f7ff")
         modal.resizable(False, False)
         def validate_only_letters(event):
@@ -193,16 +193,22 @@ def create_booking_page(root):
             # Разблокируем список, если кабинка не выбрана
             cabin_combobox.config(state="readonly")
 
+        ttk.Label(modal, style="Custom.TLabel", text="Количество людей:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
+        num_people_entry = ttk.Entry(modal)
+        num_people_entry.grid(row=5, column=1, padx=10, pady=5, sticky="w")
+        num_people_entry.insert(0, "1")  # Значение по умолчанию
+        num_people_entry.bind("<KeyRelease>", validate_only_numbers)  # Ввод только чисел
+
         # Выбор даты и времени начала бронирования
         ttk.Label(modal, style="Custom.TLabel", text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
         start_datetime_var = tk.StringVar(value="")
-        ttk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
+        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
         ttk.Label(modal, style="Custom.TLabel", textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
 
         # Выбор даты и времени окончания бронирования
         ttk.Label(modal, style="Custom.TLabel", text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
         end_datetime_var = tk.StringVar(value="")
-        ttk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
+        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
         ttk.Label(modal, style="Custom.TLabel", textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
 
         def save_booking():
@@ -212,8 +218,11 @@ def create_booking_page(root):
             selected_cabin = cabin_combobox.get()
             start_datetime = start_datetime_var.get()
             end_datetime = end_datetime_var.get()
+            num_people = num_people_entry.get()
+            cabins_data = get_cabins_data()
+            num_people = int(num_people)
 
-            if not name or not phone or not selected_cabin or not start_datetime or not end_datetime:
+            if not name or not phone or not selected_cabin or not start_datetime or not end_datetime or not num_people:
                 messagebox.showerror("Ошибка", "Заполните все поля!")
                 return
 
@@ -232,6 +241,7 @@ def create_booking_page(root):
 
                 # Получение цены кабины
                 cabin_price = get_cabin_price(cabin_id)
+                cabin_capacity = next((Decimal(cabin['capacity']) for cabin in cabins_data if str(cabin['id']) == cabin_id), None)
                 if cabin_price is None:
                     messagebox.showerror("Ошибка", "Кабина с указанным ID не найдена!")
                     return
@@ -246,13 +256,17 @@ def create_booking_page(root):
                 if remaining_minutes > 0:  # Добавление стоимости за минуты
                     total_price += cabin_price * Decimal(remaining_minutes / 60)
 
+                extra_people = max(0, num_people - cabin_capacity)
+                extra_charge = extra_people * 1000  # 1000 за каждого дополнительного человека
+                total_price += extra_charge
+
                 # Проверка конфликта
                 if check_booking_conflict(cabin_id, start_datetime, end_datetime):
                     tk.messagebox.showerror("Ошибка", "Выбранное время уже занято. Пожалуйста, выберите другое время.")
                     return
 
                 # Вызов функции добавления бронирования
-                booking_id = add_booking(name, phone, cabin_id, start, end, total_price)
+                booking_id = add_booking(name, phone, cabin_id, start, end, total_price, num_people, extra_charge)
                 if booking_id:
                     print(f"Добавлено бронирование: {name}, {phone}, {cabin_id}, {start_datetime}, {end_datetime}, {total_price}")
                     messagebox.showinfo("Успех", "Бронирование добавлено!")
@@ -263,27 +277,28 @@ def create_booking_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Не удалось добавить бронирование: {e}")
 
-        ttk.Button(modal, text="Сохранить", command=save_booking).grid(row=5, column=0, pady=10, padx=5)
+        ttk.Button(modal, text="Сохранить", command=save_booking).grid(row=6, column=0, pady=10, padx=5)
 
 
     # Открытие календаря с выбором времени
     def open_calendar_with_time(datetime_var, title):
         calendar_window = tk.Toplevel(root)
         calendar_window.title(title)
-        calendar_window.geometry("500x200")
+        calendar_window.geometry("500x400")
+        calendar_window.configure(bg="#e6f7ff")
 
         # Календарь для выбора даты
-        calendar_frame = tk.Frame(calendar_window)
+        calendar_frame = ttk.Frame(calendar_window)
         calendar_frame.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         calendar = Calendar(calendar_frame, selectmode="day", date_pattern="yyyy-MM-dd")
         calendar.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         # Виджеты для выбора времени
-        time_frame = tk.Frame(calendar_window)
+        time_frame = ttk.Frame(calendar_window)
         time_frame.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
-        tk.Label(time_frame, text="Выбор времени").grid(row=0, column=0, pady=5, sticky="n")
+        ttk.Label(time_frame, style="Custom.TLabel", text="Выбор времени").grid(row=0, column=0, pady=5, sticky="n")
         time_picker = SpinTimePickerModern(time_frame)
         time_picker.addAll(constants.HOURS24)  # adds hours clock, minutes and period
         time_picker.configureAll(bg="#404040", height=2, fg="#ffffff", font=("Times", 16), hoverbg="#404040",
@@ -292,7 +307,7 @@ def create_booking_page(root):
         time_picker.addHours24()
         time_picker.grid(row=1, column=0, padx=5, pady=10, sticky="n")
 
-        button_frame = tk.Frame(calendar_window)
+        button_frame = ttk.Frame(calendar_window)
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
         def convert_am_pm_to_24h(time):
@@ -331,7 +346,7 @@ def create_booking_page(root):
             calendar_window.destroy()
 
 
-        tk.Button(button_frame, text="Выбрать", command=set_datetime).grid(row=5, pady=5)
+        ttk.Button(button_frame, text="Выбрать", command=set_datetime).grid(row=5, pady=5)
 
 
     def confirm_booking():
