@@ -193,11 +193,22 @@ def create_booking_page(root):
             # Разблокируем список, если кабинка не выбрана
             cabin_combobox.config(state="readonly")
 
+        def update_capacity(*args):
+            """Обновляет поле 'Количество людей' в зависимости от выбранной кабинки."""
+            selected_cabin = cabin_combobox.get().split(" - ")[0]  # Получаем ID выбранной кабины
+            cabins_data = get_cabins_data()  
+
+            # Находим вместимость кабинки
+            capacity = next((cabin['capacity'] for cabin in cabins_data if str(cabin['id']) == selected_cabin), 1)
+            
+            # Обновляем поле
+            num_people_entry.delete(0, tk.END)
+            num_people_entry.insert(0, str(capacity))
         ttk.Label(modal, style="Custom.TLabel", text="Количество людей:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
         num_people_entry = ttk.Entry(modal)
         num_people_entry.grid(row=5, column=1, padx=10, pady=5, sticky="w")
-        num_people_entry.insert(0, "1")  # Значение по умолчанию
-        num_people_entry.bind("<KeyRelease>", validate_only_numbers)  # Ввод только чисел
+        cabin_combobox.bind("<<ComboboxSelected>>", update_capacity)
+        update_capacity()
 
         # Выбор даты и времени начала бронирования
         ttk.Label(modal, style="Custom.TLabel", text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
@@ -288,14 +299,14 @@ def create_booking_page(root):
         calendar_window.configure(bg="#e6f7ff")
 
         # Календарь для выбора даты
-        calendar_frame = ttk.Frame(calendar_window)
+        calendar_frame = ttk.Frame(calendar_window, style="Custom.TFrame")
         calendar_frame.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         calendar = Calendar(calendar_frame, selectmode="day", date_pattern="yyyy-MM-dd")
         calendar.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         # Виджеты для выбора времени
-        time_frame = ttk.Frame(calendar_window)
+        time_frame = ttk.Frame(calendar_window, style="Custom.TFrame")
         time_frame.grid(row=0, column=1, padx=10, pady=10, sticky="n")
 
         ttk.Label(time_frame, style="Custom.TLabel", text="Выбор времени").grid(row=0, column=0, pady=5, sticky="n")
@@ -307,7 +318,9 @@ def create_booking_page(root):
         time_picker.addHours24()
         time_picker.grid(row=1, column=0, padx=5, pady=10, sticky="n")
 
-        button_frame = ttk.Frame(calendar_window)
+        style = ttk.Style()
+        style.configure("Custom.TFrame", background="#e6f7ff")
+        button_frame = ttk.Frame(calendar_window, style="Custom.TFrame")
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
 
         def convert_am_pm_to_24h(time):
