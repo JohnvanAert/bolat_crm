@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, update_product_stock, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, gui_cabin_status, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -88,8 +88,6 @@ def create_gui_page(root):
     BUTTON_BG = "#7fc3bd"  # Основной цвет фона кнопки
     BUTTON_FG = "black"    # Цвет текста
     BUTTON_ACTIVE_BG = "#5aa9a4"  # Цвет кнопки при нажатии
-    BUTTON_BORDER_FREE = "#7fc3bd"  # Черная обводка для свободных кабин
-    BUTTON_BORDER_BUSY = "#FF0000"  # Красная обводка для занятых кабин
 
     def create_cabin_buttons():
         """Создает кнопки-квадраты для всех кабинок из базы данных."""
@@ -107,8 +105,14 @@ def create_gui_page(root):
             cabin_price = cabin.get("price", 0)  # Цена кабинки (по умолчанию 0)
             button_label = f"{cabin_name} - {cabin_price} $"  # Формируем строку с названием и ценой
 
-            is_busy = is_cabin_busy(cabin_id, current_time)
-            border_color = BUTTON_BORDER_BUSY if is_busy else BUTTON_BORDER_FREE  # Красная рамка, если занята
+            # Получаем статус кабины
+            status = gui_cabin_status(cabin_id, current_time)
+            if status == "busy":
+                border_color = "#FF0000"  # Красный (занята)
+            elif status == "pending":
+                border_color = "#FFA500"  # Оранжевый (ожидает)
+            else:
+                border_color = "#7fc3bd"  # Обычный цвет (свободна)
 
             # Создаем кнопку
             cabin_button = tk.Button(

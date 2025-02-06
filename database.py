@@ -1382,3 +1382,33 @@ def has_sales_records(cabin_id):
     finally:
         cursor.close()
         conn.close()
+
+
+
+def gui_cabin_status(cabin_id, current_time):
+    """
+    Проверяет статус кабины: занята ли она сейчас или еще не началась аренда.
+    Возвращает:
+    - "busy" (красный) если аренда уже началась и еще идет
+    - "pending" (оранжевый) если аренда запланирована, но не началась
+    - "free" если кабинка свободна
+    """
+    query = """
+        SELECT date, end_date 
+        FROM sales 
+        WHERE cabins_id = %s AND end_date > %s
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_id, current_time))
+            result = cursor.fetchall()
+            for start_date, end_date in result:
+                if start_date > current_time:
+                    return "pending"  # Оранжевая рамка
+                if start_date <= current_time < end_date:
+                    return "busy"  # Красная рамка
+            return "free"  # Кабинка свободна
+    finally:
+        if conn:
+            conn.close()
