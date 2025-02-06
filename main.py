@@ -274,12 +274,12 @@ def main():
     cabins_listbox.grid(row=1, column=0, padx=10, pady=5, sticky="nw")
 
     # Продукты для закупа (правая колонка)
-    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=1, padx=10, pady=5, sticky="nw")
+    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=1, padx=10, sticky="nw")
     restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=50)
     restock_listbox.grid(row=1, column=1, padx=10, pady=5, sticky="nw")
     # Интерфейс
-    tk.Label(main_page, text="Заказы:", font=("Helvetica", 16)).pack(pady=5)
-    sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=15, width=80)
+    tk.Label(main_page, text="Заказы:", font=("Helvetica", 16)).pack()
+    sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=80)
     sold_listbox.pack()
     
 
@@ -355,10 +355,10 @@ def main():
     pagination_frame = tk.Frame(main_page)
     pagination_frame.pack(pady=10)
 
-    prev_button = ttk.Button(pagination_frame, text="Предыдущая страница", style="TButton", command=previous_page)
+    prev_button = ttk.Button(pagination_frame, text="<<", style="TButton", command=previous_page)
     prev_button.pack(side=tk.LEFT, padx=1)
 
-    next_button = ttk.Button(pagination_frame, text="Следующая страница", command=next_page)
+    next_button = ttk.Button(pagination_frame, text=">>", command=next_page)
     next_button.pack(side=tk.LEFT, padx=1)
 
     

@@ -54,7 +54,7 @@ def create_gui_page(root):
     tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge"), show="headings")
     tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date")
     tree.heading("id", text="ID")
-    tree.heading("cabins_count", text="Выбранная кабинка")
+    tree.heading("cabins_count", text="Кабина")
     tree.heading("total_sales", text="Общий чек")
     tree.heading("name", text="Имя")
     tree.heading("number", text="Номер")
@@ -62,6 +62,14 @@ def create_gui_page(root):
     tree.heading("cabins_price", text="Аренда кабинки")
     tree.heading("end_date", text="Дата окончания")
     tree.grid(row=7, column=0, columnspan=2)
+
+    tree.column("id", width=50)
+    tree.column("name", width=200)
+    tree.column("number", width=200)
+    tree.column("cabins_count", width=50)
+    tree.column("total_sales", width=100)
+    tree.column("date", width=150)
+    tree.column("end_date", width=150)
 
     # Переменные для пагинации
     current_page = tk.IntVar(value=1)
@@ -77,6 +85,11 @@ def create_gui_page(root):
     # Создаем фрейм для квадратов кабинок
     cabins_frame = tk.Frame(frame)
     cabins_frame.grid(row=12, column=0, columnspan=2, pady=10)
+    BUTTON_BG = "#7fc3bd"  # Основной цвет фона кнопки
+    BUTTON_FG = "black"    # Цвет текста
+    BUTTON_ACTIVE_BG = "#5aa9a4"  # Цвет кнопки при нажатии
+    BUTTON_BORDER_FREE = "#7fc3bd"  # Черная обводка для свободных кабин
+    BUTTON_BORDER_BUSY = "#FF0000"  # Красная обводка для занятых кабин
 
     def create_cabin_buttons():
         """Создает кнопки-квадраты для всех кабинок из базы данных."""
@@ -86,12 +99,16 @@ def create_gui_page(root):
 
         # Получаем данные о всех кабинках из базы
         cabins_data = get_cabins_data()
-
+        current_time = datetime.datetime.now()
         # Создаем кнопки для каждой кабинки
         for idx, cabin in enumerate(cabins_data):
+            cabin_id = cabin.get("id")
             cabin_name = cabin.get("name", f"Кабинка {idx+1}")  # Защита от отсутствия имени
             cabin_price = cabin.get("price", 0)  # Цена кабинки (по умолчанию 0)
             button_label = f"{cabin_name} - {cabin_price} $"  # Формируем строку с названием и ценой
+
+            is_busy = is_cabin_busy(cabin_id, current_time)
+            border_color = BUTTON_BORDER_BUSY if is_busy else BUTTON_BORDER_FREE  # Красная рамка, если занята
 
             # Создаем кнопку
             cabin_button = tk.Button(
@@ -101,6 +118,11 @@ def create_gui_page(root):
                 height=5,
                 relief=tk.GROOVE,
                 bd=0.5,
+                bg=BUTTON_BG,
+                fg=border_color,
+                activebackground=BUTTON_ACTIVE_BG,
+                highlightbackground=border_color,
+                highlightthickness=2,  # Толщина обводки
                 command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
             )
             # Располагаем кнопки в сетке
@@ -334,7 +356,7 @@ def create_gui_page(root):
         style.configure("Custom.Treeview.Heading", font=("Arial", 12, "bold"), background="#4CAF50", foreground="white")
         # Создаём общий фрейм для двух таблиц
         tables_frame = ttk.Frame(edit_window, style="Custom.TFrame")
-        tables_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        tables_frame.grid(row=5, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         # Фрейм для товаров
         products_frame = ttk.Frame(tables_frame, style="Custom.TFrame")
         products_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
@@ -1390,7 +1412,7 @@ def create_gui_page(root):
 
     def refresh_gui_page():
         display_sales_data()
-        frame.after(200000, refresh_gui_page)
+        frame.after(60000, refresh_gui_page)
         
 
     return frame
