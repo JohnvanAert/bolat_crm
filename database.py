@@ -792,23 +792,32 @@ def get_cabin_price(cabin_id):
         conn.close()
 
 def check_booking_conflict(cabin_id, start_date, end_date):
-    """Проверяет пересечение бронирования для выбранной кабины."""
+    """Проверяет пересечение бронирования для выбранной кабины как в bookings, так и в sales."""
     query = """
-        SELECT COUNT(*)
-        FROM bookings
-        WHERE cabin_id = %s 
-          AND status != 'Отменено' 
-          AND (start_date < %s AND end_date > %s)
+        SELECT COUNT(*) FROM (
+            -- Проверяем конфликты в таблице bookings
+            SELECT start_date, end_date FROM bookings 
+            WHERE cabin_id = %s 
+              AND status != 'Отменено' 
+              AND (start_date < %s AND end_date > %s)
+              
+            UNION ALL
+            
+            -- Проверяем конфликты в таблице sales
+            SELECT date AS start_date, end_date FROM sales 
+            WHERE cabins_id = %s 
+              AND (date < %s AND end_date > %s)
+        ) AS conflicts
     """
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (cabin_id, end_date, start_date))
+            cursor.execute(query, (cabin_id, end_date, start_date, cabin_id, end_date, start_date))
             result = cursor.fetchone()
             return result[0] > 0  # True, если есть пересечение
     except Exception as e:
         print("Ошибка при проверке конфликта бронирования:", e)
-        return True
+        return True  # Если возникла ошибка, безопаснее запретить бронирование
     finally:
         conn.close()
 
@@ -849,25 +858,60 @@ def fetch_filtered_bookings(name, date, status, cabin, limit, page):
     return rows, total_count
 
 
+from datetime import datetime, timedelta
+
 def is_cabin_busy(cabin_id, current_time):
     """
-    Проверяет, занята ли кабина на момент времени current_time.
-    Возвращает True, если кабина занята, иначе False.
+    Проверяет, занята ли кабина в указанный момент времени.
+    Если время до следующей брони меньше часа, возвращает True.
     """
     query = """
-        SELECT COUNT(*) 
+        SELECT date, end_date 
         FROM sales 
-        WHERE cabins_id = %s AND end_date > %s
+        WHERE cabins_id = %s 
+        ORDER BY date ASC
     """
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (cabin_id, current_time))
-            result = cursor.fetchone()
-            return result[0] > 0  # Если есть записи, значит кабина занята
+            cursor.execute(query, (cabin_id,))
+            bookings = cursor.fetchall()
+
+            for date, end_date in bookings:
+                # Проверяем, попадает ли текущее время внутрь уже существующей брони
+                if date <= current_time < end_date:
+                    return True  # Кабина занята в этот момент
+
+                # Проверяем, если до следующей брони меньше 1 часа
+                if current_time < date and (date - current_time) < timedelta(hours=1):
+                    return True  # Слишком маленький промежуток между бронями
+
+            return False  # Кабина свободна
     finally:
         if conn:
             conn.close()
+
+def get_next_booking(cabin_id, current_end_time):
+    """
+    Получает время начала следующего бронирования для данной кабины.
+    """
+    query = """
+        SELECT date 
+        FROM sales 
+        WHERE cabins_id = %s AND date > %s 
+        ORDER BY date ASC 
+        LIMIT 1
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_id, current_end_time))
+            result = cursor.fetchone()
+            return result[0] if result else None  # Возвращаем время начала следующей брони или None
+    finally:
+        if conn:
+            conn.close()
+
 
 def get_cabin_statuses():
     query = """

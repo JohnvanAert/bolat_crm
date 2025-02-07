@@ -261,8 +261,6 @@ def main():
     create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page)
     main_page = tk.Frame(root)
     main_page.pack()
-    welcome_label = tk.Label(main_page, text="Добро пожаловать на главную страницу!", font=("Helvetica", 18), bg="#000")
-    welcome_label.pack()
 
     # Создаем рамку для содержимого
     content_frame = tk.Frame(main_page, bg="#7FC3BD")

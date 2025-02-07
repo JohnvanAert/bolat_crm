@@ -6,6 +6,7 @@ from tkinter import messagebox
 from tktimepicker import SpinTimePickerModern, constants
 from decimal import Decimal
 from cabin_data import add_observer, get_cabins_data
+import datetime
 
 def create_booking_page(root):
     frame_main = tk.Frame(root)
@@ -319,8 +320,8 @@ def create_booking_page(root):
         # Календарь для выбора даты
         calendar_frame = ttk.Frame(calendar_window, style="Custom.TFrame")
         calendar_frame.grid(row=0, column=0, padx=10, pady=10, sticky="n")
-
-        calendar = Calendar(calendar_frame, selectmode="day", date_pattern="yyyy-MM-dd")
+        today = datetime.date.today()
+        calendar = Calendar(calendar_frame, selectmode="day", date_pattern="yyyy-MM-dd", mindate=today)
         calendar.grid(row=0, column=0, padx=10, pady=10, sticky="n")
 
         # Виджеты для выбора времени
@@ -335,44 +336,19 @@ def create_booking_page(root):
         time_picker.configure_separator(bg="#404040", fg="#ffffff")
         time_picker.addHours24()
         time_picker.grid(row=1, column=0, padx=5, pady=10, sticky="n")
-
+        
         style = ttk.Style()
         style.configure("Custom.TFrame", background="#e6f7ff")
         button_frame = ttk.Frame(calendar_window, style="Custom.TFrame")
         button_frame.grid(row=1, column=0, columnspan=2, pady=10)
-
-        def convert_am_pm_to_24h(time):
-            """
-            Конвертирует время из формата AM/PM в HH:mm (24-часовой формат).
-            """
-            try:
-                # Разделяем строку времени
-                if " " in time:
-                    time, period = time.split(" ")
-                else:
-                    raise ValueError("Некорректный формат времени.")
-
-                hours, minutes = map(int, time.split(":"))
-
-                # Преобразуем в 24-часовой формат
-                if period == "PM" and hours != 12:
-                    hours += 12
-                elif period == "AM" and hours == 12:
-                    hours = 0
-
-                return f"{hours:02}:{minutes:02}"
-            except Exception as e:
-                raise ValueError(f"Ошибка при обработке времени: {e}")
-
+    
         def set_datetime():
             date = calendar.get_date()
-            time_am_pm = time_picker.time()  # Получаем выбранное время из time_picker
+            hours, minutes = time_picker.time()[:2]  # Берем только часы и минуты
+            time_24h = f"{hours:02}:{minutes:02}"  # Форматируем в HH:mm
 
-            # Преобразуем кортеж в строку, если это необходимо
-            if isinstance(time_am_pm, tuple):
-                time_am_pm = f"{time_am_pm[0]}:{time_am_pm[1]} {time_am_pm[2]}"
+            print("Выбранное время (24-часовой формат):", time_24h)  # Отладка
             
-            time_24h = convert_am_pm_to_24h(time_am_pm)  # Конвертируем в 24-часовой формат
             datetime_var.set(f"{date} {time_24h}")
             calendar_window.destroy()
 

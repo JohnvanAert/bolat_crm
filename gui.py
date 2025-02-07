@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, gui_cabin_status, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, gui_cabin_status, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity, get_next_booking
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -84,7 +84,7 @@ def create_gui_page(root):
 
     # Создаем фрейм для квадратов кабинок
     cabins_frame = tk.Frame(frame)
-    cabins_frame.grid(row=12, column=0, columnspan=2, pady=10)
+    cabins_frame.grid(row=12, column=0, columnspan=2, pady=5)
     BUTTON_BG = "#7fc3bd"  # Основной цвет фона кнопки
     BUTTON_FG = "black"    # Цвет текста
     BUTTON_ACTIVE_BG = "#5aa9a4"  # Цвет кнопки при нажатии
@@ -132,7 +132,6 @@ def create_gui_page(root):
             # Располагаем кнопки в сетке
             row, col = divmod(idx, 5)  # 5 - количество кнопок в строке
             cabin_button.grid(row=row, column=col, padx=5, pady=5)
-
 
     def handle_cabin_click(cabin):
         """Обработчик нажатия на кнопку кабинки."""
@@ -348,7 +347,6 @@ def create_gui_page(root):
         # Установка текущей кабинки
         selected_cabin = selected_data[3]
         edit_cabins_combo.set(selected_cabin)
-
         # Загрузка товаров из базы данных
         sale_id = selected_data[0]
         products_data = get_products_for_sale(sale_id)  # Получение товаров для текущей продажи
@@ -800,6 +798,20 @@ def create_gui_page(root):
 
                 
                 new_end_date = calculate_new_end_date(old_end_date, duration)
+                # Проверяем, нет ли брони в ближайший час после нового окончания аренды
+                next_booking_time = get_next_booking(selected_cabin_id, new_end_date)
+
+                if next_booking_time:
+                    time_difference = (next_booking_time - old_end_date).total_seconds() / 60  # Разница в минутах
+
+                    if time_difference < 30:
+                        messagebox.showerror("Ошибка", "Нельзя продлить аренду, так как до следующей брони осталось менее 30 минут.")
+                        return
+
+                    # Новая критичная проверка: если новое время пересекает следующую бронь
+                    if new_end_date > next_booking_time:
+                        messagebox.showerror("Ошибка", "Нельзя продлить аренду, так как она пересекается со следующей бронью.")
+                        return
 
                 # Вычисляем разницу во времени в минутах
                 extension_minutes = int((new_end_date - old_end_date).total_seconds() / 60)
@@ -1412,7 +1424,7 @@ def create_gui_page(root):
 
         ttk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
 
-    ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=13, columnspan=2, pady=5)
+    ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=14, columnspan=2, pady=5)
 
     def refresh_gui_page():
         display_sales_data()
