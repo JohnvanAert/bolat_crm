@@ -16,8 +16,9 @@ def create_product_page(root):
     def open_add_product_modal():
         modal = Toplevel(root)
         modal.title("Добавление продукта")
-        modal.geometry("400x450")
+        modal.geometry("500x600")
         modal.configure(bg="#e6f7ff")
+        modal.grid_columnconfigure(1, weight=1)
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
@@ -58,8 +59,10 @@ def create_product_page(root):
         # Frame to hold the image preview and the close button
         img_frame = tk.Frame(modal, bg="#e6f7ff")
         img_frame.grid(row=3, column=1, sticky="w")
-        img_preview_label = tk.Label(modal,bg="#e6f7ff", fg="black", text="Нет изображения", width=20, height=10)
-        img_preview_label.grid(row=3, column=1)
+
+        img_preview_label = tk.Label(img_frame,bg="#e6f7ff", fg="black", text="Нет изображения")
+        img_preview_label.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
+        
 
             # Checkbox for expense
         is_expense = tk.BooleanVar()
@@ -73,14 +76,15 @@ def create_product_page(root):
         entry_expense_amount.bind("<KeyRelease>", validate_only_numbers)
 
         def remove_image():
-            img_preview_label.config(image="", text="No Image")
+            img_preview_label.config(image="", text="Нет изображения")
             img_preview_label.image = None
             img_path_var.set("")
+            close_button.place_forget()
 
-        close_button = tk.Button(img_frame, text="X", command=remove_image, width=2, height=1)
-        close_button.grid(row=0, column=1, sticky="ne", padx=2, pady=2)
-
-
+        # Кнопка удаления тоже внутри img_frame
+        close_button = ttk.Button(img_frame, text="✖", command=lambda: remove_image(), width=2)
+        close_button.place(relx=0, rely=0, anchor="nw")  # Размещаем в правом верхнем углу
+        close_button.place_forget()
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
             if file_path:
@@ -90,10 +94,15 @@ def create_product_page(root):
         def load_image_preview(file_path):
             try:
                 img = Image.open(file_path)
-                img = img.resize((150, 100), Image.LANCZOS)
+                width, height = img.size
+                max_size = (300, 200)
+                ratio = min(max_size[0]/width, max_size[1]/height)
+                new_size = (int(width * ratio), int(height * ratio))
+                img = img.resize(new_size, Image.LANCZOS)
                 img_tk = ImageTk.PhotoImage(img)
                 img_preview_label.configure(image=img_tk, text="")
                 img_preview_label.image = img_tk
+                close_button.place(relx=0, rely=0, anchor="nw")
             except (FileNotFoundError, IOError):
                 messagebox.showerror("Ошибка", "Не удалось загрузить изображение.")
 

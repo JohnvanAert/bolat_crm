@@ -1,17 +1,27 @@
-from tkinter import ttk, Toplevel, Label, Button
+from tkinter import ttk, Toplevel, Label, Button, messagebox
 import tkinter as tk
 from tkcalendar import Calendar
 from decimal import Decimal
 from database import get_total_income, get_total_expenses, get_cabin_statistics, get_cabin_statistics_by_date_range, get_total_income_by_date_range, get_total_expenses_by_date_range, fetch_statistics, get_product_sales_statistics_by_dates, get_product_sales_statistics_by_period
-from datetime import datetime
+from datetime import datetime, timedelta
+import pandas as pd
+from tkinter import filedialog
+from openpyxl.utils import get_column_letter
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""
     frame = tk.Frame(root)
+    current_date_range = {"start": None, "end": None}
+    # Таблица статистики по кабинкам
+    cabin_frame = tk.Frame(frame)
+    cabin_frame.pack(pady=10, fill=tk.X)
+    # Заголовок и кнопка для таблицы кабинок
+    cabin_header = tk.Frame(cabin_frame)
+    cabin_header.pack(fill=tk.X)
 
     # Заголовок
-    tk.Label(frame, text="Статистика по кабинкам", font=("Arial", 16)).pack(pady=10)
-
+    tk.Label(cabin_header, text="Статистика по кабинкам", font=("Arial", 16), anchor="center").pack(side=tk.LEFT, expand=True)
+    ttk.Button(cabin_header, text="Скачать", command=lambda: export_table_to_excel(tree, "cabin_statistics.xlsx", current_date_range)).pack(side=tk.RIGHT)
     # Таблица статистики по кабинкам
     columns = ("cabin_name", "rental_count", "total_income", "avg_check", "total_people")
     tree = ttk.Treeview(frame, columns=columns, show="headings", height=10)
@@ -28,7 +38,13 @@ def create_statistics_page(root):
     finance_frame = tk.Frame(stats_frame)
     finance_frame.pack(side=tk.LEFT, pady=10)
 
-    tk.Label(finance_frame, text="Финансовая статистика", font=("Arial", 14)).pack()
+    # Заголовок и кнопка для финансовой статистики
+    finance_header = tk.Frame(finance_frame)
+    finance_header.pack(fill=tk.X)
+
+    
+    tk.Label(finance_header, text="Финансовая статистика", font=("Arial", 14), anchor="center").pack(side=tk.LEFT, expand=True)
+    ttk.Button(finance_header, text="Скачать", command=lambda: export_table_to_excel(finance_tree, "finance_statistics.xlsx", current_date_range)).pack(side=tk.RIGHT)
 
     finance_tree = ttk.Treeview(finance_frame, columns=("description", "value"), show="headings", height=5)
     finance_tree.heading("description", text="Описание")
@@ -38,9 +54,12 @@ def create_statistics_page(root):
      # Статистика по продуктам
     product_frame = tk.Frame(stats_frame)
     product_frame.pack(side=tk.RIGHT, padx=10)
+    # Заголовок и кнопка для статистики по продуктам
+    product_header = tk.Frame(product_frame)
+    product_header.pack(fill=tk.X)
 
-    tk.Label(product_frame, text="Статистика по продуктам", font=("Arial", 14)).pack()
-
+    tk.Label(product_header, text="Статистика по продуктам", font=("Arial", 14), anchor="center").pack(side=tk.LEFT, expand=True)
+    ttk.Button(product_header, text="Скачать", command=lambda: export_table_to_excel(product_tree, "product_statistics.xlsx", current_date_range)).pack(side=tk.RIGHT)
     product_tree = ttk.Treeview(product_frame, columns=("product_name", "total_sold", "total_income"), show="headings", height=10)
     product_tree.heading("product_name", text="Название продукта")
     product_tree.heading("total_sold", text="Продано (шт.)")
@@ -170,11 +189,13 @@ def create_statistics_page(root):
         # Стилизация итоговой строки и отступа
         product_tree.tag_configure("summary", font=("Helvetica", 10, "bold"))
         product_tree.tag_configure("spacer")
-        
+    
     def open_date_picker(): 
         def select_dates():
             start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
             end_date = datetime.strptime(cal_end.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
+            current_date_range["start"] = start_date  # Обновляем start
+            current_date_range["end"] = end_date  # Обновляем end
             print(f"Выбранный диапазон: с {start_date} по {end_date}")
             update_statistics(None, (start_date, end_date))
             date_picker.destroy()
@@ -194,16 +215,78 @@ def create_statistics_page(root):
         ttk.Button(date_picker, text="Применить", command=select_dates).pack()
 
     def update_statistics(period, date=None):
-        """Обновляет статистику по кабинкам и финансам."""
+        if date:
+            start_date, end_date = date
+            selected_period_label.config(text=f"Выбранный период: {start_date} - {end_date}")
+        else:
+            period_text = {"day": "Сегодня", "week": "Эта неделя", "month": "Этот месяц"}
+            selected_period_label.config(text=f"Выбранный период: {period_text.get(period, 'Неизвестно')}")
+
         update_cabin_statistics(period, date)
         update_financial_statistics(period, date)
         update_product_statistics(period, date)
-        
+
+    
+    def export_table_to_excel(treeview, default_filename, date_range):
+        """Экспортирует данные из Treeview в Excel с указанием даты и позволяет выбрать место сохранения."""
+        data = []
+        for item in treeview.get_children():
+            values = treeview.item(item, 'values')
+            data.append(values)
+
+        if not data:
+            messagebox.showwarning("Ошибка", "Нет данных для экспорта.")
+            return
+
+        # Получаем заголовки столбцов
+        columns = [treeview.heading(col)["text"] for col in treeview["columns"]]
+        df = pd.DataFrame(data, columns=columns)
+
+        # Окно выбора пути сохранения файла
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel файлы", "*.xlsx"), ("Все файлы", "*.*")],
+            initialfile=default_filename,
+            title="Сохранить файл"
+        )
+
+        if not file_path:  # Если пользователь отменил сохранение
+            return
+
+        # Создаем Excel-файл
+        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Статистика")
+
+            # Добавляем строку с датой
+            workbook = writer.book
+            worksheet = writer.sheets["Статистика"]
+            if date_range["start"] and date_range["end"]:
+                worksheet.cell(row=1, column=1, value=f"Дата: с {date_range['start']} по {date_range['end']}")
+            else:
+                worksheet.cell(row=1, column=1, value="Дата: не указана")
+
+            # === АВТОМАТИЧЕСКАЯ ПОДСТРОЙКА ШИРИНЫ КОЛОНОК ===
+            for col_num, column_cells in enumerate(worksheet.iter_cols(), start=1):
+                max_length = 0
+                col_letter = get_column_letter(col_num)  # Получаем букву столбца
+                for cell in column_cells:
+                    try:
+                        if cell.value:
+                            max_length = max(max_length, len(str(cell.value)))
+                    except:
+                        pass
+                adjusted_width = max_length + 2  # Добавляем немного пространства
+                worksheet.column_dimensions[col_letter].width = adjusted_width
+                
+        messagebox.showinfo("Успех ✅", f"Данные успешно экспортированы в {file_path}.")
+
     # Кнопки переключения периода
     ttk.Button(button_frame, text="День", command=lambda: update_statistics('day')).pack(side=tk.LEFT, padx=5)
     ttk.Button(button_frame, text="Неделя", command=lambda: update_statistics('week')).pack(side=tk.LEFT, padx=5)
     ttk.Button(button_frame, text="Месяц", command=lambda: update_statistics('month')).pack(side=tk.LEFT, padx=5)
     ttk.Button(button_frame, text="Выбрать дату", command=open_date_picker).pack(side=tk.LEFT, padx=5)
+    selected_period_label = tk.Label(button_frame, text="Выбранный период: Сегодня", font=("Arial", 12))
+    selected_period_label.pack(side=tk.LEFT, padx=10)
 
     # Загружаем статистику за день по умолчанию
     update_statistics('day')
