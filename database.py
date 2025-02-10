@@ -155,9 +155,10 @@ def insert_product(name, price, quantity, image_path):
     try:
         conn = connect()
         cursor = conn.cursor()
+        relative_image_path = os.path.relpath(image_path, start=os.getcwd())  # Сохраняем относительный путь
         cursor.execute(
             "INSERT INTO products (name, price, quantity, image_path) VALUES (%s, %s, %s, %s)",
-            (name, price, quantity, image_path)
+            (name, price, quantity, relative_image_path)
         )
         conn.commit()
         cursor.close()
@@ -189,12 +190,30 @@ def update_product(product_id, name, price, quantity, image_path):
 
 # Function to delete an expense entry by ID
 def delete_product(product_id):
-    conn = connect()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM products WHERE id = %s", (product_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        conn = connect()
+        cursor = conn.cursor()
+        
+        # Получаем путь к изображению
+        cursor.execute("SELECT image_path FROM products WHERE id = %s", (product_id,))
+        image_path_result = cursor.fetchone()
+        
+        if image_path_result:
+            image_path = image_path_result[0]
+            full_image_path = os.path.join(os.getcwd(), image_path)
+            
+            # Удаление изображения, если файл существует
+            if os.path.exists(full_image_path):
+                os.remove(full_image_path)
+        
+        # Удаление продукта из базы данных
+        cursor.execute("DELETE FROM products WHERE id = %s", (product_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print("Ошибка при удалении продукта:", e)
+
 
 def is_product_in_sales(product_id):
     """ Проверяет, используется ли продукт в таблице sales_products """
@@ -1456,3 +1475,47 @@ def gui_cabin_status(cabin_id, current_time):
     finally:
         if conn:
             conn.close()
+
+
+def get_renter_details(cabin_name):
+    query = """
+        SELECT s.name, s.number, s.total_sales, s.date, s.end_date
+        FROM sales s
+        JOIN cabins c ON s.cabins_id = c.id
+        WHERE c.name = %s AND CURRENT_TIMESTAMP <= s.end_date
+        LIMIT 1;
+    """
+
+    with connect() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query, (cabin_name,))
+            row = cursor.fetchone()
+            if row:
+                return {"name": row[0], "number": row[1], "total_sales": row[2], "date": row[3], "end_date": row[4]}
+            else:
+                return None
+
+
+
+def fetch_product_details(product_name):
+    """
+    Получает полную информацию о продукте по его названию.
+    """
+    connection = connect()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, quantity, price, image_path
+                FROM products
+                WHERE name = %s
+            """, (product_name,))
+            product = cursor.fetchone()
+        return {
+            "id": product[0], 
+            "name": product[1], 
+            "quantity": product[2], 
+            "price": product[3], 
+            "image_path": product[4]
+        } if product else None
+    finally:
+        connection.close()

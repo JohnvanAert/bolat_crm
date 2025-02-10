@@ -125,13 +125,15 @@ def create_cabin_page(root):
         modal_window.title("Редактировать/Удалить кабинку")
         
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
-
+                entry.insert(0, filtered_value)
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
             entry = event.widget
@@ -143,18 +145,18 @@ def create_cabin_page(root):
         tk.Label(modal_window, text="Имя кабинки").grid(row=0, column=0)
         name_var = tk.StringVar(value=current_name)
         entry_name = ttk.Entry(modal_window, textvariable=name_var)
-        entry_name.grid(row=0, column=1)
+        entry_name.grid(row=0, column=1, pady=10, padx=10)
 
         tk.Label(modal_window, text="Цена кабинки").grid(row=1, column=0)
         price_var = tk.StringVar(value=current_price)
         entry_price = ttk.Entry(modal_window, textvariable=price_var)
-        entry_price.grid(row=1, column=1)
+        entry_price.grid(row=1, column=1, pady=10)
         entry_price.bind("<KeyRelease>", validate_only_numbers)
         # Поле для вместимости
         tk.Label(modal_window, text="Вместимость").grid(row=2, column=0)
         capacity_var = tk.StringVar(value=current_capacity)
         entry_capacity = ttk.Entry(modal_window, textvariable=capacity_var)
-        entry_capacity.grid(row=2, column=1)
+        entry_capacity.grid(row=2, column=1, pady=10)
         entry_capacity.bind("<KeyRelease>", validate_only_numbers)
         def save_changes():
             new_name = name_var.get()
@@ -191,10 +193,10 @@ def create_cabin_page(root):
                     messagebox.showerror("Ошибка", f"Не удалось удалить кабинку: {e}")
 
         save_button = ttk.Button(modal_window, text="Сохранить", command=save_changes)
-        save_button.grid(row=3, column=0, columnspan=2)
+        save_button.grid(row=3, column=0, columnspan=2, pady=5)
 
         delete_button = ttk.Button(modal_window, text="Удалить", command=lambda:delete_cabin_action(cabin_id))
-        delete_button.grid(row=4, column=0, columnspan=2)
+        delete_button.grid(row=4, column=0, columnspan=2, pady=5)
 
     # Обработчик двойного клика по таблице
     def on_table_double_click(event):

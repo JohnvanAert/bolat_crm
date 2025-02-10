@@ -1,13 +1,14 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, Label, Toplevel
 from product_page import create_product_page
 from gui import create_gui_page
 from cabin_page import create_cabin_page  # Импорт новой страницы для кабин
 from expenses_page import create_expenses_page
 from statistic_page import create_statistics_page
 from booking_page import create_booking_page
-from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products
+from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products, get_renter_details, fetch_product_details
 from datetime import datetime
+from PIL import Image, ImageTk
 
 def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#6fa8dc", button_fg="#004d99"):
     """Применение стилей ко всем фреймам и кнопкам рекурсивно."""
@@ -131,6 +132,31 @@ def main():
         frame_booking.pack()
         frame_statistics.pack_forget()
         root.update_idletasks()
+
+    # Функция для создания стильно оформленного Listbox
+    def create_styled_listbox(parent, title, row=None, column=None, pack=False, width=50):
+        # Заголовок
+        title_label = tk.Label(parent, text=title, font=("Helvetica", 16, "bold"), bg="#E8F6F3", fg="#2E4053")
+        
+        # Контейнер для Listbox с рамкой
+        frame = tk.Frame(parent, bg="#D1E7E0", bd=2, relief="groove")
+        
+        # Стилизованный Listbox
+        listbox = tk.Listbox(frame, font=("Helvetica", 14), bg="#F8F9F9", fg="#2C3E50",
+                            selectbackground="#76D7C4", selectforeground="white",
+                            height=10, width=width, relief="flat", highlightthickness=0, activestyle="none")
+        
+        listbox.pack(padx=5, pady=5, fill="both", expand=True)
+
+        # Расположение элементов
+        if pack:
+            title_label.pack(padx=10, pady=(10, 5), anchor="w")
+            frame.pack(padx=10, pady=5, fill="x")
+        else:
+            title_label.grid(row=row, column=column, padx=10, pady=(10, 5), sticky="nw")
+            frame.grid(row=row+1, column=column, padx=10, pady=5, sticky="nw")
+
+        return listbox
     
     def update_occupied_cabins():
         global occupied_cabins_page
@@ -156,6 +182,7 @@ def main():
                     minutes = remainder // 60
                     time_left = f"{int(hours)} ч {int(minutes)} мин"
                     cabins_listbox.insert(tk.END, f"{cabin_name} - до начала аренды: {time_left}, людей: {people_count}")
+                    cabins_listbox.bind('<Double-Button-1>', show_cabin_details)
                 elif start_time <= now <= end_time:
                     # Во время аренды
                     remaining_time = end_time - now
@@ -163,6 +190,7 @@ def main():
                     minutes = remainder // 60
                     time_left = f"{int(hours)} ч {int(minutes)} мин"
                     cabins_listbox.insert(tk.END, f"{cabin_name} - осталось: {time_left}, людей: {people_count}")
+                    cabins_listbox.bind('<Double-Button-1>', show_cabin_details)
                 else:
                     # Аренда завершена
                     cabins_listbox.insert(tk.END, f"{cabin_name} - аренда завершена")
@@ -199,8 +227,77 @@ def main():
         else:
             prev_cabins_button.config(state=tk.NORMAL)
     
+    def show_cabin_details(event):
+        selection = cabins_listbox.curselection()
+        if not selection:
+            return
 
+        selected_index = selection[0]
+        cabin_info = cabins_listbox.get(selected_index)
 
+        # Извлекаем имя кабины из строки
+        cabin_name = cabin_info.split(" - ")[0]
+
+        # Получаем данные арендатора из базы данных
+        renter_details = get_renter_details(cabin_name)
+
+        if renter_details:
+            # Создание модального окна
+            details_window = tk.Toplevel()
+            details_window.title(f"Арендаторы {cabin_name}")
+            details_window.geometry("400x300")
+            details_window.configure(bg="#e6f7ff")
+            details_window.grab_set()  # Модальное окно
+            style = ttk.Style()
+            style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+
+            # Отображение информации
+            tk.Label(details_window, text=f"Кабина: {cabin_name}", font=("Helvetica", 14, "bold"), bg="#E6F7FF", fg="black").pack(pady=10)
+            tk.Label(details_window, text=f"Имя клиента: {renter_details['name']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            tk.Label(details_window, text=f"Номер: {renter_details['number']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            tk.Label(details_window, text=f"Сумма заказа: {renter_details['total_sales']} ₸", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            tk.Label(details_window, text=f"Время начала: {renter_details['date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            tk.Label(details_window, text=f"Время окончания: {renter_details['end_date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+
+            ttk.Button(details_window, text="Закрыть", command=details_window.destroy).pack(pady=20)
+        else:
+            tk.messagebox.showinfo("Информация", "Информация о клиента не найдена.")
+
+    def show_product_details(event):
+        """
+        Отображает модальное окно с информацией о выбранном продукте.
+        """
+        selected_item = restock_listbox.get(restock_listbox.curselection())  # Получаем выделенный товар
+        product_name = selected_item.split(",")[0]  # Извлекаем имя товара
+
+        product = fetch_product_details(product_name)  # Загружаем информацию о товаре
+
+        if not product:
+            return
+
+        modal = Toplevel()
+        modal.title("Информация о товаре")
+        modal.configure(bg="#E6F7FF")
+        modal.geometry("400x400")
+
+        Label(modal, text=f"Наименование: {product['name']}", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+        Label(modal, text=f"Количество: {product['quantity']} шт.", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+        Label(modal, text=f"Цена: {product['price']} тг", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+
+        if product["image_path"]:
+            try:
+                image = Image.open(product["image_path"])  # Открываем изображение
+                image = image.resize((200, 200))  # Изменяем размер
+                img = ImageTk.PhotoImage(image)  # Преобразуем в формат Tkinter
+                
+                img_label = Label(modal, image=img, bg="#E6F7FF")
+                img_label.image = img
+                img_label.pack(pady=10)
+            except Exception as e:
+                Label(modal, text="Ошибка загрузки изображения", font=("Arial", 10), bg="#E6F7FF", fg="red").pack()
+                print(f"Ошибка загрузки изображения: {e}")
+
+        ttk.Button(modal, text="Закрыть", command=modal.destroy).pack(pady=20)
     def update_sold_products():
         global current_page
         sold_listbox.delete(0, tk.END)  # Очистка текущего списка
@@ -267,18 +364,16 @@ def main():
     content_frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
     # Занятые кабины (левая колонка)
-    tk.Label(content_frame, text="Занятые кабины:", font=("Helvetica", 16), bg="#7FC3BD", fg="#93c47d").grid(row=0, column=0, padx=10, pady=5, sticky="nw")
-    cabins_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=50)
-    cabins_listbox.grid(row=1, column=0, padx=10, pady=5, sticky="nw")
+    cabins_listbox = create_styled_listbox(content_frame, "Занятые кабины:", row=0, column=0, width=50)
 
     # Продукты для закупа (правая колонка)
-    tk.Label(content_frame, text="Продукты для закупа:", font=("Helvetica", 16), bg="#7FC3BD", fg="#fff").grid(row=0, column=1, padx=10, sticky="nw")
-    restock_listbox = tk.Listbox(content_frame, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=50)
-    restock_listbox.grid(row=1, column=1, padx=10, pady=5, sticky="nw")
-    # Интерфейс
-    tk.Label(main_page, text="Заказы:", font=("Helvetica", 16)).pack()
-    sold_listbox = tk.Listbox(main_page, font=("Helvetica", 14), bg="#F0F3F4", fg="#566573", selectbackground="#7FB3D5", selectforeground="white", height=10, width=80)
-    sold_listbox.pack()
+    restock_listbox = create_styled_listbox(content_frame, "Продукты для закупа:", row=0, column=1, width=50)
+
+    # Интерфейс для отображения заказов
+    orders_frame = tk.Frame(main_page, bg="#7FC3BD")
+    orders_frame.pack(pady=10, fill=tk.BOTH, expand=True)
+
+    sold_listbox = create_styled_listbox(orders_frame, "Заказы:", pack=True, width=80)
     
 
     def update_restock_list():
@@ -297,10 +392,15 @@ def main():
                 restock_listbox.insert(
                     tk.END, f"{product['name']}, Количество: {product['quantity']} шт."
                 )
+            restock_listbox.bind("<Double-Button-1>", show_product_details)
         except Exception as e:
             restock_listbox.insert(tk.END, f"Ошибка загрузки: {e}")
         
         check_restock_buttons_state()
+    
+    def auto_update_restock_list():
+        update_restock_list()
+        sold_listbox.after(60000, auto_update_restock_list)  # Обновление каждые 60 секунд
 
     # Функции для управления пагинацией "Продуктов для закупки"
     def next_restock_page():

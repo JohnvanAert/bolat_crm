@@ -3,6 +3,8 @@ from tkinter import messagebox, filedialog, Toplevel, ttk
 from PIL import Image, ImageTk
 from database import insert_product, fetch_products, update_product, delete_product, insert_expense, is_product_in_sales
 from datetime import datetime
+import os
+import shutil
 
 def create_product_page(root):
     frame = tk.Frame(root)
@@ -12,23 +14,28 @@ def create_product_page(root):
 
     pagination_frame = tk.Frame(frame)
     pagination_frame.grid(row=3, column=0, columnspan=3)
-
+    
     def open_add_product_modal():
         modal = Toplevel(root)
         modal.title("Добавление продукта")
         modal.geometry("500x600")
         modal.configure(bg="#e6f7ff")
         modal.grid_columnconfigure(1, weight=1)
+        IMAGE_DIR = 'images'
+        if not os.path.exists(IMAGE_DIR):
+            os.makedirs(IMAGE_DIR)
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
-
+                entry.insert(0, filtered_value)
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
             entry = event.widget
@@ -88,8 +95,16 @@ def create_product_page(root):
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
             if file_path:
-                img_path_var.set(file_path)
-                load_image_preview(file_path)
+                # Генерация нового имени файла, чтобы избежать конфликтов
+                file_name = os.path.basename(file_path)
+                new_file_path = os.path.join(IMAGE_DIR, file_name)
+                
+                # Проверка на существование файла, чтобы не перезаписать
+                if not os.path.exists(new_file_path):
+                    shutil.copy(file_path, new_file_path)
+                
+                img_path_var.set(new_file_path)  # Сохраняем путь в переменной
+                load_image_preview(new_file_path)
 
         def load_image_preview(file_path):
             try:
@@ -266,13 +281,15 @@ def create_product_page(root):
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
-
+                entry.insert(0, filtered_value)
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
             entry = event.widget

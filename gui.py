@@ -281,12 +281,15 @@ def create_gui_page(root):
         service_state = get_service_state(sale_id)
         discount_state = get_discount_state(sale_id)
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
+                entry.insert(0, filtered_value)
 
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
@@ -1038,13 +1041,15 @@ def create_gui_page(root):
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
-
+                entry.insert(0, filtered_value)
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
             entry = event.widget
@@ -1077,9 +1082,9 @@ def create_gui_page(root):
             # Разблокируем список, если кабинка не выбрана
             cabins_combo_modal.config(state="readonly")
 
-        ttk.Label(add_window, style="Custom.TLabel", text="Общая продажа").grid(row=3, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Общая продажа").grid(row=5, column=0)
         entry_sales = ttk.Entry(add_window, state='readonly')
-        entry_sales.grid(row=3, column=1, pady=10)
+        entry_sales.grid(row=5, column=1, pady=10)
 
         # Поле для ввода времени аренды (в часах)
         ttk.Label(add_window, style="Custom.TLabel", text="На сколько часов?").grid(row=4, column=0)
@@ -1088,9 +1093,9 @@ def create_gui_page(root):
         entry_hours.bind("<KeyRelease>", lambda event: update_total_price())
 
         # Поле для ввода количества людей
-        ttk.Label(add_window, style="Custom.TLabel", text="Количество людей:").grid(row=5, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Количество людей:").grid(row=3, column=0)
         entry_people_count = ttk.Entry(add_window)
-        entry_people_count.grid(row=5, column=1, pady=10)
+        entry_people_count.grid(row=3, column=1, pady=10)
         entry_people_count.bind("<KeyRelease>", lambda event: update_total_price())
 
         def format_price(price):
@@ -1327,7 +1332,7 @@ def create_gui_page(root):
             ttk.Button(product_window, text="- Удалить", command=remove_product_from_order).pack(side="left")
             ttk.Button(product_window, text="Закрыть", command=product_window.destroy).pack(side="right")
 
-        ttk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=9, columnspan=2)
+        ttk.Button(add_window, text="Выбрать продукты", command=open_product_list).grid(row=9, columnspan=2, pady=5)
 
 
         def update_sales_price(event):
@@ -1422,7 +1427,7 @@ def create_gui_page(root):
             except Exception as e:
                 messagebox.showerror("Ошибка", f"Произошла ошибка: {e}")
 
-        ttk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2)
+        ttk.Button(add_window, text="Добавить", command=submit_data).grid(row=8, columnspan=2, pady=5)
 
     ttk.Button(frame, text="Добавить запись", command=lambda: open_add_modal()).grid(row=14, columnspan=2, pady=5)
 

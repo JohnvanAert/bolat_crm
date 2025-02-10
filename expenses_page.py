@@ -13,7 +13,7 @@ def create_expenses_page(root):
     tk.Label(frame, text="Поиск по имени").grid(row=1, column=0, padx=5, pady=5, sticky="w")
     search_name_entry = ttk.Entry(frame)
     search_name_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-    tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+    tk.Label(frame, text="Поиск по сумме").grid(row=2, column=0, padx=5, pady=5, sticky="w")
     search_price_entry = ttk.Entry(frame)
     search_price_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 

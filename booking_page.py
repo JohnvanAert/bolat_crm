@@ -168,13 +168,16 @@ def create_booking_page(root):
         modal.configure(bg="#e6f7ff")
         modal.resizable(False, False)
         def validate_only_letters(event):
-            """Разрешает вводить только буквы."""
+            """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
             value = entry.get()
-            if not value.isalpha():
+            # Фильтруем строку: оставляем только буквы и пробелы
+            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
+            
+            if value != filtered_value:
                 entry.delete(0, tk.END)
-                entry.insert(0, ''.join(filter(str.isalpha, value)))
-
+                entry.insert(0, filtered_value)
+                
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""
             entry = event.widget
