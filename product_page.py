@@ -92,18 +92,34 @@ def create_product_page(root):
         close_button = ttk.Button(img_frame, text="✖", command=lambda: remove_image(), width=2)
         close_button.place(relx=0, rely=0, anchor="nw")  # Размещаем в правом верхнем углу
         close_button.place_forget()
+
+        def compress_image(input_path, output_path, quality=85, size_limit_kb=500, min_resolution=(800, 800)):
+            """Сжимает изображение, если размер превышает лимит или разрешение больше минимального."""
+            file_size_kb = os.path.getsize(input_path) / 1024  # Размер файла в КБ
+
+            with Image.open(input_path) as img:
+                width, height = img.size
+
+                # Проверка: нужно ли сжимать?
+                needs_compression = file_size_kb > size_limit_kb or width > min_resolution[0] or height > min_resolution[1]
+
+                if needs_compression:
+                    img = img.convert("RGB")
+                    img.save(output_path, "JPEG", optimize=True, quality=quality)
+                else:
+                    # Если изображение уже оптимизировано, просто копируем
+                    shutil.copy(input_path, output_path)
+
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
             if file_path:
-                # Генерация нового имени файла, чтобы избежать конфликтов
                 file_name = os.path.basename(file_path)
                 new_file_path = os.path.join(IMAGE_DIR, file_name)
-                
-                # Проверка на существование файла, чтобы не перезаписать
+
                 if not os.path.exists(new_file_path):
-                    shutil.copy(file_path, new_file_path)
-                
-                img_path_var.set(new_file_path)  # Сохраняем путь в переменной
+                    compress_image(file_path, new_file_path, quality=85, size_limit_kb=500, min_resolution=(800, 800))
+
+                img_path_var.set(new_file_path)
                 load_image_preview(new_file_path)
 
         def load_image_preview(file_path):
