@@ -48,6 +48,7 @@ def main():
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
     root.configure(bg="#e6f7ff")
+    root.iconbitmap("icon.ico")
     # Создаем стиль
     style = ttk.Style()
     style.theme_use("clam")  # Используем нейтральную тему

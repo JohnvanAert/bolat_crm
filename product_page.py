@@ -292,7 +292,7 @@ def create_product_page(root):
     def open_edit_modal(product):
         modal = Toplevel(root)
         modal.title("Редактирование продукта")
-        modal.geometry("400x450")
+        modal.geometry("400x550")
         modal.configure(bg="#e0f7fa")
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
@@ -314,7 +314,31 @@ def create_product_page(root):
                 entry.delete(0, tk.END)
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
+        # Добавляем переменные для расхода
+        expense_amount_var = tk.StringVar()
+        is_expense = tk.BooleanVar()
 
+        def toggle_expense_field():
+            """Активирует/деактивирует поле ввода расхода"""
+            if is_expense.get():
+                entry_expense_amount.config(state="normal")
+            else:
+                entry_expense_amount.config(state="disabled")
+                expense_amount_var.set("")  # Очищаем поле при отключении
+
+        expense_checkbox = tk.Checkbutton(
+            modal, 
+            bg="#e0f7fa", 
+            fg="black", 
+            text="Добавить как расход",
+            variable=is_expense,
+            command=toggle_expense_field
+        )
+        expense_checkbox.grid(row=5, column=0, columnspan=2, pady=5)
+
+
+        # Поле для суммы расхода
+    
         ttk.Label(modal, style="Custom.TLabel", text="Название продукта").grid(row=0, column=0)
         name_var = tk.StringVar(value=product['name'])
         entry_name = ttk.Entry(modal, textvariable=name_var)
@@ -338,12 +362,60 @@ def create_product_page(root):
         img_preview_label = tk.Label(modal, bg="#e6f7ff", text="No Image", width=200, height=200)
         img_preview_label.grid(row=3, column=1)
 
+        ttk.Label(modal, style="Custom.TLabel", text="Сумма расхода").grid(row=6, column=0, pady=5)
+        entry_expense_amount = ttk.Entry(
+            modal, 
+            textvariable=expense_amount_var, 
+            state="disabled"
+        )
+        entry_expense_amount.grid(row=6, column=1, pady=5)
+        entry_expense_amount.bind("<KeyRelease>", validate_only_numbers)
+
+        def compress_image(input_path, output_path, quality=85, size_limit_kb=500, min_resolution=(800, 800)):
+            """Сжимает изображение, если размер превышает лимит или разрешение больше минимального."""
+            file_size_kb = os.path.getsize(input_path) / 1024  # Размер файла в КБ
+
+            with Image.open(input_path) as img:
+                width, height = img.size
+
+                # Проверка: нужно ли сжимать?
+                needs_compression = file_size_kb > size_limit_kb or width > min_resolution[0] or height > min_resolution[1]
+
+                if needs_compression:
+                    img = img.convert("RGB")
+                    img.save(output_path, "JPEG", optimize=True, quality=quality)
+                else:
+                    # Если изображение уже оптимизировано, просто копируем
+                    shutil.copy(input_path, output_path)
 
         def select_image():
             file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.jpeg *.png")])
             if file_path:
-                image_path_var.set(file_path)
-                load_image_preview(file_path)
+                try:
+                    # Создаем папку для изображений если ее нет
+                    IMAGE_DIR = "images"
+                    os.makedirs(IMAGE_DIR, exist_ok=True)
+
+                    # Генерируем уникальное имя файла
+                    file_name = os.path.basename(file_path)
+                    new_file_path = os.path.join(IMAGE_DIR, file_name)
+
+                    # Обрабатываем дубликаты
+                    counter = 1
+                    while os.path.exists(new_file_path):
+                        name, ext = os.path.splitext(file_name)
+                        new_file_path = os.path.join(IMAGE_DIR, f"{name}_{counter}{ext}")
+                        counter += 1
+
+                    # Сжимаем и сохраняем изображение
+                    compress_image(file_path, new_file_path)
+
+                    # Обновляем интерфейс
+                    image_path_var.set(new_file_path)
+                    load_image_preview(new_file_path)
+
+                except Exception as e:
+                    messagebox.showerror("Ошибка", f"Не удалось обработать изображение: {str(e)}")
 
         def load_image_preview(file_path):
             try:
@@ -376,6 +448,23 @@ def create_product_page(root):
                 return
 
             update_product(product['id'], new_name, new_price, new_quantity, new_image_path)
+
+            # Добавляем расход если нужно
+            if is_expense.get():
+                expense_amount = expense_amount_var.get()
+                if not expense_amount:
+                    messagebox.showerror("Ошибка", "Введите сумму расхода.")
+                    return
+                try:
+                    expense_amount = float(expense_amount)
+                except ValueError:
+                    messagebox.showerror("Ошибка", "Сумма расхода должна быть числом.")
+                    return
+                
+                expense_name = f"Закуп {new_name}"
+                expense_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                insert_expense(expense_name, expense_amount, expense_date)
+
             messagebox.showinfo("Успех", "Продукт обновлен!")
             modal.destroy()
             display_products()
@@ -391,8 +480,8 @@ def create_product_page(root):
                 modal.destroy()
                 display_products()
 
-        ttk.Button(modal, text="Сохранить изменения", command=save_changes).grid(row=5, columnspan=2, pady=10)
-        ttk.Button(modal, text="Удалить продукт", command=delete_products).grid(row=6, columnspan=2, pady=10)
+        ttk.Button(modal, text="Сохранить изменения", command=save_changes).grid(row=7, columnspan=2, pady=10)
+        ttk.Button(modal, text="Удалить продукт", command=delete_products).grid(row=8, columnspan=2, pady=10)
 
     def refresh_product_page():
         display_products()
