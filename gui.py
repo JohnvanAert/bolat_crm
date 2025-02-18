@@ -122,9 +122,6 @@ def create_gui_page(root):
                 height=5,
                 relief=tk.GROOVE,
                 bd=0.5,
-                bg=BUTTON_BG,
-                fg=border_color,
-                activebackground=BUTTON_ACTIVE_BG,
                 highlightbackground=border_color,
                 highlightthickness=2,  # Толщина обводки
                 command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
@@ -237,7 +234,7 @@ def create_gui_page(root):
         ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=1, columnspan=1, pady=5)
 
     
-
+    
     def update_pagination_buttons(total_pages):
         for widget in pagination_frame.winfo_children():
             widget.destroy()

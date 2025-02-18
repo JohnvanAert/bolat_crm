@@ -1,7 +1,8 @@
 import psycopg2
 from dotenv import load_dotenv
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import threading
 
 # Загрузка переменных окружения из файла .env
 load_dotenv()
@@ -881,29 +882,45 @@ from datetime import datetime, timedelta
 
 def is_cabin_busy(cabin_id, current_time):
     """
-    Проверяет, занята ли кабина в указанный момент времени.
-    Если время до следующей брони меньше часа, возвращает True.
+    Проверяет, занята ли кабина в указанный момент времени, 
+    проверяя таблицы sales и bookings.
+    Если до начала следующей брони меньше часа — возвращает True.
     """
-    query = """
-        SELECT date, end_date 
-        FROM sales 
-        WHERE cabins_id = %s 
+    query_sales = """
+        SELECT date, end_date
+        FROM sales
+        WHERE cabins_id = %s
         ORDER BY date ASC
     """
+    query_bookings = """
+        SELECT start_date, end_date
+        FROM bookings
+        WHERE cabin_id = %s
+        ORDER BY start_date ASC
+    """
+
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (cabin_id,))
+            # Проверяем занятость по таблице sales
+            cursor.execute(query_sales, (cabin_id,))
+            sales_bookings = cursor.fetchall()
+
+            for date, end_date in sales_bookings:
+                if date <= current_time < end_date:
+                    return True  # Кабина занята по продажам
+                if current_time < date and (date - current_time) < timedelta(hours=1):
+                    return True  # До следующей продажи менее часа
+
+            # Проверяем занятость по таблице bookings
+            cursor.execute(query_bookings, (cabin_id,))
             bookings = cursor.fetchall()
 
-            for date, end_date in bookings:
-                # Проверяем, попадает ли текущее время внутрь уже существующей брони
-                if date <= current_time < end_date:
-                    return True  # Кабина занята в этот момент
-
-                # Проверяем, если до следующей брони меньше 1 часа
-                if current_time < date and (date - current_time) < timedelta(hours=1):
-                    return True  # Слишком маленький промежуток между бронями
+            for start_date, end_date in bookings:
+                if start_date <= current_time < end_date:
+                    return True  # Кабина занята по броням
+                if current_time < start_date and (start_date - current_time) < timedelta(hours=1):
+                    return True  # До следующей брони менее часа
 
             return False  # Кабина свободна
     finally:
@@ -1519,3 +1536,73 @@ def fetch_product_details(product_name):
         } if product else None
     finally:
         connection.close()
+
+
+def update_booking(booking_id, data):
+    """Обновление информации о бронировании в базе данных."""
+    query = """
+    UPDATE bookings
+    SET 
+        customer_name = %s,
+        customer_phone = %s,
+        cabin_id = %s,
+        start_date = %s,
+        end_date = %s,
+        status = %s
+    WHERE id = %s;
+    """
+    params = (
+        data["customer_name"],
+        data["customer_phone"],
+        data["cabin_name"],  # Теперь это ID
+        data["start_date"],
+        data["end_date"],
+        data["status"],
+        booking_id
+    )
+
+    conn = connect()
+    with conn.cursor() as cursor:
+        cursor.execute(query, params)
+    conn.commit()
+    conn.close()
+
+def delete_booking(booking_id):
+    """Удаление бронирования из базы данных."""
+    query = "DELETE FROM bookings WHERE id = %s;"
+    conn = connect()
+    with conn.cursor() as cursor:
+        cursor.execute(query, (booking_id,))
+    conn.commit()
+    conn.close()
+
+
+def cancel_expired_bookings():
+    """Отменяет все бронирования в статусе 'Ожидание' с истекшим временем окончания."""
+    query = """
+        UPDATE bookings
+        SET status = 'Отменен'
+        WHERE status = 'Ожидание' AND end_date < NOW();
+    """
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            affected_rows = cursor.rowcount
+            conn.commit()
+            # print(f"Отменено {affected_rows} просроченных бронирований.")
+            return affected_rows
+    except Exception as e:
+        conn.rollback()
+        print("Ошибка при отмене просроченных бронирований:", e)
+        return 0
+    finally:
+        conn.close()
+
+
+def schedule_booking_check(interval=300):
+    """Периодически проверяет просроченные бронирования и обновляет их статус."""
+    cancel_expired_bookings()
+    threading.Timer(interval, schedule_booking_check, [interval]).start()
+
+schedule_booking_check()

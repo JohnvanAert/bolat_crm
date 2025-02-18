@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkcalendar import Calendar
-from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings  # Функции из базы данных
+from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings, update_booking, delete_booking  # Функции из базы данных
 from tkinter import messagebox
 from tktimepicker import SpinTimePickerModern, constants
 from decimal import Decimal
@@ -85,6 +85,7 @@ def create_booking_page(root):
     bookings_table.heading("Начало брони", text="Начало брони")
     bookings_table.heading("Конец брони", text="Конец брони")
     bookings_table.heading("Статус", text="Статус")
+    # Обработчик двойного клика
 
     # Настройка ширины столбцов
     bookings_table.column("ID", width=40)
@@ -157,7 +158,76 @@ def create_booking_page(root):
 
     
     load_bookings()
-    
+    def on_booking_double_click(event):
+        """Открытие модального окна для редактирования брони."""
+        selected_item = bookings_table.selection()
+        if not selected_item:
+            return
+
+        item = bookings_table.item(selected_item)
+        booking_data = item["values"]
+
+        # Создание модального окна
+        edit_window = tk.Toplevel(root)
+        edit_window.title("Редактировать бронь")
+        edit_window.geometry("400x600")
+        edit_window.transient(root)
+        edit_window.grab_set()
+
+        # Поля для редактирования
+        # Поля для редактирования
+        fields_map = {
+            "Имя клиента": 1,   # booking_data[1]
+            "Телефон": 2,       # booking_data[2]
+            "Кабинка": 3,       # booking_data[3]
+            "Начало брони": 5,  # booking_data[5]
+            "Конец брони": 6,   # booking_data[6]
+            "Статус": 7         # booking_data[7]
+        }
+
+        entries = {}
+
+        for label, index in fields_map.items():
+            tk.Label(edit_window, text=label).pack(pady=(10, 0))
+            entry = ttk.Entry(edit_window, width=40)
+            entry.pack(pady=5)
+            entry.insert(0, booking_data[index])  
+            entries[label] = entry
+
+        def save_changes():
+            """Сохранение изменений в базе данных."""
+            updated_data = {
+                "customer_name": entries["Имя клиента"].get().strip(),
+                "customer_phone": entries["Телефон"].get().strip(),
+                "cabin_name": entries["Кабинка"].get().strip(),
+                "start_date": entries["Начало брони"].get().strip(),
+                "end_date": entries["Конец брони"].get().strip(),
+                "status": entries["Статус"].get().strip()
+            }
+            if not updated_data["cabin_name"]:
+                raise ValueError("Название кабинки не может быть пустым.")
+
+            # Вызов функции обновления в базе
+            
+            update_booking(booking_data[0], updated_data)
+            load_bookings()  # Перезагрузка таблицы
+            edit_window.destroy()
+
+        def delete_booking_confirm():
+            """Подтверждение удаления и удаление брони."""
+            answer = messagebox.askyesno("Удалить бронь", "Вы уверены, что хотите удалить эту бронь?")
+            if answer:
+                delete_booking(booking_data[0])
+                load_bookings()  # Перезагрузка таблицы
+                edit_window.destroy()
+
+        # Кнопки управления
+        ttk.Button(edit_window, text="Сохранить", command=save_changes).pack(pady=10)
+        ttk.Button(edit_window, text="Удалить", command=delete_booking_confirm).pack(pady=5)
+        ttk.Button(edit_window, text="Отмена", command=edit_window.destroy).pack(pady=5)
+
+        
+    bookings_table.bind("<Double-1>", on_booking_double_click)
     
     # Кнопки управления
     # Модальное окно для добавления бронирования
