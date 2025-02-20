@@ -327,7 +327,6 @@ def create_gui_page(root):
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
         edit_cabins_combo.grid(row=3, column=1, padx=10, pady=10)
         edit_cabins_combo['values'] = cabins_combo['values']
-        edit_cabins_combo.config(state="disabled")
         # Добавляем выпадающий список времени
         ttk.Label(edit_window, style="Custom.TLabel", text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
         time_combo = ttk.Combobox(edit_window, state="readonly")
@@ -758,8 +757,12 @@ def create_gui_page(root):
             # Определяем новую кабинку и её цену
             selected_cabin_id = next((cabin['id'] for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
             new_cabin_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['name'].strip().lower() == new_cabin), None)
+            if new_cabin_price is None:
+                new_cabin_price = Decimal(selected_data[4])
 
-            selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
+            if selected_cabin_id is None:  
+                selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
+            print(f"Выбрана кабинка: {edit_cabins_combo.get()}, ID: {selected_cabin_id}, date: {selected_data[5]}, end_date: {selected_data[7]}")
             cabin_hourly_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             cabin_capacity = next((int(cabin['capacity']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             if not cabin_hourly_price:
@@ -795,7 +798,7 @@ def create_gui_page(root):
             try:
                  # Считаем старую дату завершения
                 old_end_date = datetime.datetime.strptime(selected_data[5], '%Y-%m-%d %H:%M:%S')
-
+                
                 
                 new_end_date = calculate_new_end_date(old_end_date, duration)
                 # Проверяем, нет ли брони в ближайший час после нового окончания аренды
@@ -841,6 +844,16 @@ def create_gui_page(root):
             if new_cabin == selected_cabin.strip().lower():
                 cabin_price = Decimal(selected_data[6])  # Используем старую цену кабинки
 
+            old_start_date = datetime.datetime.strptime(selected_data[5], '%Y-%m-%d %H:%M:%S')  
+            old_end_date = datetime.datetime.strptime(selected_data[7], '%Y-%m-%d %H:%M:%S')
+            current_duration_hours = (old_end_date - old_start_date).total_seconds() / 3600
+
+            if new_cabin != selected_cabin.strip().lower():
+                cabin_total_price = new_cabin_price * Decimal(current_duration_hours + duration_hours)
+            else:
+                # Добавляем стоимость за дополнительное время
+                cabin_total_price = Decimal(selected_data[6]) + (new_cabin_price * Decimal(duration_hours))
+                
             total_price = total_products_price + cabin_total_price
 
             # Добавляем или убираем 15% услуг
@@ -877,7 +890,7 @@ def create_gui_page(root):
             if not new_number.isdigit():
                 messagebox.showerror("Ошибка", "Номер должен быть числом!")
                 return
-
+            
             # Обновляем данные в базе
             update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get(), people_count=new_people_count, extra_charge=extra_charge)
 
@@ -1430,7 +1443,8 @@ def create_gui_page(root):
 
     def refresh_gui_page():
         display_sales_data()
-        frame.after(60000, refresh_gui_page)
+        create_cabin_buttons()
+        frame.after(40000, refresh_gui_page)
         
 
     return frame

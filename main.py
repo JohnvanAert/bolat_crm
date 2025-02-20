@@ -227,7 +227,7 @@ def main():
             cabins_listbox.insert(tk.END, "Нет занятых кабин")
 
         # Запускаем функцию снова через 1 минуту (60 000 миллисекунд)
-        cabins_listbox.after(60000, update_occupied_cabins)
+        cabins_listbox.after(20000, update_occupied_cabins)
         check_cabins_buttons_state()
 
 
