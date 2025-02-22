@@ -547,7 +547,7 @@ def create_booking_page(root):
             )
 
             # Расположение кнопок в сетке
-            row, col = divmod(idx, 5)  # 5 кнопок в строке
+            row, col = divmod(idx, 8)  # 5 кнопок в строке
             cabin_button.grid(row=row, column=col, padx=5, pady=5)
     
     def handle_cabin_click(cabin):

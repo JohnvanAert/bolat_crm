@@ -129,7 +129,7 @@ def create_gui_page(root):
                 command=lambda c=cabin: handle_cabin_click(c)  # При нажатии передаем данные кабинки
             )
             # Располагаем кнопки в сетке
-            row, col = divmod(idx, 5)  # 5 - количество кнопок в строке
+            row, col = divmod(idx, 8)  # 5 - количество кнопок в строке
             cabin_button.grid(row=row, column=col, padx=5, pady=5)
 
     def handle_cabin_click(cabin):

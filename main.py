@@ -9,6 +9,9 @@ from booking_page import create_booking_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products, get_renter_details, fetch_product_details
 from datetime import datetime
 from PIL import Image, ImageTk
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
+
 
 def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#6fa8dc", button_fg="#004d99"):
     """Применение стилей ко всем фреймам и кнопкам рекурсивно."""
@@ -264,6 +267,7 @@ def main():
             tk.Label(details_window, text=f"Имя клиента: {renter_details['name']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
             tk.Label(details_window, text=f"Номер: {renter_details['number']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
             tk.Label(details_window, text=f"Сумма заказа: {renter_details['total_sales']} ₸", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+
             tk.Label(details_window, text=f"Время начала: {renter_details['date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
             tk.Label(details_window, text=f"Время окончания: {renter_details['end_date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
 
