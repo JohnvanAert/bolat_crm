@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, gui_cabin_status, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity, get_next_booking
+from database import insert_sales_data, fetch_sales_data, update_sales_data, fetch_products, gui_cabin_status, insert_order_product, get_products_for_sale, delete_product_from_sale, update_product_quantity, delete_sales, get_cabin_info_from_sale, recalculate_cabin_price, get_products_data_for_sale, update_total_sales, update_sale_total_price, add_product_to_sale, get_all_products, is_cabin_busy, add_rental_extension, get_extensions_for_sale, decrease_product_stock, fetch_products_from_db, increase_product_stock, update_product_stocks, get_available_quantity, fetch_rental_cost, get_service_state, get_discount_state, restore_product_quantity, get_next_booking, complete_order, get_order_status
 from cabin_data import add_observer, get_cabins_data
 import datetime
 from decimal import Decimal, InvalidOperation
@@ -51,8 +51,8 @@ def create_gui_page(root):
     ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, pady=5)
 
 
-    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge"), show="headings")
-    tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date")
+    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
+    tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Кабина")
     tree.heading("total_sales", text="Общий чек")
@@ -61,6 +61,7 @@ def create_gui_page(root):
     tree.heading("date", text="Дата и Время")
     tree.heading("cabins_price", text="Аренда кабинки")
     tree.heading("end_date", text="Дата окончания")
+    tree.heading("status", text="Статус")
     tree.grid(row=7, column=0, columnspan=2)
 
     tree.column("id", width=50)
@@ -70,6 +71,7 @@ def create_gui_page(root):
     tree.column("total_sales", width=100)
     tree.column("date", width=150)
     tree.column("end_date", width=150)
+    tree.column("status", width=100)
 
     # Переменные для пагинации
     current_page = tk.IntVar(value=1)
@@ -213,8 +215,9 @@ def create_gui_page(root):
         paginated_data = all_data[start_index:end_index]
 
         for row in paginated_data:
-            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge  = row
-            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge))
+            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, is_completed  = row
+            status = "Завершен" if is_completed else "Ожидание"
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, status))
 
 
 
@@ -273,8 +276,9 @@ def create_gui_page(root):
     def on_item_double_click(event):
         item = tree.selection()[0]
         selected_data = tree.item(item, "values")
-
+        
         sale_id = selected_data[0]
+        is_completed = get_order_status(sale_id)
         service_state = get_service_state(sale_id)
         discount_state = get_discount_state(sale_id)
         def validate_only_letters(event):
@@ -306,31 +310,30 @@ def create_gui_page(root):
         style = ttk.Style()
         # Стиль для Label
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
-        ttk.Label(edit_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0, padx=5, pady=5)
         edit_name_entry = ttk.Entry(edit_window)
-        edit_name_entry.grid(row=0, column=1, padx=10, pady=10)
+        edit_name_entry.grid(row=0, column=1, padx=5, pady=5)
         edit_name_entry.insert(0, selected_data[1])
-        edit_name_entry.bind("<KeyRelease>", validate_only_letters)
         
-        ttk.Label(edit_window, style="Custom.TLabel", text="Номер").grid(row=1, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Номер").grid(row=1, column=0, padx=5, pady=5)
         edit_number_entry = ttk.Entry(edit_window)
-        edit_number_entry.grid(row=1, column=1, padx=10, pady=10)
+        edit_number_entry.grid(row=1, column=1, padx=5, pady=5)
         edit_number_entry.insert(0, selected_data[2])
         edit_number_entry.bind("<KeyRelease>", validate_only_numbers)
 
-        ttk.Label(edit_window, style="Custom.TLabel", text="Количество людей").grid(row=2, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Количество людей").grid(row=2, column=0, padx=5, pady=5)
         people_entry = ttk.Entry(edit_window)
-        people_entry.grid(row=2, column=1, padx=10, pady=10)
+        people_entry.grid(row=2, column=1, padx=5, pady=5)
         people_entry.insert(0, (selected_data[8]))
         
-        ttk.Label(edit_window, style="Custom.TLabel", text="Выберите кабинку").grid(row=3, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Выберите кабинку").grid(row=3, column=0, padx=5, pady=5)
         edit_cabins_combo = ttk.Combobox(edit_window, state="readonly")
-        edit_cabins_combo.grid(row=3, column=1, padx=10, pady=10)
+        edit_cabins_combo.grid(row=3, column=1, padx=5, pady=5)
         edit_cabins_combo['values'] = cabins_combo['values']
         # Добавляем выпадающий список времени
-        ttk.Label(edit_window, style="Custom.TLabel", text="Продление аренды").grid(row=4, column=0, padx=10, pady=10)
+        ttk.Label(edit_window, style="Custom.TLabel", text="Продление аренды").grid(row=4, column=0, padx=5, pady=5)
         time_combo = ttk.Combobox(edit_window, state="readonly")
-        time_combo.grid(row=4, column=1, padx=10, pady=10)
+        time_combo.grid(row=4, column=1, padx=5, pady=5)
         time_combo['values'] = ["30 минут", "1 час", "1 час 30 минут", "2 часа"]
         def calculate_new_end_date(start_date, duration):
             if duration == "30 минут":
@@ -349,15 +352,22 @@ def create_gui_page(root):
         # Загрузка товаров из базы данных
         sale_id = selected_data[0]
         products_data = get_products_for_sale(sale_id)  # Получение товаров для текущей продажи
+        # способ оплаты
+        payment_options = ["Kaspi Gold", "Kaspi Red", "Наличные", "Halyk Bank"]
+        ttk.Label(edit_window, style="Custom.TLabel", text="Способ оплаты").grid(row=5, column=0, padx=5, pady=5)
+        payment_combo = ttk.Combobox(edit_window, state="readonly", values=payment_options)
+        payment_combo.grid(row=5, column=1, padx=5, pady=5)
+        current_payment = selected_data[10] if len(selected_data) > 10 else "Наличные"
+        payment_combo.set(current_payment)  # Установите значение по умолчанию или из базы данных
+
         # Стиль для фреймов
         style.configure("Custom.TFrame", background="#e6f7ff",borderwidth=0, relief="groove")
-
         # Стиль для Treeview (таблиц)
         style.configure("Custom.Treeview", font=("Arial", 10), background="#ffffff", fieldbackground="#ffffff")
         style.configure("Custom.Treeview.Heading", font=("Arial", 12, "bold"), background="#4CAF50", foreground="white")
         # Создаём общий фрейм для двух таблиц
         tables_frame = ttk.Frame(edit_window, style="Custom.TFrame")
-        tables_frame.grid(row=5, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
+        tables_frame.grid(row=6, column=0, columnspan=2, sticky="nsew", padx=5, pady=5)
         # Фрейм для товаров
         products_frame = ttk.Frame(tables_frame, style="Custom.TFrame")
         products_frame.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
@@ -740,11 +750,15 @@ def create_gui_page(root):
 
 
         def save_changes():
+            if get_order_status(selected_data[0]):
+                messagebox.showerror("Ошибка", "Завершённый заказ нельзя изменить!")
+                return
             new_name = edit_name_entry.get().strip()
             new_number = edit_number_entry.get().strip()
             new_people_count = int(people_entry.get().strip())  
             service_charge_applied = bool(service_var.get())
             discount_applied = bool(discount_var.get())
+            selected_payment = payment_combo.get()
             # Проверяем, выбрано ли новое значение из комбобокса
             if edit_cabins_combo.get():
                 # Извлекаем только название кабинки (до дефиса)
@@ -752,6 +766,8 @@ def create_gui_page(root):
             else:
                 new_cabin = selected_cabin.strip().lower()  # Используем старое значение, если новое не выбрано
 
+            current_time = datetime.datetime.now()
+                  
             # Получаем данные о кабинках
             cabins_data = get_cabins_data()
             # Определяем новую кабинку и её цену
@@ -763,6 +779,10 @@ def create_gui_page(root):
             if selected_cabin_id is None:  
                 selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
             print(f"Выбрана кабинка: {edit_cabins_combo.get()}, ID: {selected_cabin_id}, date: {selected_data[5]}, end_date: {selected_data[7]}")
+            # Проверяем занятость кабины
+            if is_cabin_busy(selected_cabin_id, current_time):
+                messagebox.showerror("Ошибка", "Эта кабина уже занята в данный момент.")
+                return
             cabin_hourly_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             cabin_capacity = next((int(cabin['capacity']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             if not cabin_hourly_price:
@@ -786,7 +806,7 @@ def create_gui_page(root):
             # Рассчитываем extra_charge на основе нового количества людей
             extra_people = max(0, new_people_count - cabin_capacity)
             extra_charge = extra_people * 1000            
-            
+                 
             cabin_total_price = cabin_total_price - previous_extra_charge + extra_charge
             # Если кабинка не найдена, используем прежние данные
             if selected_cabin_id is None or new_cabin_price is None:
@@ -892,7 +912,7 @@ def create_gui_page(root):
                 return
             
             # Обновляем данные в базе
-            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get(), people_count=new_people_count, extra_charge=extra_charge)
+            update_sales_data(selected_data[0], new_name, new_number, selected_cabin_id, total_price.quantize(Decimal('0.01')), cabin_total_price, extension_minutes, service_charge_applied, discount_applied=discount_var.get(), people_count=new_people_count, extra_charge=extra_charge, payment_method=selected_payment)
 
             # Уведомление об успешном обновлении
             messagebox.showinfo("Успех", "Данные успешно обновлены!")
@@ -943,27 +963,103 @@ def create_gui_page(root):
         button_frame = tk.Frame(edit_window, bg="#e0f7fa")
         button_frame.grid(row=7, column=0, columnspan=2, pady=5)  # Используем grid для размещения фрейма
 
-        # Добавляем первый ряд кнопок
-        ttk.Button(button_frame, text="Добавить продукты", command=open_add_product_window).grid(row=0, column=0, padx=5)
-        ttk.Button(button_frame, text="Удалить товар", command=delete_product).grid(row=0, column=1, padx=5)
-        ttk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity).grid(row=0, column=2, padx=5)
-        ttk.Button(button_frame, text="Сохранить", command=save_changes).grid(row=0, column=3, padx=5)
-        ttk.Button(button_frame, text="Удалить", command=delete_sale).grid(row=0, column=4, padx=5)
+        # Создаем кнопки и сохраняем их в переменные
+        add_product_btn = ttk.Button(button_frame, text="Добавить продукты", command=open_add_product_window)
+        delete_product_btn = ttk.Button(button_frame, text="Удалить товар", command=delete_product)
+        decrease_quantity_btn = ttk.Button(button_frame, text="Уменьшить количество", command=decrease_quantity)
+        save_btn = ttk.Button(button_frame, text="Сохранить", command=save_changes)
+        delete_sale_btn = ttk.Button(button_frame, text="Удалить", command=delete_sale)
 
+        add_product_btn.grid(row=0, column=0, padx=5)
+        delete_product_btn.grid(row=0, column=1, padx=5)
+        decrease_quantity_btn.grid(row=0, column=2, padx=5)
+        save_btn.grid(row=0, column=3, padx=5)
+        delete_sale_btn.grid(row=0, column=4, padx=5)
+
+        
+            # Собираем все кнопки в список для управления
+        management_buttons = [
+            add_product_btn,
+            delete_product_btn,
+            decrease_quantity_btn,
+            save_btn,
+            delete_sale_btn
+        ]
         # Боковая панель
         checkbox_frame = tk.Frame(edit_window, bg="#e0f7fa")
-        checkbox_frame.grid(row=8, column=0, columnspan=2, pady=5)  # Размещаем выше кнопок
-
+        checkbox_frame.grid(row=8, column=0, columnspan=2, pady=5)
 
         # Добавляем второй ряд чекбоксов и кнопок
         service_var = tk.BooleanVar(value=service_state)  # Переменная для состояния процента услуг
         discount_var = tk.BooleanVar(value=discount_state)  # Переменная для состояния скидки 15%
 
-        tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var, bg="#e0f7fa", fg="black").grid(row=1, column=0, columnspan=2, padx=5)
-        tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var, bg="#e0f7fa", fg="black").grid(row=1, column=2, columnspan=2, padx=5)
-        finish_order_button = ttk.Button(checkbox_frame, text="Чек", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
-        finish_order_button.grid(row=1, column=4, columnspan=3, pady=5)
+        service_check = tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var, bg="#e0f7fa", fg="black")
+        service_check.grid(row=0, column=0, padx=10, pady=5)
 
+        discount_check = tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var, bg="#e0f7fa", fg="black")
+        discount_check.grid(row=0, column=1, padx=10, pady=5)
+
+        finish_order_button = ttk.Button(checkbox_frame, text="Чек", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
+        finish_order_button.grid(row=0, column=2, padx=10, pady=5)
+
+        complete_order_button = ttk.Button(checkbox_frame, text="Завершить заказ", command=lambda: confirm_completion(selected_data[0]))
+        complete_order_button.grid(row=0, column=3, padx=10, pady=5)
+
+        checkbox_frame.grid_columnconfigure(0, weight=1)
+        checkbox_frame.grid_columnconfigure(1, weight=1)
+        checkbox_frame.grid_columnconfigure(2, weight=1)
+        checkbox_frame.grid_columnconfigure(3, weight=1)
+
+        # Список всех редактируемых виджетов
+        editable_widgets = [
+            edit_name_entry,
+            edit_number_entry,
+            people_entry,
+            edit_cabins_combo,
+            time_combo,
+            payment_combo,
+        ]
+        
+        # Список кнопок для блокировки
+        buttons_to_disable = [
+            complete_order_button
+            # Добавьте сюда другие кнопки
+        ]
+        
+        # Список чекбоксов для блокировки
+        checkbuttons = [
+            (service_var, service_check),
+            (discount_var, discount_check),
+        ]
+
+        # Блокируем элементы, если заказ завершён
+        if is_completed:
+            # Блокируем основные виджеты
+            for widget in editable_widgets:
+                widget.config(state="disabled")
+
+            for btn in management_buttons:
+                btn.config(state="disabled")
+                
+            # Блокируем кнопки
+            for button in buttons_to_disable:
+                button.config(state="disabled")
+                
+            # Блокируем чекбоксы и удаляем обработчики
+            for var, checkbox in checkbuttons:
+                checkbox.config(state="disabled")
+                var.trace_remove("write", var.trace_info()[0][1]) if var.trace_info() else None
+
+        def confirm_completion(order_id):
+            response = messagebox.askyesno(
+                "Подтверждение",
+                "Вы уверены, что хотите завершить этот заказ?"
+            )
+            if response:
+                complete_order(order_id)
+                messagebox.showinfo("Успех", "Заказ успешно завершён!")
+                edit_window.destroy()
+                display_sales_data()
         def show_final_receipt(selected_data, products_data, service_state, discount_state):
             receipt_window = tk.Toplevel()
             receipt_window.title("Чек")
@@ -1072,7 +1168,6 @@ def create_gui_page(root):
         ttk.Label(add_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0)
         entry_name = ttk.Entry(add_window)
         entry_name.grid(row=0, column=1, pady=10)
-        entry_name.bind("<KeyRelease>", validate_only_letters)
 
         ttk.Label(add_window, style="Custom.TLabel", text="Номер").grid(row=1, column=0)
         entry_number = ttk.Entry(add_window)
@@ -1444,7 +1539,7 @@ def create_gui_page(root):
     def refresh_gui_page():
         display_sales_data()
         create_cabin_buttons()
-        frame.after(40000, refresh_gui_page)
+        frame.after(10000, refresh_gui_page)
         
 
     return frame

@@ -343,7 +343,6 @@ def create_product_page(root):
         name_var = tk.StringVar(value=product['name'])
         entry_name = ttk.Entry(modal, textvariable=name_var)
         entry_name.grid(row=0, column=1, pady=5)
-        entry_name.bind("<KeyRelease>", validate_only_letters)
         
         ttk.Label(modal, style="Custom.TLabel", text="Цена").grid(row=1, column=0)
         price_var = tk.StringVar(value=str(product['price']))

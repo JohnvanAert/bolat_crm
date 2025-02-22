@@ -6,7 +6,6 @@ from cabin_page import create_cabin_page  # Импорт новой страни
 from expenses_page import create_expenses_page
 from statistic_page import create_statistics_page
 from booking_page import create_booking_page
-from secondary_page import create_secondary_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products, get_renter_details, fetch_product_details
 from datetime import datetime
 from PIL import Image, ImageTk
@@ -25,7 +24,7 @@ def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_b
         style_all_widgets(child, frame_bg, font_color, button_bg, button_fg)
 
 
-def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_secondary_page):
+def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
     nav_frame = tk.Frame(root, bg="#e6f7ff")
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
@@ -36,7 +35,6 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     ttk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     ttk.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     ttk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    ttk.Button(nav_frame, text="Персонал", command=show_secondary_page).pack(side=tk.LEFT, padx=5)
 
 current_page = 1
 restock_page = 1
@@ -73,7 +71,6 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
-        frame_secondary.pack_forget()
         main_page.pack()
         frame_booking.pack_forget()
         root.update_idletasks()
@@ -85,7 +82,6 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
-        frame_secondary.pack_forget()
         frame_products.pack()
         frame_booking.pack_forget()
         root.update_idletasks()
@@ -98,7 +94,6 @@ def main():
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
-        frame_secondary.pack_forget()
         frame_gui.pack()
         root.update_idletasks()
 
@@ -110,7 +105,6 @@ def main():
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
-        frame_secondary.pack_forget()
         frame_cabin.pack()
         root.update_idletasks()
 
@@ -123,7 +117,6 @@ def main():
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
         frame_expenses.pack()
-        frame_secondary.pack_forget()
         root.update_idletasks()
 
     def show_statistics_page():
@@ -135,7 +128,6 @@ def main():
         frame_expenses.pack_forget()
         frame_booking.pack_forget()
         frame_statistics.pack()
-        frame_secondary.pack_forget()
         root.update_idletasks()
 
     def show_booking_page():
@@ -146,20 +138,7 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_booking.pack()
-        frame_secondary.pack_forget()
         frame_statistics.pack_forget()
-        root.update_idletasks()
-
-    def show_secondary_page():
-        left_panel.pack_forget()
-        main_page.pack_forget()
-        frame_products.pack_forget()
-        frame_gui.pack_forget()
-        frame_cabin.pack_forget()
-        frame_expenses.pack_forget()
-        frame_statistics.pack_forget()
-        frame_booking.pack_forget()
-        frame_secondary.pack()
         root.update_idletasks()
 
     # Функция для создания стильно оформленного Listbox
@@ -384,14 +363,14 @@ def main():
             prev_button.config(state=tk.NORMAL)
 
     # Главная страница
-    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_secondary_page)
+    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page)
     main_page = tk.Frame(root)
-    main_page.pack(fill='both', expand=True)
+    
     # Левая панель с навигационными кнопками
     left_panel = tk.Frame(root, bg="#cfe2f3", width=200)
     left_panel.pack(side='left', fill='y')
     left_panel.pack_propagate(0)  # Фиксируем ширину
-
+    main_page.pack()
     # Кнопки навигации
     nav_buttons = [
         ("Кабинки", show_main_page),
@@ -512,7 +491,6 @@ def main():
     frame_expenses = create_expenses_page(root)
     frame_statistics = create_statistics_page(root)
     frame_booking = create_booking_page(root)
-    frame_secondary = create_secondary_page(root)
      # Применяем стили к страницам
 
      
@@ -524,7 +502,6 @@ def main():
     style_all_widgets(frame_cabin, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
     style_all_widgets(frame_statistics, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
     style_all_widgets(frame_expenses, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_secondary, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
     
     frame_products.pack_forget()
     frame_gui.pack_forget()
@@ -532,7 +509,6 @@ def main():
     frame_expenses.pack_forget()
     frame_statistics.pack_forget()
     frame_booking.pack_forget()
-    frame_secondary.pack_forget()
     auto_update_sold_products()
     update_occupied_cabins()
     root.mainloop()

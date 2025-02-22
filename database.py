@@ -62,7 +62,7 @@ def fetch_sales_data():
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge FROM sales ORDER BY date DESC")
+        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method, is_completed FROM sales ORDER BY date DESC")
         sales_data = cursor.fetchall()
         cursor.close()
         conn.close()
@@ -71,7 +71,7 @@ def fetch_sales_data():
         print(f"Ошибка при получении данных о продажах: {e}")
         return []
 
-def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied, people_count, extra_charge):
+def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied, people_count, extra_charge, payment_method):
     conn = connect()
     cursor = conn.cursor()
     try:
@@ -87,11 +87,12 @@ def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_tota
                 service_charge_applied = %s, 
                 discount_applied = %s, 
                 people_count = %s,
-                extra_charge = %s
+                extra_charge = %s,
+                payment_method = %s
         """
 
         # Если есть добавочные минуты, обновляем `end_date`
-        params = [new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, service_charge_applied, discount_applied, people_count, extra_charge]
+        params = [new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, service_charge_applied, discount_applied, people_count, extra_charge, payment_method]
 
         if extension_minutes > 0:
             sql += ", end_date = end_date + %s * INTERVAL '1 minute'"
@@ -1038,7 +1039,7 @@ def get_cabin_statistics(period):
         LEFT JOIN
             sales s ON c.id = s.cabins_id
         WHERE
-            s.date >= NOW() - INTERVAL '1 {period}'
+            s.date >= NOW() - INTERVAL '1 {period}' AND s.is_completed = TRUE
         GROUP BY
             c.id, c.name
         ORDER BY
@@ -1060,7 +1061,7 @@ def get_total_income(period):
     query = f"""
     SELECT SUM(total_sales)
     FROM sales
-    WHERE date >= NOW() - INTERVAL '1 {period}';
+    WHERE date >= NOW() - INTERVAL '1 {period}' AND is_completed = TRUE;
     """
     return fetch_single_value(query)
 
@@ -1104,7 +1105,7 @@ def get_cabin_statistics_by_date_range(start_date, end_date):
             ELSE 0 
         END AS avg_check
     FROM cabins c
-    LEFT JOIN sales s ON c.id = s.cabins_id AND s.date BETWEEN %s AND %s
+    LEFT JOIN sales s ON c.id = s.cabins_id AND s.date BETWEEN %s AND %s AND s.is_completed = TRUE
     GROUP BY c.id, c.name
     HAVING
     COUNT(s.id) > 0 OR SUM(s.total_sales) > 0
@@ -1131,7 +1132,7 @@ def get_total_income_by_date_range(start_date, end_date):
     query = """
         SELECT COALESCE(SUM(total_sales), 0)
         FROM sales
-        WHERE date BETWEEN %s AND %s
+        WHERE date BETWEEN %s AND %s AND is_completed = TRUE
     """
     try:
         conn = connect()
@@ -1599,10 +1600,32 @@ def cancel_expired_bookings():
     finally:
         conn.close()
 
+def complete_order(order_id):
+    """Отмечает заказ как завершённый."""
+    query = "UPDATE sales SET is_completed = TRUE WHERE id = %s;"
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (order_id,))
+            conn.commit()
+        print(f"Заказ {order_id} успешно завершён.")
+    except Exception as e:
+        print("Ошибка при завершении заказа:", e)
+    finally:
+        conn.close()
 
-def schedule_booking_check(interval=300):
-    """Периодически проверяет просроченные бронирования и обновляет их статус."""
-    cancel_expired_bookings()
-    threading.Timer(interval, schedule_booking_check, [interval]).start()
 
-schedule_booking_check()
+def get_order_status(order_id):
+    """Проверяет, завершён ли заказ."""
+    query = "SELECT is_completed FROM sales WHERE id = %s;"
+    try:
+        conn = connect()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (order_id,))
+            result = cursor.fetchone()
+            return result[0] if result else False
+    except Exception as e:
+        print("Ошибка при проверке статуса заказа:", e)
+        return False
+    finally:
+        conn.close()
