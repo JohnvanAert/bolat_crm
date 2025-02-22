@@ -304,8 +304,11 @@ def create_gui_page(root):
         edit_window.geometry("850x600")  # Увеличьте размер окна
         edit_window.title("Редактирование заказа")
         edit_window.configure(bg="#e6f7ff")
+        edit_window.grab_set()
         edit_window.grid_rowconfigure(4, weight=1)  # Для масштабирования таблицы
         edit_window.grid_columnconfigure(1, weight=1)
+        # Сброс переменной при закрытии окна
+
         # Создаем стили для Label и Entry
         style = ttk.Style()
         # Стиль для Label
@@ -424,6 +427,7 @@ def create_gui_page(root):
             product_window = tk.Toplevel(root)
             product_window.title("Добавить продукты")
             product_window.configure(bg="#e6f7ff")
+            product_window.grab_set()
             ttk.Label(product_window, style="Custom.TLabel", text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
 
             product_list = ttk.Treeview(product_window, columns=("ID", "Название", "Цена", "Количество"), show="headings")
@@ -780,9 +784,12 @@ def create_gui_page(root):
                 selected_cabin_id = int(selected_data[3])  # ID текущей кабинки
             print(f"Выбрана кабинка: {edit_cabins_combo.get()}, ID: {selected_cabin_id}, date: {selected_data[5]}, end_date: {selected_data[7]}")
             # Проверяем занятость кабины
-            if is_cabin_busy(selected_cabin_id, current_time):
-                messagebox.showerror("Ошибка", "Эта кабина уже занята в данный момент.")
-                return
+            # Проверяем занятость кабины только если она была изменена
+            if new_cabin != selected_cabin.strip().lower():
+                if is_cabin_busy(selected_cabin_id, current_time):
+                    messagebox.showerror("Ошибка", "Эта кабина уже занята в данный момент.")
+                    return
+
             cabin_hourly_price = next((Decimal(cabin['price']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             cabin_capacity = next((int(cabin['capacity']) for cabin in cabins_data if cabin['id'] == selected_cabin_id), None)
             if not cabin_hourly_price:
@@ -1065,6 +1072,7 @@ def create_gui_page(root):
             receipt_window.title("Чек")
             receipt_window.geometry("400x500")
             receipt_window.configure(bg="white")
+            receipt_window.grab_set()
 
             receipt_text = tk.Text(receipt_window, font=("Courier", 12), bg="white", fg="black", wrap="word", height=20)
             receipt_text.pack(padx=10, pady=10, fill="both", expand=True)
@@ -1144,6 +1152,7 @@ def create_gui_page(root):
         add_window.title("Добавить запись")
         add_window.configure(bg="#e6f7ff")
         add_window.geometry("700x600")
+        add_window.grab_set()
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
@@ -1163,7 +1172,6 @@ def create_gui_page(root):
             if not value.isdigit():
                 entry.delete(0, tk.END)
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
-
 
         ttk.Label(add_window, style="Custom.TLabel", text="Имя").grid(row=0, column=0)
         entry_name = ttk.Entry(add_window)
@@ -1192,15 +1200,15 @@ def create_gui_page(root):
         entry_sales.grid(row=5, column=1, pady=10)
 
         # Поле для ввода времени аренды (в часах)
-        ttk.Label(add_window, style="Custom.TLabel", text="На сколько часов?").grid(row=4, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="На сколько часов?").grid(row=3, column=0)
         entry_hours = ttk.Entry(add_window)
-        entry_hours.grid(row=4, column=1, pady=10)
+        entry_hours.grid(row=3, column=1, pady=10)
         entry_hours.bind("<KeyRelease>", lambda event: update_total_price())
 
         # Поле для ввода количества людей
-        ttk.Label(add_window, style="Custom.TLabel", text="Количество людей:").grid(row=3, column=0)
+        ttk.Label(add_window, style="Custom.TLabel", text="Количество людей:").grid(row=4, column=0)
         entry_people_count = ttk.Entry(add_window)
-        entry_people_count.grid(row=3, column=1, pady=10)
+        entry_people_count.grid(row=4, column=1, pady=10)
         entry_people_count.bind("<KeyRelease>", lambda event: update_total_price())
 
         def format_price(price):
@@ -1296,6 +1304,7 @@ def create_gui_page(root):
             product_window = tk.Toplevel(add_window)
             product_window.title("Выбор продуктов")
             product_window.configure(bg="#e6f7ff")
+            product_window.grab_set()
             product_tree = ttk.Treeview(product_window, columns=("product_id", "product_name", "price", "quantity"), show="headings")
             product_tree.heading("product_id", text="ID")
             product_tree.heading("product_name", text="Название")
@@ -1332,8 +1341,10 @@ def create_gui_page(root):
 
                 # Получение данных из базы
                 products = fetch_products_from_db()  # Вызов функции из database.py
-                for row in products:
-                    product_tree.insert("", tk.END, values=row)
+                products = [{'id': p[0], 'name': p[1], 'price': p[2], 'quantity': p[3]} for p in products]
+                sorted_products = sorted(products, key=lambda x: x['id'])
+                for product in sorted_products:
+                    product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
 
             def add_product_to_order():
                 selected_item = product_tree.selection()
@@ -1419,9 +1430,14 @@ def create_gui_page(root):
 
                 # Получение актуального списка продуктов из базы данных
                 updated_products = fetch_products()
+                # ✅ Проверяем тип данных и конвертируем только если нужно
+                if updated_products and isinstance(updated_products[0], tuple):
+                    updated_products = [{'id': p[0], 'name': p[1], 'price': p[2], 'quantity': p[3]} for p in updated_products]
 
+                 # Сортируем по имени
+                sorted_products = sorted(updated_products, key=lambda x: x['id'])
                 # Обновление таблицы
-                for product in updated_products:
+                for product in sorted_products:
                     product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
 
                 # Добавление актуальных данных

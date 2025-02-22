@@ -1601,8 +1601,12 @@ def cancel_expired_bookings():
         conn.close()
 
 def complete_order(order_id):
-    """Отмечает заказ как завершённый."""
-    query = "UPDATE sales SET is_completed = TRUE WHERE id = %s;"
+    """Отмечает заказ как завершённый и устанавливает end_date на текущее время без миллисекунд."""
+    query = """
+        UPDATE sales 
+        SET is_completed = TRUE, end_date = NOW()::timestamp(0) 
+        WHERE id = %s;
+    """
     try:
         conn = connect()
         with conn.cursor() as cursor:

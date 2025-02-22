@@ -21,6 +21,7 @@ def create_product_page(root):
         modal.geometry("500x600")
         modal.configure(bg="#e6f7ff")
         modal.grid_columnconfigure(1, weight=1)
+        modal.grab_set()
         IMAGE_DIR = 'images'
         if not os.path.exists(IMAGE_DIR):
             os.makedirs(IMAGE_DIR)
@@ -294,6 +295,7 @@ def create_product_page(root):
         modal.title("Редактирование продукта")
         modal.geometry("400x550")
         modal.configure(bg="#e0f7fa")
+        modal.grab_set()
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):

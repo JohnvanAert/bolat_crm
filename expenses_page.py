@@ -64,7 +64,7 @@ def create_expenses_page(root):
     def open_edit_expense_modal(item_id, current_name, current_amount, current_datetime):
         edit_expense_modal = tk.Toplevel(frame)
         edit_expense_modal.title("Редактировать расход")
-        
+        edit_expense_modal.grab_set()
         def validate_only_letters(event):
             """Разрешает вводить только буквы."""
             entry = event.widget
@@ -236,6 +236,7 @@ def create_expenses_page(root):
         add_expense_modal = tk.Toplevel(frame)
         add_expense_modal.title("Добавить расход")
         add_expense_modal.geometry("400x300")
+        add_expense_modal.grab_set()
         add_expense_modal.configure(bg="#e6f7ff")
         style = ttk.Style()
         style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")

@@ -8,6 +8,8 @@ from decimal import Decimal
 from cabin_data import add_observer, get_cabins_data
 import datetime
 
+edit_window = None
+modal = None
 def create_booking_page(root):
     frame_main = tk.Frame(root)
     # Заголовок
@@ -284,6 +286,7 @@ def create_booking_page(root):
         modal.title("Добавить бронирование")
         modal.geometry("600x300")
         modal.configure(bg="#e6f7ff")
+        modal.grab_set()
         modal.resizable(False, False)
         def validate_only_letters(event):
             """Разрешает вводить только буквы и пробелы."""
