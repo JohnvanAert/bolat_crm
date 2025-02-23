@@ -6,6 +6,8 @@ import datetime
 from decimal import Decimal, InvalidOperation
 from tkcalendar import Calendar
 from datetime import timedelta
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -51,7 +53,7 @@ def create_gui_page(root):
     ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, pady=5)
 
 
-    tree = ttk.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
+    tree = tb.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
     tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Кабина")

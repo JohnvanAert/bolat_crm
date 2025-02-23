@@ -11,33 +11,21 @@ from datetime import datetime
 from PIL import Image, ImageTk
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
-
-
-def style_all_widgets(widget, frame_bg="#c01aa3", font_color="#004d99", button_bg="#6fa8dc", button_fg="#004d99"):
-    """Применение стилей ко всем фреймам и кнопкам рекурсивно."""
-    if isinstance(widget, tk.Frame):  # Если это фрейм
-        widget.configure(bg=frame_bg)
-    elif isinstance(widget, tk.Button):  # Если это кнопка
-        widget.configure(bg=button_bg, fg=button_fg, font=("Helvetica", 12), relief=tk.FLAT)
-    elif isinstance(widget, tk.Label):  # Стили для меток
-            widget.configure(bg=frame_bg, fg=font_color, font=("Helvetica", 14))
-
-    # Применяем стили рекурсивно ко всем дочерним виджетам
-    for child in widget.winfo_children():
-        style_all_widgets(child, frame_bg, font_color, button_bg, button_fg)
+from ttkbootstrap.widgets import Meter
+from ttkbootstrap.dialogs import Messagebox
 
 
 def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
-    nav_frame = tk.Frame(root, bg="#e6f7ff")
+    nav_frame = tb.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
-    ttk.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
-    ttk.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
-    ttk.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
-    ttk.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT, padx=5)
-    ttk.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    ttk.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    ttk.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+    tb.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
+    tb.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
+    tb.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
+    tb.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT, padx=5)
+    tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+    tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+    tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
 
 current_page = 1
 restock_page = 1
@@ -45,21 +33,13 @@ occupied_cabins_page = 1
 page_size = 15  
 
 def main():
-    root = tk.Tk()
+    root = tb.Window(themename="flatly")
     root.title("3B CRM")
     root.geometry("1450x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
     root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
-    root.configure(bg="#e6f7ff")
     root.iconbitmap("icon.ico")
     # Создаем стиль
-    style = ttk.Style()
-    style.theme_use("clam")  # Используем нейтральную тему
-    style.configure("TButton", font=("Helvetica", 12), padding=6, background="#4CAF50", foreground="#fff", relief="flat")
-    style.configure("TLabel", font=("Helvetica", 12), background="#d7d7d7", foreground="#004d99")
-    style.configure("TEntry", font=("Helvetica", 12), padding=4)
-    style.map("TButton", background=[("active", "#45A049")])
-
     def resize_handler(event):
         # Обработка изменения размера, если необходимо
         #print(f"New size: {event.width}x{event.height}")
@@ -253,27 +233,39 @@ def main():
         renter_details = get_renter_details(cabin_name)
 
         if renter_details:
-            # Создание модального окна
-            details_window = tk.Toplevel()
+            # Создание модального окна с использованием ttkbootstrap
+            details_window = tb.Toplevel()
             details_window.title(f"Арендаторы {cabin_name}")
-            details_window.geometry("400x300")
-            details_window.configure(bg="#e6f7ff")
-            details_window.grab_set()  # Модальное окно
-            style = ttk.Style()
-            style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+            details_window.geometry("400x350")
+            details_window.configure(background=tb.Style().colors.bg)
+            details_window.grab_set()  # Блокируем основное окно
 
-            # Отображение информации
-            tk.Label(details_window, text=f"Кабина: {cabin_name}", font=("Helvetica", 14, "bold"), bg="#E6F7FF", fg="black").pack(pady=10)
-            tk.Label(details_window, text=f"Имя клиента: {renter_details['name']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
-            tk.Label(details_window, text=f"Номер: {renter_details['number']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
-            tk.Label(details_window, text=f"Сумма заказа: {renter_details['total_sales']} ₸", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            # Заголовок модального окна
+            tb.Label(details_window, text=f"Кабина: {cabin_name}",
+                    bootstyle="primary", font=("Helvetica", 16, "bold")).pack(pady=15)
 
-            tk.Label(details_window, text=f"Время начала: {renter_details['date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
-            tk.Label(details_window, text=f"Время окончания: {renter_details['end_date']}", font=("Helvetica", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+            # Информация о клиенте
+            tb.Label(details_window, text=f"Имя клиента: {renter_details['name']}",
+                    bootstyle="info", font=("Helvetica", 12)).pack(pady=5)
 
-            ttk.Button(details_window, text="Закрыть", command=details_window.destroy).pack(pady=20)
+            tb.Label(details_window, text=f"Номер: {renter_details['number']}",
+                    bootstyle="info", font=("Helvetica", 12)).pack(pady=5)
+
+            tb.Label(details_window, text=f"Сумма заказа: {renter_details['total_sales']} ₸",
+                    bootstyle="success", font=("Helvetica", 12, "bold")).pack(pady=5)
+
+            tb.Label(details_window, text=f"Время начала: {renter_details['date']}",
+                    bootstyle="warning", font=("Helvetica", 12)).pack(pady=5)
+
+            tb.Label(details_window, text=f"Время окончания: {renter_details['end_date']}",
+                    bootstyle="warning", font=("Helvetica", 12)).pack(pady=5)
+
+            # Кнопка закрытия
+            tb.Button(details_window, text="Закрыть", bootstyle="danger", command=details_window.destroy).pack(pady=20)
+
         else:
-            tk.messagebox.showinfo("Информация", "Информация о клиента не найдена.")
+            # Используем ttkbootstrap Messagebox
+            Messagebox.show_info("Информация", "Информация о клиента не найдена.")
 
     def show_product_details(event):
         """
@@ -385,7 +377,7 @@ def main():
     for text, command in nav_buttons:
         btn = ttk.Button(left_panel, text=text, command=command, style='TButton')
         btn.pack(pady=5, padx=10, fill='x')
-
+    
 
     # Создаем рамку для содержимого
     content_frame = tk.Frame(main_page, bg="#7FC3BD")
@@ -474,9 +466,6 @@ def main():
     update_occupied_cabins()
     # Обновляем список продуктов для пополнения при загрузке страницы
     
-    style = ttk.Style()
-    style.configure("TButton", background="#7fc3bd", foreground="#ffffff", font=("Arial", 12))
-
     # Кнопки навигации
     pagination_frame = tk.Frame(main_page)
     pagination_frame.pack(pady=10)
@@ -498,15 +487,6 @@ def main():
      # Применяем стили к страницам
 
      
-    # Применяем стили ко всем страницам и их содержимому
-    style_all_widgets(main_page, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_booking, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_products, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_gui, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_cabin, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_statistics, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    style_all_widgets(frame_expenses, frame_bg="#e6f7ff", font_color="#004d99", button_bg="#bcbcbc", button_fg="#004d99")
-    
     frame_products.pack_forget()
     frame_gui.pack_forget()
     frame_cabin.pack_forget()

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from tkinter import filedialog
 from openpyxl.utils import get_column_letter
+from tkcalendar import DateEntry  # Добавить в импорты
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""

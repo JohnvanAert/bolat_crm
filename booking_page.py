@@ -7,9 +7,11 @@ from tktimepicker import SpinTimePickerModern, constants
 from decimal import Decimal
 from cabin_data import add_observer, get_cabins_data
 import datetime
+from tkcalendar import DateEntry
+from ttkbootstrap.widgets import DateEntry as TtkDateEntry
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 
-edit_window = None
-modal = None
 def create_booking_page(root):
     frame_main = tk.Frame(root)
     # Заголовок
@@ -24,27 +26,11 @@ def create_booking_page(root):
     name_filter = ttk.Entry(filter_frame)
     name_filter.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-    # Фильтр по дате
-    tk.Label(filter_frame, text="Дата:").grid(row=1, column=2, sticky="w")
-    selected_date = tk.StringVar()  # Переменная для хранения выбранной даты
-    date_button = ttk.Button(filter_frame, text="Выбрать дату", command=lambda: open_calendar(selected_date, date_button))
-    date_button.grid(row=1, column=3, padx=5, pady=5, sticky="w")
-
-
-    def open_calendar(date_var, date_button):
-        """Открывает модальное окно с календарем для выбора даты."""
-        def select_date():
-            selected_date = calendar.get_date()
-            date_var.set(selected_date)  # Устанавливаем выбранную дату в переменную
-            date_button.config(text=f"Дата: {selected_date}")  # Обновляем текст кнопки
-            calendar_window.destroy()
-
-        calendar_window = tk.Toplevel()
-        calendar_window.title("Выбрать дату")
-        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-        calendar.pack(pady=10)
-
-        tk.Button(calendar_window, text="Выбрать", command=select_date).pack(pady=5)
+    # Фильтр по дате (DateEntry вместо модального окна)
+    tk.Label(filter_frame, text="Дата:").grid(row=1, column=2, padx=5, pady=5, sticky="w")
+    raw_date = tk.StringVar()
+    date_entry = TtkDateEntry(filter_frame)
+    date_entry.grid(row=1, column=3, padx=5, pady=5, sticky="w")
 
     tk.Label(filter_frame, text="Статус:").grid(row=1, column=4, padx=5, pady=5, sticky="w")
     status_filter = ttk.Combobox(filter_frame, values=["Все", "Подтверждено", "Отменено", "Ожидание"])
@@ -67,8 +53,7 @@ def create_booking_page(root):
     def clear_filters():
         """Сбрасывает все фильтры в исходное состояние."""
         name_filter.delete(0, tk.END)  # Очищает поле имени
-        selected_date.set("")  # Сбрасывает выбранную дату
-        date_button.config(text="Выбрать дату")
+        date_entry.entry.delete(0, tk.END)  # Сбрасывает выбранную дату
         status_filter.set("Все")  # Сбрасывает статус на "Все"
         cabin_filter.set("Все")  # Сбрасывает кабинку на "Все"
         load_bookings(1)  # Перезагружает бронирования без фильтров
@@ -118,14 +103,21 @@ def create_booking_page(root):
 
         # Получение данных фильтров
         name = name_filter.get().strip()
-        date = selected_date.get()
+        raw_date = date_entry.entry.get()  # Теперь получаем выбранную дату при нажатии кнопки
+        if raw_date:
+            try:
+                formatted_date = datetime.datetime.strptime(raw_date, "%m/%d/%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                formatted_date = ""  # Если формат некорректный
+        else:
+            formatted_date = ""
         status = status_filter.get().strip()
         cabin_name = cabin_filter.get().strip()
         # Получаем ID кабинки или None, если выбрано "Все"
         cabin_id = None if cabin_name == "Все" else cabin_map.get(cabin_name)
 
         # Запрос данных из базы
-        bookings, total_count = fetch_filtered_bookings(name, date, status, cabin_id, records_per_page, current_page)
+        bookings, total_count = fetch_filtered_bookings(name, formatted_date, status, cabin_id, records_per_page, current_page)
         bookings_table.delete(*bookings_table.get_children())
         # Добавление данных в таблицу
         for booking in bookings:
@@ -282,10 +274,9 @@ def create_booking_page(root):
     # Кнопки управления
     # Модальное окно для добавления бронирования
     def add_booking_modal(selected_cabin=None):
-        modal = tk.Toplevel(root)
+        modal = tb.Window(themename="flatly")
         modal.title("Добавить бронирование")
         modal.geometry("600x300")
-        modal.configure(bg="#e6f7ff")
         modal.grab_set()
         modal.resizable(False, False)
         def validate_only_letters(event):
@@ -308,20 +299,19 @@ def create_booking_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
         style = ttk.Style()
-        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
-        ttk.Label(modal, style="Custom.TLabel", text="Имя клиента:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        name_entry = ttk.Entry(modal)
+        tb.Label(modal, text="Имя клиента:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        name_entry = tb.Entry(modal)
         name_entry.grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
-        ttk.Label(modal, style="Custom.TLabel", text="Телефон клиента:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-        phone_entry = ttk.Entry(modal)
+        tb.Label(modal, text="Телефон клиента:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        phone_entry = tb.Entry(modal)
         phone_entry.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         phone_entry.bind("<KeyRelease>", validate_only_numbers)
 
-        ttk.Label(modal, style="Custom.TLabel", text="Кабинка:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+        tb.Label(modal, text="Кабинка:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
         cabins = get_cabins()  # Функция для получения списка кабинок из базы данных
         cabin_choices = [f"{cabin['id']} - {cabin['name']}" for cabin in cabins]
-        cabin_combobox = ttk.Combobox(modal, values=cabin_choices)
+        cabin_combobox = tb.Combobox(modal, values=cabin_choices)
         cabin_combobox.grid(row=2, column=1, padx=10, pady=5, sticky="w")
 
         if selected_cabin:
@@ -346,23 +336,23 @@ def create_booking_page(root):
             # Обновляем поле
             num_people_entry.delete(0, tk.END)
             num_people_entry.insert(0, str(capacity))
-        ttk.Label(modal, style="Custom.TLabel", text="Количество людей:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
-        num_people_entry = ttk.Entry(modal)
+        tb.Label(modal, text="Количество людей:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
+        num_people_entry = tb.Entry(modal)
         num_people_entry.grid(row=5, column=1, padx=10, pady=5, sticky="w")
         cabin_combobox.bind("<<ComboboxSelected>>", update_capacity)
         update_capacity()
 
         # Выбор даты и времени начала бронирования
-        ttk.Label(modal, style="Custom.TLabel", text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
+        tb.Label(modal, text="Дата и время начала бронирования:").grid(row=3, column=0, sticky="w", pady=5, padx=10)
         start_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
-        ttk.Label(modal, style="Custom.TLabel", textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
+        tb.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(start_datetime_var, "Выбор даты и времени начала")).grid(row=3, column=1, pady=5, padx=5)
+        tb.Label(modal, textvariable=start_datetime_var).grid(row=3, column=2, pady=5, padx=10)
 
         # Выбор даты и времени окончания бронирования
-        ttk.Label(modal, style="Custom.TLabel", text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
+        tb.Label(modal, text="Дата и время окончания бронирования:").grid(row=4, column=0, sticky="w", pady=5, padx=5)
         end_datetime_var = tk.StringVar(value="")
-        tk.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
-        ttk.Label(modal, style="Custom.TLabel", textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
+        tb.Button(modal, text="Выбрать дату и время", command=lambda: open_calendar_with_time(end_datetime_var, "Выбор даты и времени окончания")).grid(row=4, column=1, pady=5, padx=10)
+        tb.Label(modal, textvariable=end_datetime_var).grid(row=4, column=2, pady=5, padx=10)
 
         def save_booking():
             """Сохранение нового бронирования."""
@@ -513,16 +503,13 @@ def create_booking_page(root):
     button_frame = tk.Frame(frame_main)
     button_frame.grid(row=10, column=0, pady=10, columnspan=2)
 
-    ttk.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
-    ttk.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
-    ttk.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
+    tb.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
+    tb.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
+    tb.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
 
     cabins_frame = tk.Frame(frame_main)
     cabins_frame.grid(row=11, column=0, pady=10, columnspan=2)
-    BUTTON_BG = "#76c7c0"  # Основной цвет фона кнопки
-    BUTTON_FG = "white"    # Цвет текста
-    BUTTON_ACTIVE_BG = "#5aa9a4"  # Цвет кнопки при нажатии
-
+    
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""
         for widget in cabins_frame.winfo_children():
@@ -541,7 +528,6 @@ def create_booking_page(root):
                 height=5,
                 relief=tk.GROOVE,
                 bd=0.5,
-                highlightbackground=BUTTON_BG,  # Обводка цвета
                 highlightthickness=2,  # Толщина обводки
                 command=lambda c=cabin: handle_cabin_click(c)  # Передаем кабинку в обработчик
             )
