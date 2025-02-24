@@ -4,6 +4,9 @@ from database import fetch_expenses_data, add_expense, update_expense, remove_ex
 from expenses_data import add_observer
 from datetime import datetime
 from tkcalendar import Calendar
+from ttkbootstrap.widgets import DateEntry as TtkDateEntry
+import ttkbootstrap as tb
+from ttkbootstrap.constants import *
 
 def create_expenses_page(root):
     frame = tk.Frame(root)
@@ -17,34 +20,22 @@ def create_expenses_page(root):
     search_price_entry = ttk.Entry(frame)
     search_price_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
-    # Переменные для хранения выбранных дат
-    selected_start_date = tk.StringVar(value="Нажмите для выбора")
-    selected_end_date = tk.StringVar(value="Нажмите для выбора")
-
-    def open_calendar(entry_variable):
-        def set_date():
-            selected_date = calendar.get_date()
-            entry_variable.set(selected_date)
-            calendar_window.destroy()
-
-        # Создаем модальное окно для выбора даты
-        calendar_window = tk.Toplevel(root)
-        calendar_window.title("Выбор даты")
-        calendar_window.geometry("250x200")
-        calendar_window.grab_set()  # Делаем окно модальным
-
-        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-        calendar.grid(row=0, column=0)
-
-        tk.Button(calendar_window, text="Выбрать", command=set_date).grid(row=1, column=0)
-
-    # Виджеты для выбора диапазона дат
     tk.Label(frame, text="Дата с").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+    start_date_entry = TtkDateEntry(
+        frame, 
+        bootstyle="primary",
+        dateformat="%Y-%m-%d"
+    )
+    start_date_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
 
+    # Дата по
     tk.Label(frame, text="Дата по").grid(row=4, column=0, padx=5, pady=5, sticky="w")
-    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, padx=5, pady=5, sticky="ew")
-
+    end_date_entry = TtkDateEntry(
+        frame,
+        bootstyle="primary", 
+        dateformat="%Y-%m-%d"
+    )
+    end_date_entry.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
 
     # Table for displaying expense data
     tree = ttk.Treeview(frame, columns=("id", "name", "price", "date"), show="headings")
@@ -193,8 +184,8 @@ def create_expenses_page(root):
 
         # Filter by date range
         try:
-            start_date = datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
-            end_date = datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
+            start_date = datetime.strptime(start_date_entry.entry.get(), "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date_entry.entry.get(), "%Y-%m-%d").date()
 
             if start_date and end_date:
                 all_data = [row for row in all_data if start_date <= row[3].date() <= end_date]
@@ -224,8 +215,10 @@ def create_expenses_page(root):
     def clear_filters():
         search_name_entry.delete(0, tk.END)
         search_price_entry.delete(0, tk.END)
-        selected_start_date.set("Нажмите для выбора")
-        selected_end_date.set("Нажмите для выбора")
+        start_date_entry.entry.delete(0, tk.END)
+        start_date_entry.entry.insert(0, datetime.now().strftime("%Y-%m-%d"))
+        end_date_entry.entry.delete(0, tk.END)
+        end_date_entry.entry.insert(0, datetime.now().strftime("%Y-%m-%d"))
         display_expenses_data()
 
     ttk.Button(frame, text="Очистить фильтры", command=clear_filters).grid(row=6, column=1, padx=5, pady=5, sticky="ew")
@@ -256,46 +249,26 @@ def create_expenses_page(root):
         amount_entry = ttk.Entry(add_expense_modal)
         amount_entry.grid(row=1, column=1, padx=5, pady=5)
         amount_entry.bind("<KeyRelease>", validate_only_numbers)
-        # Поле для выбора даты
+        # Поле даты с TtkDateEntry
         ttk.Label(add_expense_modal, style="Custom.TLabel", text="Дата:").grid(row=2, column=0, padx=5, pady=5)
-        selected_date_var = tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")) 
-        date_button = ttk.Button(
+        date_entry = TtkDateEntry(
             add_expense_modal,
-            text="Выбрать дату",
-            command=lambda: open_calendar(selected_date_var)  # Открыть календарь
+            bootstyle="primary",
+            dateformat="%Y-%m-%d",
         )
-        date_button.grid(row=2, column=1, padx=5, pady=5)
-        # Отображение выбранной даты
-        date_label = tk.Label(add_expense_modal, textvariable=selected_date_var)
-        date_label.grid(row=3, column=1, padx=5, pady=5)
+        date_entry.grid(row=2, column=1, padx=5, pady=5)
+
         
         ttk.Label(add_expense_modal, style="Custom.TLabel", text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
         time_entry = ttk.Entry(add_expense_modal)
         time_entry.grid(row=4, column=1, padx=5, pady=5)
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
 
-        def open_calendar(entry_variable):
-            def set_date():
-                selected_date = calendar.get_date()
-                entry_variable.set(selected_date)
-                calendar_window.destroy()
-
-            # Создаем модальное окно для выбора даты
-            calendar_window = tk.Toplevel(root)
-            calendar_window.title("Выбор даты")
-            calendar_window.geometry("250x200")
-            calendar_window.configure(bg="#e6f7ff")
-            calendar_window.grab_set()  # Делаем окно модальным
-
-            calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-            calendar.grid(row=0, column=0)
-
-            ttk.Button(calendar_window, text="Выбрать", command=set_date).grid(row=1, column=0)
-        
+       
         def save_expense():
             name = name_entry.get()
             amount = amount_entry.get()
-            date = selected_date_var.get()
+            date = date_entry.entry.get()
             time = time_entry.get()
 
             if not name or not amount or not time:

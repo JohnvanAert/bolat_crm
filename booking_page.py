@@ -15,7 +15,7 @@ from ttkbootstrap.constants import *
 def create_booking_page(root):
     frame_main = tk.Frame(root)
     # Заголовок
-    tk.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
+    tb.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
 
 
     # Панель фильтров
@@ -509,7 +509,7 @@ def create_booking_page(root):
 
     cabins_frame = tk.Frame(frame_main)
     cabins_frame.grid(row=11, column=0, pady=10, columnspan=2)
-    
+
     def create_cabin_buttons():
         """Создает квадратные кнопки для кабинок."""
         for widget in cabins_frame.winfo_children():

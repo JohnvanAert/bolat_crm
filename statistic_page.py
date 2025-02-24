@@ -8,6 +8,7 @@ import pandas as pd
 from tkinter import filedialog
 from openpyxl.utils import get_column_letter
 from tkcalendar import DateEntry  # Добавить в импорты
+from ttkbootstrap.widgets import DateEntry as TtkDateEntry
 
 def create_statistics_page(root):
     """Создает фрейм для отображения статистики."""
@@ -193,10 +194,14 @@ def create_statistics_page(root):
     
     def open_date_picker(): 
         def select_dates():
-            start_date = datetime.strptime(cal_start.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
-            end_date = datetime.strptime(cal_end.get_date(), "%m/%d/%y").strftime("%Y-%m-%d")
-            current_date_range["start"] = start_date  # Обновляем start
-            current_date_range["end"] = end_date  # Обновляем end
+            # Получаем даты из DateEntry и форматируем в строку
+            start_date = cal_start.entry.get().strip()
+            end_date = cal_end.entry.get().strip()
+            start_date = datetime.strptime(start_date, "%m/%d/%Y").strftime("%Y-%m-%d")
+            end_date = datetime.strptime(end_date, "%m/%d/%Y").strftime("%Y-%m-%d")
+
+            current_date_range["start"] = start_date
+            current_date_range["end"] = end_date
             print(f"Выбранный диапазон: с {start_date} по {end_date}")
             update_statistics(None, (start_date, end_date))
             date_picker.destroy()
@@ -205,16 +210,18 @@ def create_statistics_page(root):
         date_picker.title("Выбор диапазона дат")
         date_picker.configure(bg="#e0f7fa")
         
-        Label(date_picker, bg="#e6f7ff", fg="black", text="Дата с:").pack()
-        cal_start = Calendar(date_picker)
-        cal_start.pack()
+        # Виджет для выбора начальной даты
+        Label(date_picker, text="Дата с:", bg="#e6f7ff", fg="black").pack(pady=5)
+        cal_start = TtkDateEntry(date_picker)
+        cal_start.pack(pady=5)
 
-        Label(date_picker, bg="#e6f7ff", fg="black", text="Дата по:").pack()
-        cal_end = Calendar(date_picker)
-        cal_end.pack()
+        # Виджет для выбора конечной даты
+        Label(date_picker, text="Дата по:", bg="#e6f7ff", fg="black").pack(pady=5)
+        cal_end = TtkDateEntry(date_picker)
+        cal_end.pack(pady=5)
 
-        ttk.Button(date_picker, text="Применить", command=select_dates).pack()
-
+        ttk.Button(date_picker, text="Применить", command=select_dates).pack(pady=10)
+        
     def update_statistics(period, date=None):
         if date:
             start_date, end_date = date
