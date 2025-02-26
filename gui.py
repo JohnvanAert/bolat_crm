@@ -8,6 +8,7 @@ from tkcalendar import Calendar
 from datetime import timedelta
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
+from ttkbootstrap.widgets import DateEntry as TtkDateEntry
 
 def create_gui_page(root):
     frame = tk.Frame(root)
@@ -25,33 +26,22 @@ def create_gui_page(root):
     search_number_entry = ttk.Entry(frame)
     search_number_entry.grid(row=2, column=1, pady=5)
 
-        # Поля для выбора диапазона дат (модальное окно вместо DateEntry)
-    selected_start_date = tk.StringVar(value="Нажмите для выбора")
-    selected_end_date = tk.StringVar(value="Нажмите для выбора")
-
-    def open_calendar(entry_variable):
-        def set_date():
-            selected_date = calendar.get_date()
-            entry_variable.set(selected_date)
-            calendar_window.destroy()
-
-        # Создаем модальное окно для выбора даты
-        calendar_window = tk.Toplevel(root)
-        calendar_window.title("Выбор даты")
-        calendar_window.geometry("300x300")
-        calendar_window.grab_set()  # Делаем окно модальным
-
-        calendar = Calendar(calendar_window, selectmode="day", date_pattern="yyyy-mm-dd")
-        calendar.pack(pady=20)
-
-        tk.Button(calendar_window, text="Выбрать", command=set_date).pack(pady=10)
-
+    # Поля для выбора диапазона дат (модальное окно вместо DateEntry
     tk.Label(frame, text="Дата с").grid(row=3, column=0)
-    ttk.Button(frame, textvariable=selected_start_date, command=lambda: open_calendar(selected_start_date)).grid(row=3, column=1, pady=5)
+    start_date_entry = TtkDateEntry(
+        frame, 
+        bootstyle="primary",
+        dateformat="%Y-%m-%d"
+    )
+    start_date_entry.grid(row=3, column=1)
 
     tk.Label(frame, text="Дата по").grid(row=4, column=0)
-    ttk.Button(frame, textvariable=selected_end_date, command=lambda: open_calendar(selected_end_date)).grid(row=4, column=1, pady=5)
-
+    end_date_entry = TtkDateEntry(
+        frame,
+        bootstyle="primary", 
+        dateformat="%Y-%m-%d"
+    )
+    end_date_entry.grid(row=4, column=1)
 
     tree = tb.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
     tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status")
@@ -183,14 +173,15 @@ def create_gui_page(root):
         
          # Фильтрация по диапазону дат
         try:
-            start_date = datetime.datetime.strptime(selected_start_date.get(), "%Y-%m-%d").date()
-            end_date = datetime.datetime.strptime(selected_end_date.get(), "%Y-%m-%d").date()
+            start_date_str = start_date_entry.entry.get()
+            end_date_str = end_date_entry.entry.get()
 
-            if start_date and end_date:
+            if start_date_str and end_date_str:
+                start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
+                end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
                 all_data = [row for row in all_data if start_date <= row[5].date() <= end_date]
         except ValueError:
-            pass  # Если дата не выбрана или формат неверный, фильтрация не применяется
-
+            pass
 
 
             # Фильтрация данных по имени и номеру
@@ -232,8 +223,8 @@ def create_gui_page(root):
             search_name_entry.delete(0, tk.END)
             search_number_entry.delete(0, tk.END)
             selected_cabin_id.set("не выбрано")
-            selected_start_date.set("Нажмите для выбора")
-            selected_end_date.set("Нажмите для выбора")
+            start_date_entry.entry.delete(0, tk.END)
+            end_date_entry.entry.delete(0, tk.END)
             display_sales_data()
 
         ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=1, columnspan=1, pady=5)

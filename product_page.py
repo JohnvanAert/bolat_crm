@@ -19,7 +19,6 @@ def create_product_page(root):
         modal = Toplevel(root)
         modal.title("Добавление продукта")
         modal.geometry("500x600")
-        modal.configure(bg="#e6f7ff")
         modal.grid_columnconfigure(1, weight=1)
         modal.grab_set()
         IMAGE_DIR = 'images'
@@ -46,39 +45,39 @@ def create_product_page(root):
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
 
-        ttk.Label(modal,style="Custom.TLabel", text="Название продукта").grid(row=0, column=0)
+        ttk.Label(modal, text="Название продукта").grid(row=0, column=0)
         entry_name = ttk.Entry(modal)
         entry_name.grid(row=0, column=1, pady="5")
         entry_name.bind("<KeyRelease>", validate_only_letters)
 
-        ttk.Label(modal,style="Custom.TLabel", text="Цена").grid(row=1, column=0)
+        ttk.Label(modal, text="Цена").grid(row=1, column=0)
         entry_price = ttk.Entry(modal)
         entry_price.grid(row=1, column=1, pady="5")
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
-        ttk.Label(modal,style="Custom.TLabel", text="Количество").grid(row=2, column=0)
+        ttk.Label(modal, text="Количество").grid(row=2, column=0)
         entry_quantity = ttk.Entry(modal)
         entry_quantity.grid(row=2, column=1, pady="5")
         entry_quantity.bind("<KeyRelease>", validate_only_numbers)
 
 
-        ttk.Label(modal,style="Custom.TLabel", text="Изображение").grid(row=3, column=0)
+        ttk.Label(modal, text="Изображение").grid(row=3, column=0)
         img_path_var = tk.StringVar()
         # Frame to hold the image preview and the close button
         img_frame = tk.Frame(modal, bg="#e6f7ff")
         img_frame.grid(row=3, column=1, sticky="w")
 
-        img_preview_label = tk.Label(img_frame,bg="#e6f7ff", fg="black", text="Нет изображения")
+        img_preview_label = tk.Label(img_frame, text="Нет изображения")
         img_preview_label.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
         
 
             # Checkbox for expense
         is_expense = tk.BooleanVar()
-        expense_checkbox = tk.Checkbutton(modal, bg="#e0f7fa", fg="black", text="Добавить как расход", variable=is_expense, command=lambda: toggle_expense_field())
+        expense_checkbox = tk.Checkbutton(modal, text="Добавить как расход", variable=is_expense, command=lambda: toggle_expense_field())
         expense_checkbox.grid(row=7, column=0, columnspan=2, pady="5")
 
         # Expense amount entry (initially disabled)
-        ttk.Label(modal,style="Custom.TLabel", text="Сумма расхода").grid(row=5, column=0)
+        ttk.Label(modal, text="Сумма расхода").grid(row=5, column=0)
         entry_expense_amount = ttk.Entry(modal, state="disabled")
         entry_expense_amount.grid(row=5, column=1, pady="5")
         entry_expense_amount.bind("<KeyRelease>", validate_only_numbers)
