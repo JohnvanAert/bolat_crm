@@ -24,8 +24,7 @@ def create_product_page(root):
         IMAGE_DIR = 'images'
         if not os.path.exists(IMAGE_DIR):
             os.makedirs(IMAGE_DIR)
-        style = ttk.Style()
-        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
+
         def validate_only_letters(event):
             """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
@@ -64,7 +63,7 @@ def create_product_page(root):
         ttk.Label(modal, text="Изображение").grid(row=3, column=0)
         img_path_var = tk.StringVar()
         # Frame to hold the image preview and the close button
-        img_frame = tk.Frame(modal, bg="#e6f7ff")
+        img_frame = tk.Frame(modal)
         img_frame.grid(row=3, column=1, sticky="w")
 
         img_preview_label = tk.Label(img_frame, text="Нет изображения")
@@ -356,7 +355,7 @@ def create_product_page(root):
         
         ttk.Label(modal, text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
-        img_preview_label = tk.Label(modal, bg="#e6f7ff", text="No Image", width=200, height=200)
+        img_preview_label = tk.Label(modal, text="No Image", width=200, height=200)
         img_preview_label.grid(row=3, column=1)
 
         ttk.Label(modal, text="Сумма расхода").grid(row=6, column=0, pady=5)

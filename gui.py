@@ -395,7 +395,6 @@ def create_gui_page(root):
             """
             product_window = tk.Toplevel(root)
             product_window.title("Добавить продукты")
-            product_window.configure(bg="#e6f7ff")
             product_window.grab_set()
             ttk.Label(product_window, text="Список доступных товаров").grid(row=0, column=0, columnspan=2)
 
@@ -416,6 +415,23 @@ def create_gui_page(root):
             all_products = get_all_products()
             current_products = {p['id']: p['quantity'] for p in get_products_for_sale(sale_id)}
 
+            search_var = tk.StringVar()
+            search_entry = ttk.Entry(product_window, textvariable=search_var)
+            search_entry.grid(row=2, column=1, pady=5)
+            ttk.Label(product_window, text="Поиск:").grid(row=2, column=0)
+
+            def populate_product_list():
+                product_list.delete(*product_list.get_children())
+                query = search_var.get().lower()
+                for product in all_products:
+                    product_id, product_name, product_price, product_quantity = (
+                        product['id'], product['name'], product['price'], product['quantity']
+                    )
+                    if query in product_name.lower():
+                        product_list.insert("", "end", values=(product_id, product_name, product_price, product_quantity))
+
+            search_var.trace_add("write", lambda *args: populate_product_list())
+            populate_product_list()
             for product in all_products:
                 product_id, product_name, product_price, product_quantity = (
                     product['id'], product['name'], product['price'], product['quantity']
@@ -571,7 +587,7 @@ def create_gui_page(root):
 
             # Поле для ввода количества (изначально заблокировано)
             quantity_entry = tk.Entry(product_window, textvariable=quantity_var, width=10, state="disabled")
-            quantity_entry.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+            quantity_entry.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
 
             # Функция для обработки выбора продукта
             def on_product_select(event):
@@ -598,9 +614,9 @@ def create_gui_page(root):
             
             # Кнопка "Добавить" (изначально заблокирована)
             add_button = ttk.Button(product_window, text="Добавить", command=add_or_update_product, state="disabled")
-            add_button.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
+            add_button.grid(row=3, column=1, padx=10, pady=10, sticky="ew")
             # Кнопка "Закрыть"
-            ttk.Button(product_window, text="Закрыть", command=product_window.destroy).grid(row=2, column=2, padx=10, pady=10, sticky="ew")
+            
                         # Привязываем событие выбора продукта
             product_list.bind("<<TreeviewSelect>>", on_product_select)
         
@@ -969,10 +985,10 @@ def create_gui_page(root):
         service_var = tk.BooleanVar(value=service_state)  # Переменная для состояния процента услуг
         discount_var = tk.BooleanVar(value=discount_state)  # Переменная для состояния скидки 15%
 
-        service_check = tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var, bg="#e0f7fa", fg="black")
+        service_check = tk.Checkbutton(checkbox_frame, text="Включить % услуг", variable=service_var)
         service_check.grid(row=0, column=0, padx=10, pady=5)
 
-        discount_check = tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var, bg="#e0f7fa", fg="black")
+        discount_check = tk.Checkbutton(checkbox_frame, text="Скидка 15%", variable=discount_var)
         discount_check.grid(row=0, column=1, padx=10, pady=5)
 
         finish_order_button = ttk.Button(checkbox_frame, text="Чек", command=lambda: show_final_receipt(selected_data, products_data, service_var.get(), discount_var.get()))
@@ -1093,6 +1109,8 @@ def create_gui_page(root):
             receipt_text.insert("end", "----------------------\n")
             receipt_text.insert("end", f"Сумма за продукты: {total_product_cost:.2f}\n")
             receipt_text.insert("end", f"Аренда кабинки: {Decimal(rental_cost):.2f}\n")
+            receipt_text.insert("end", f"Общая аренда кабинки: {Decimal(rental_cost):.2f}₸\n")
+            receipt_text.insert("end", f"Доплата за человека: {selected_data[9]}₸\n")
 
             if service_state:
                 receipt_text.insert("end", f"Процент за услуги: {service_fee:.2f}\n")
@@ -1102,7 +1120,7 @@ def create_gui_page(root):
             receipt_text.insert("end", "======================\n")
             receipt_text.insert("end", f"ИТОГО: {total_cost:.2f} тнг.\n")
             receipt_text.insert("end", "======================\n")
-
+            receipt_text.insert("end", f"Способ оплаты: {selected_data[10]} \n")
             # Отключаем редактирование
             receipt_text.config(state="disabled")
 
@@ -1271,6 +1289,7 @@ def create_gui_page(root):
             
             # Получение списка продуктов и отображение их в таблице
             products = fetch_products()
+            
             for product in products:
              product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
             # Поле для ввода количества
@@ -1280,6 +1299,20 @@ def create_gui_page(root):
             quantity_entry = ttk.Entry(product_window, width=5)
             quantity_entry.pack(side="left", padx=5, pady=5)
 
+            search_label = ttk.Label(product_window, text="Поиск:")
+            search_label.pack(side="left", padx=5, pady=5)
+            
+            search_entry = ttk.Entry(product_window)
+            search_entry.pack(side="left", fill="x", padx=5, pady=5)
+
+            def update_product_list(*args):
+                query = search_entry.get().lower()
+                product_tree.delete(*product_tree.get_children())
+                for product in products:
+                    if query in product['name'].lower():
+                        product_tree.insert("", tk.END, values=(product['id'], product['name'], product['price'], product['quantity']))
+            
+            search_entry.bind("<KeyRelease>", update_product_list)
             # Функция для обновления состояния кнопки
             def update_add_button_state(*args):
                 if quantity_entry.get().isdigit() and int(quantity_entry.get()) > 0:
@@ -1490,7 +1523,6 @@ def create_gui_page(root):
                 # Вычисляем конечное время аренды
                 start_date = datetime.datetime.now().replace(microsecond=0)
                 end_date = start_date + timedelta(hours=hours)
-                print(f"Products total: {total_product_price_decimal}, Cabin price: {cabin_price}, Total: {total_price}")
                 # Сохраняем продажу и получаем ID
                 sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date, people_count, extra_fee)
                 

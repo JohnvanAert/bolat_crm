@@ -152,88 +152,7 @@ def create_booking_page(root):
 
     
     load_bookings()
-    def on_booking_double_click(event):
-        """Открытие модального окна для редактирования брони."""
-        selected_item = bookings_table.selection()
-        if not selected_item:
-            return
 
-        item = bookings_table.item(selected_item)
-        booking_data = item["values"]
-        booking_status = booking_data[7]
-        is_readonly = booking_status in ["Отменено", "Подтверждено"]
-        # Создание модального окна
-        edit_window = tk.Toplevel(root)
-        edit_window.title("Редактировать бронь")
-        edit_window.geometry("400x450")
-        edit_window.transient(root)
-        edit_window.grab_set()
-
-        # Поля для редактирования
-        fields_map = {
-            "Имя клиента": 1,   # booking_data[1]
-            "Телефон": 2,       # booking_data[2]
-            "Кабинка": 3,       # booking_data[3]
-            "Начало брони": 5,  # booking_data[5]
-            "Конец брони": 6,   # booking_data[6]
-        }
-
-        entries = {}
-
-        for label, index in fields_map.items():
-            tk.Label(edit_window, text=label).pack(pady=(10, 0))
-
-            if label == "Статус" or is_readonly:
-                # Используем Label вместо Entry, если статус нельзя менять
-                entry = ttk.Label(edit_window, text=booking_data[index], background="lightgray", padding=5)
-            else:
-                # Разрешаем редактирование, если статус не "Отменено" и не "Подтверждено"
-                entry = ttk.Entry(edit_window, width=40)
-                entry.insert(0, booking_data[index])
-
-            entry.pack(pady=5)
-            entries[label] = entry
-
-        def save_changes():
-            """Сохранение изменений в базе данных."""
-
-            updated_data = {
-                "customer_name": entries["Имя клиента"].get().strip(),
-                "customer_phone": entries["Телефон"].get().strip(),
-                "cabin_name": entries["Кабинка"].get().strip(),
-                "start_date": entries["Начало брони"].get().strip(),
-                "end_date": entries["Конец брони"].get().strip()
-            }
-
-            cabin_name = updated_data["cabin_name"]
-            start_date = updated_data["start_date"]
-            end_date = updated_data["end_date"]
-
-            if check_booking_conflict(cabin_name, start_date, end_date):
-                    messagebox.showerror("Ошибка", "Выбранное время уже занято. Пожалуйста, выберите другое время.")
-                    return
-
-            update_booking(booking_data[0], updated_data)
-            load_bookings()  # Перезагрузка таблицы
-            edit_window.destroy()
-
-        def delete_booking_confirm():
-            """Подтверждение удаления и удаление брони."""
-            answer = messagebox.askyesno("Удалить бронь", "Вы уверены, что хотите удалить эту бронь?")
-            if answer:
-                delete_booking(booking_data[0])
-                load_bookings()  # Перезагрузка таблицы
-                edit_window.destroy()
-
-        # Кнопки управления
-        if not is_readonly:
-            ttk.Button(edit_window, text="Сохранить", command=save_changes).pack(pady=10)
-        ttk.Button(edit_window, text="Удалить", command=delete_booking_confirm).pack(pady=5)
-        ttk.Button(edit_window, text="Отмена", command=edit_window.destroy).pack(pady=5)
-
-        
-    bookings_table.bind("<Double-1>", on_booking_double_click)
-    
     # Кнопки управления
     # Модальное окно для добавления бронирования
     def add_booking_modal(selected_cabin=None):
@@ -360,7 +279,6 @@ def create_booking_page(root):
                 # Вызов функции добавления бронирования
                 booking_id = add_booking(name, phone, cabin_id, start, end, total_price, num_people, extra_charge)
                 if booking_id:
-                    print(f"Добавлено бронирование: {name}, {phone}, {cabin_id}, {start_datetime}, {end_datetime}, {total_price}")
                     messagebox.showinfo("Успех", "Бронирование добавлено!")
                     modal.destroy()
                     load_bookings()

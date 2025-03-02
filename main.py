@@ -15,8 +15,10 @@ from ttkbootstrap.widgets import Meter
 from ttkbootstrap.dialogs import Messagebox
 import json
 import os
+import shutil
 
 CONFIG_FILE = "config.json"
+CACHE_DIRS = ["cache", "__pycache__"]
 
 def load_theme():
     """Загрузка темы из файла конфигурации."""
@@ -30,6 +32,21 @@ def save_theme(theme_name):
     """Сохранение выбранной темы в файл конфигурации."""
     with open(CONFIG_FILE, "w") as file:
         json.dump({"theme": theme_name}, file)
+
+def clear_cache():
+    """Удаляет файлы кэша, включая __pycache__."""
+    for cache_dir in CACHE_DIRS:
+        if os.path.exists(cache_dir):
+            try:
+                shutil.rmtree(cache_dir)  # Удаляем папку с кэшем
+                os.makedirs(cache_dir)  # Создаем пустую папку заново
+                print(f"Кэш {cache_dir} очищен.")
+            except Exception as e:
+                print(f"Ошибка при очистке {cache_dir}: {e}")
+        else:
+            print(f"Кэш {cache_dir} уже пуст.")
+    
+    tk.messagebox.showinfo("Успех", "Кэш и __pycache__ успешно очищены!")
 
 def open_settings(root):
     """Открывает окно настроек для выбора темы."""
@@ -54,6 +71,7 @@ def open_settings(root):
         settings_window.destroy()
     
     tb.Button(settings_window, text="Применить", command=apply_theme).pack(pady=10)
+    tb.Button(settings_window, text="Очистить кэш", command=clear_cache, bootstyle="danger").pack(pady=10)
 
 def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
     nav_frame = tb.Frame(root)
@@ -279,37 +297,44 @@ def main():
             # Создание модального окна с использованием ttkbootstrap
             details_window = tb.Toplevel()
             details_window.title(f"Арендаторы {cabin_name}")
-            details_window.geometry("400x350")
-            details_window.configure(background=tb.Style().colors.bg)
+            details_window.geometry("400x320")
             details_window.grab_set()  # Блокируем основное окно
 
-            # Заголовок модального окна
-            tb.Label(details_window, text=f"Кабина: {cabin_name}",
-                    bootstyle="primary", font=("Helvetica", 16, "bold")).pack(pady=15)
+            # Создаем рамку-карточку
+            card_frame = tb.Frame(details_window, padding=15)
+            card_frame.pack(padx=20, pady=20, fill="both", expand=True)
+
+            # Заголовок карточки
+            tb.Label(card_frame, text=f"Кабина: {cabin_name}",
+                     font=("Helvetica", 16, "bold")).pack(pady=5)
 
             # Информация о клиенте
-            tb.Label(details_window, text=f"Имя клиента: {renter_details['name']}",
-                    bootstyle="info", font=("Helvetica", 12)).pack(pady=5)
+            tb.Label(card_frame, text=f"Имя клиента: {renter_details['name']}",
+                     font=("Helvetica", 12)).pack(anchor="w", pady=2)
 
-            tb.Label(details_window, text=f"Номер: {renter_details['number']}",
-                    bootstyle="info", font=("Helvetica", 12)).pack(pady=5)
+            tb.Label(card_frame, text=f"Номер: {renter_details['number']}",
+                     font=("Helvetica", 12)).pack(anchor="w", pady=2)
 
-            tb.Label(details_window, text=f"Сумма заказа: {renter_details['total_sales']} ₸",
-                    bootstyle="success", font=("Helvetica", 12, "bold")).pack(pady=5)
+            # Сумма заказа (выделена)
+            tb.Label(card_frame, text=f"Сумма заказа: {renter_details['total_sales']} ₸",
+                     font=("Helvetica", 14, "bold")).pack(pady=8)
 
-            tb.Label(details_window, text=f"Время начала: {renter_details['date']}",
-                    bootstyle="warning", font=("Helvetica", 12)).pack(pady=5)
+            # Время аренды
+            tb.Label(card_frame, text=f"Время начала: {renter_details['date']}",
+                     font=("Helvetica", 12)).pack(anchor="w", pady=2)
 
-            tb.Label(details_window, text=f"Время окончания: {renter_details['end_date']}",
-                    bootstyle="warning", font=("Helvetica", 12)).pack(pady=5)
+            tb.Label(card_frame, text=f"Время окончания: {renter_details['end_date']}",
+                     font=("Helvetica", 12)).pack(anchor="w", pady=2)
+            
+            tb.Label(card_frame, text=f"Способ Оплаты: {renter_details['payment_method']}",
+                     font=("Helvetica", 12)).pack(anchor="w", pady=2)
 
             # Кнопка закрытия
-            tb.Button(details_window, text="Закрыть", bootstyle="danger", command=details_window.destroy).pack(pady=20)
+            tb.Button(card_frame, text="Закрыть", bootstyle="danger", command=details_window.destroy).pack(pady=10)
 
         else:
             # Используем ttkbootstrap Messagebox
             Messagebox.show_info("Информация", "Информация о клиента не найдена.")
-
     def show_product_details(event):
         """
         Отображает модальное окно с информацией о выбранном продукте.
@@ -324,12 +349,11 @@ def main():
 
         modal = Toplevel()
         modal.title("Информация о товаре")
-        modal.configure(bg="#E6F7FF")
         modal.geometry("400x400")
 
-        Label(modal, text=f"Наименование: {product['name']}", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
-        Label(modal, text=f"Количество: {product['quantity']} шт.", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
-        Label(modal, text=f"Цена: {product['price']} тг", font=("Arial", 12), bg="#E6F7FF", fg="black").pack(pady=5)
+        Label(modal, text=f"Наименование: {product['name']}").pack(pady=5)
+        Label(modal, text=f"Количество: {product['quantity']} шт.").pack(pady=5)
+        Label(modal, text=f"Цена: {product['price']} тг").pack(pady=5)
 
         if product["image_path"]:
             try:
@@ -337,12 +361,11 @@ def main():
                 image = image.resize((200, 200))  # Изменяем размер
                 img = ImageTk.PhotoImage(image)  # Преобразуем в формат Tkinter
                 
-                img_label = Label(modal, image=img, bg="#E6F7FF")
+                img_label = Label(modal, image=img)
                 img_label.image = img
                 img_label.pack(pady=10)
             except Exception as e:
-                Label(modal, text="Ошибка загрузки изображения", font=("Arial", 10), bg="#E6F7FF", fg="red").pack()
-                print(f"Ошибка загрузки изображения: {e}")
+                Label(modal, text="Ошибка загрузки изображения", font=("Arial", 10)).pack()
 
         ttk.Button(modal, text="Закрыть", command=modal.destroy).pack(pady=20)
     def update_sold_products():
@@ -360,7 +383,7 @@ def main():
 
                 sold_listbox.insert(
                     tk.END,
-                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} шт. | Цена: {price} тнг."
+                    f"{order_time} | Кабина: {cabin_name} | Продукт: {product_name} | Кол-во: {quantity} шт. | Цена: {price} ₸"
                 )
         else:
             sold_listbox.insert(tk.END, "Нет заказанных товаров")

@@ -32,13 +32,14 @@ def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_re
         
         # SQL-запрос для вставки данных и получения id новой записи
         query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
         # Выполняем запрос
-        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee))
+        default_payment_method = "Наличные"
+        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee, default_payment_method))
         
         # Получаем id вставленной записи
         sale_id = cursor.fetchone()[0]
@@ -706,8 +707,8 @@ def confirm_booking_to_sale(booking_id):
         WHERE id = %s AND status = 'Ожидание';
     """
     insert_sale_query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, payment_method)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -724,6 +725,7 @@ def confirm_booking_to_sale(booking_id):
             if not booking:
                 raise ValueError("Бронирование не найдено или уже подтверждено.")
             
+            default_payment_method = "Наличные"
             # Добавляем продажу
             cursor.execute(
                 insert_sale_query, 
@@ -735,7 +737,8 @@ def confirm_booking_to_sale(booking_id):
                     booking[4],  # start_date
                     booking[3],   # cabin_price
                     booking[5],   # end_date
-                    booking[6] #people_count
+                    booking[6], #people_count
+                    default_payment_method
                 )
             )
             sale_id = cursor.fetchone()[0]
@@ -1507,7 +1510,7 @@ def gui_cabin_status(cabin_id, current_time):
 
 def get_renter_details(cabin_name):
     query = """
-        SELECT s.name, s.number, s.total_sales, s.date, s.end_date
+        SELECT s.name, s.number, s.total_sales, s.date, s.end_date, s.payment_method
         FROM sales s
         JOIN cabins c ON s.cabins_id = c.id
         WHERE c.name = %s AND CURRENT_TIMESTAMP <= s.end_date
@@ -1519,7 +1522,7 @@ def get_renter_details(cabin_name):
             cursor.execute(query, (cabin_name,))
             row = cursor.fetchone()
             if row:
-                return {"name": row[0], "number": row[1], "total_sales": row[2], "date": row[3], "end_date": row[4]}
+                return {"name": row[0], "number": row[1], "total_sales": row[2], "date": row[3], "end_date": row[4], "payment_method": row[5]}
             else:
                 return None
 
