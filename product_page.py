@@ -293,10 +293,7 @@ def create_product_page(root):
         modal = Toplevel(root)
         modal.title("Редактирование продукта")
         modal.geometry("400x550")
-        modal.configure(bg="#e0f7fa")
         modal.grab_set()
-        style = ttk.Style()
-        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
         def validate_only_letters(event):
             """Разрешает вводить только буквы и пробелы."""
             entry = event.widget
@@ -340,29 +337,29 @@ def create_product_page(root):
 
         # Поле для суммы расхода
     
-        ttk.Label(modal, style="Custom.TLabel", text="Название продукта").grid(row=0, column=0)
+        ttk.Label(modal, text="Название продукта").grid(row=0, column=0)
         name_var = tk.StringVar(value=product['name'])
         entry_name = ttk.Entry(modal, textvariable=name_var)
         entry_name.grid(row=0, column=1, pady=5)
         
-        ttk.Label(modal, style="Custom.TLabel", text="Цена").grid(row=1, column=0)
+        ttk.Label(modal, text="Цена").grid(row=1, column=0)
         price_var = tk.StringVar(value=str(product['price']))
         entry_price = ttk.Entry(modal, textvariable=price_var)
         entry_price.grid(row=1, column=1, pady=5)
         entry_price.bind("<KeyRelease>", validate_only_numbers)
 
-        ttk.Label(modal, style="Custom.TLabel", text="Количество").grid(row=2, column=0)
+        ttk.Label(modal, text="Количество").grid(row=2, column=0)
         quantity_var = tk.StringVar(value=str(product['quantity']))
         entry_quantity = ttk.Entry(modal, textvariable=quantity_var)
         entry_quantity.grid(row=2, column=1, pady=5)
         entry_quantity.bind("<KeyRelease>", validate_only_numbers)
         
-        ttk.Label(modal, style="Custom.TLabel", text="Изображение").grid(row=3, column=0)
+        ttk.Label(modal, text="Изображение").grid(row=3, column=0)
         image_path_var = tk.StringVar(value=product["image_path"])
         img_preview_label = tk.Label(modal, bg="#e6f7ff", text="No Image", width=200, height=200)
         img_preview_label.grid(row=3, column=1)
 
-        ttk.Label(modal, style="Custom.TLabel", text="Сумма расхода").grid(row=6, column=0, pady=5)
+        ttk.Label(modal, text="Сумма расхода").grid(row=6, column=0, pady=5)
         entry_expense_amount = ttk.Entry(
             modal, 
             textvariable=expense_amount_var, 

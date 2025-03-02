@@ -812,36 +812,46 @@ def get_cabin_price(cabin_id):
     finally:
         conn.close()
 
-def check_booking_conflict(cabin_id, start_date, end_date):
-    """Проверяет пересечение бронирования для выбранной кабины как в bookings, так и в sales."""
+def check_booking_conflict(cabin_id, start_date, end_date, exclude_booking_id=None):
+    """Проверяет пересечение бронирования, исключая указанный ID."""
     query = """
         SELECT COUNT(*) FROM (
-            -- Проверяем конфликты в таблице bookings
             SELECT start_date, end_date FROM bookings 
             WHERE cabin_id = %s 
-              AND status != 'Отменено' 
-              AND (start_date < %s AND end_date > %s)
-              
+                AND status != 'Отменено' 
+                AND (start_date < %s AND end_date > %s)
+                {exclude_condition}
+                
             UNION ALL
             
-            -- Проверяем конфликты в таблице sales
             SELECT date AS start_date, end_date FROM sales 
             WHERE cabins_id = %s 
-              AND (date < %s AND end_date > %s)
+                AND (date < %s AND end_date > %s)
         ) AS conflicts
-    """
+    """.format(
+        exclude_condition="AND id != %s" if exclude_booking_id else ""
+    )
+
+    params = [
+        cabin_id, end_date, start_date,  # Для bookings
+        cabin_id, end_date, start_date   # Для sales
+    ]
+    
+    if exclude_booking_id:
+        params.insert(3, exclude_booking_id)  # Добавляем ID после первых трех параметров bookings
+
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (cabin_id, end_date, start_date, cabin_id, end_date, start_date))
+            cursor.execute(query, params)
             result = cursor.fetchone()
-            return result[0] > 0  # True, если есть пересечение
+            return result[0] > 0
     except Exception as e:
-        print("Ошибка при проверке конфликта бронирования:", e)
-        return True  # Если возникла ошибка, безопаснее запретить бронирование
+        print("Ошибка при проверке конфликта:", e)
+        return True
     finally:
         conn.close()
-
+    
 def fetch_filtered_bookings(name, date, status, cabin, limit, page):
     offset = (page - 1) * limit
 
@@ -1548,8 +1558,7 @@ def update_booking(booking_id, data):
         customer_phone = %s,
         cabin_id = %s,
         start_date = %s,
-        end_date = %s,
-        status = %s
+        end_date = %s
     WHERE id = %s;
     """
     params = (
@@ -1558,7 +1567,6 @@ def update_booking(booking_id, data):
         data["cabin_name"],  # Теперь это ID
         data["start_date"],
         data["end_date"],
-        data["status"],
         booking_id
     )
 
@@ -1582,7 +1590,7 @@ def cancel_expired_bookings():
     """Отменяет все бронирования в статусе 'Ожидание' с истекшим временем окончания."""
     query = """
         UPDATE bookings
-        SET status = 'Отменен'
+        SET status = 'Отменено'
         WHERE status = 'Ожидание' AND end_date < NOW();
     """
     try:
@@ -1633,3 +1641,19 @@ def get_order_status(order_id):
         return False
     finally:
         conn.close()
+
+
+def update_booking_date(booking_id, data):
+    """Динамическое обновление только переданных полей."""
+    if not data:
+        return
+
+    set_clause = ", ".join([f"{key} = %s" for key in data.keys()])
+    query = f"UPDATE bookings SET {set_clause} WHERE id = %s"
+    params = list(data.values()) + [booking_id]
+
+    conn = connect()
+    with conn.cursor() as cursor:
+        cursor.execute(query, params)
+    conn.commit()
+    conn.close()

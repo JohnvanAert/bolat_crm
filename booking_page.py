@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkcalendar import Calendar
-from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings, update_booking, delete_booking, cancel_expired_bookings # Функции из базы данных
+from database import get_cabins, confirm_booking_to_sale, update_booking_status, add_booking, get_cabin_price, check_booking_conflict, fetch_filtered_bookings, update_booking, delete_booking, cancel_expired_bookings, update_booking_date # Функции из базы данных
 from tkinter import messagebox
 from tktimepicker import SpinTimePickerModern, constants
 from decimal import Decimal
@@ -139,7 +139,7 @@ def create_booking_page(root):
     
          # Панель пагинации
     pagination_frame = tk.Frame(frame_main)
-    pagination_frame.grid(row=8, column=0, columnspan=3, pady=10)
+    pagination_frame.grid(row=12, column=0, columnspan=3, pady=10)
 
     prev_button = ttk.Button(pagination_frame, text="<<", command=lambda: load_bookings(current_page - 1))
     prev_button.grid(row=0, column=0, padx=5)
@@ -160,15 +160,15 @@ def create_booking_page(root):
 
         item = bookings_table.item(selected_item)
         booking_data = item["values"]
-
+        booking_status = booking_data[7]
+        is_readonly = booking_status in ["Отменено", "Подтверждено"]
         # Создание модального окна
         edit_window = tk.Toplevel(root)
         edit_window.title("Редактировать бронь")
-        edit_window.geometry("400x650")
+        edit_window.geometry("400x450")
         edit_window.transient(root)
         edit_window.grab_set()
 
-        # Поля для редактирования
         # Поля для редактирования
         fields_map = {
             "Имя клиента": 1,   # booking_data[1]
@@ -176,81 +176,43 @@ def create_booking_page(root):
             "Кабинка": 3,       # booking_data[3]
             "Начало брони": 5,  # booking_data[5]
             "Конец брони": 6,   # booking_data[6]
-            "Статус": 7         # booking_data[7]
         }
 
         entries = {}
 
         for label, index in fields_map.items():
             tk.Label(edit_window, text=label).pack(pady=(10, 0))
-            entry = ttk.Entry(edit_window, width=40)
+
+            if label == "Статус" or is_readonly:
+                # Используем Label вместо Entry, если статус нельзя менять
+                entry = ttk.Label(edit_window, text=booking_data[index], background="lightgray", padding=5)
+            else:
+                # Разрешаем редактирование, если статус не "Отменено" и не "Подтверждено"
+                entry = ttk.Entry(edit_window, width=40)
+                entry.insert(0, booking_data[index])
+
             entry.pack(pady=5)
-            entry.insert(0, booking_data[index])  
             entries[label] = entry
 
-        delay_options = {"15 минут": 15, "30 минут": 30, "1 час": 60}
-    
-        tk.Label(edit_window, text="Отложить бронь на:").pack(pady=(10, 0))
-        delay_var = tk.StringVar(value="Не откладывать")
-        delay_dropdown = ttk.Combobox(edit_window, values=["Не откладывать"] + list(delay_options.keys()), textvariable=delay_var)
-        delay_dropdown.pack(pady=5)
-
-        original_start = entries["Начало брони"].get()
-        original_end = entries["Конец брони"].get()
-        
-        def apply_delay():
-            delay_minutes = delay_options.get(delay_var.get(), 0)
-            if delay_minutes > 0:
-                start_time_str = entries["Начало брони"].get().strip()
-                end_time_str = entries["Конец брони"].get().strip()
-                
-                # Автоопределение формата даты (с секундами или без)
-                for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
-                    try:
-                        start_time = datetime.datetime.strptime(start_time_str, fmt)
-                        end_time = datetime.datetime.strptime(end_time_str, fmt)
-                        break
-                    except ValueError:
-                        continue
-                else:
-                    messagebox.showerror("Ошибка", "Некорректный формат даты и времени")
-                    return
-                
-                new_start_time = start_time + datetime.timedelta(minutes=delay_minutes)
-                new_end_time = end_time + datetime.timedelta(minutes=delay_minutes)
-                
-                entries["Начало брони"].delete(0, tk.END)
-                entries["Начало брони"].insert(0, new_start_time.strftime("%Y-%m-%d %H:%M:%S"))
-                
-                entries["Конец брони"].delete(0, tk.END)
-                entries["Конец брони"].insert(0, new_end_time.strftime("%Y-%m-%d %H:%M:%S"))
-        
-        delay_dropdown.bind("<<ComboboxSelected>>", lambda event: apply_delay())
         def save_changes():
             """Сохранение изменений в базе данных."""
+
             updated_data = {
                 "customer_name": entries["Имя клиента"].get().strip(),
                 "customer_phone": entries["Телефон"].get().strip(),
                 "cabin_name": entries["Кабинка"].get().strip(),
                 "start_date": entries["Начало брони"].get().strip(),
-                "end_date": entries["Конец брони"].get().strip(),
-                "status": entries["Статус"].get().strip()
+                "end_date": entries["Конец брони"].get().strip()
             }
-            if not updated_data["cabin_name"]:
-                raise ValueError("Название кабинки не может быть пустым.")
 
-            cabin_id = booking_data[3]  # ID кабинки
-            new_start = datetime.datetime.strptime(updated_data["start_date"], "%Y-%m-%d %H:%M:%S")
-            new_end = datetime.datetime.strptime(updated_data["end_date"], "%Y-%m-%d %H:%M:%S")
-            # Вызов функции обновления в базе
-            if check_booking_conflict(cabin_id, new_start, new_end):
-                messagebox.showerror("Ошибка", "Бронирование пересекается с другим! Измените время.")
-                entries["Начало брони"].delete(0, tk.END)
-                entries["Начало брони"].insert(0, original_start)
-                entries["Конец брони"].delete(0, tk.END)
-                entries["Конец брони"].insert(0, original_end)
-                delay_var.set("Не откладывать")
-                return
+            cabin_name = updated_data["cabin_name"]
+            start_date = updated_data["start_date"]
+            end_date = updated_data["end_date"]
+
+            if check_booking_conflict(cabin_name, start_date, end_date):
+                    messagebox.showerror("Ошибка", "Выбранное время уже занято. Пожалуйста, выберите другое время.")
+                    return
+
             update_booking(booking_data[0], updated_data)
             load_bookings()  # Перезагрузка таблицы
             edit_window.destroy()
@@ -264,7 +226,8 @@ def create_booking_page(root):
                 edit_window.destroy()
 
         # Кнопки управления
-        ttk.Button(edit_window, text="Сохранить", command=save_changes).pack(pady=10)
+        if not is_readonly:
+            ttk.Button(edit_window, text="Сохранить", command=save_changes).pack(pady=10)
         ttk.Button(edit_window, text="Удалить", command=delete_booking_confirm).pack(pady=5)
         ttk.Button(edit_window, text="Отмена", command=edit_window.destroy).pack(pady=5)
 
@@ -496,6 +459,64 @@ def create_booking_page(root):
         except Exception as e:
             messagebox.showerror("Ошибка", f"Не удалось отменить бронирование: {e}")
 
+
+    def extend_booking():
+        """Продление времени бронирования с проверкой конфликтов."""
+        selected_item = bookings_table.selection()
+        if not selected_item:
+            messagebox.showerror("Ошибка", "Выберите бронирование для отложения!")
+            return
+
+        booking_data = bookings_table.item(selected_item, "values")
+        booking_id = booking_data[0]
+        cabin_id = booking_data[3]
+        booking_status = booking_data[7]
+        current_start_str = booking_data[5]
+        current_end_str = booking_data[6]
+
+        if booking_status in ("Отменено", "Подтверждено"):
+            messagebox.showerror("Ошибка", "Нельзя изменить время для завершенного или отмененного бронирования!")
+            return
+
+        if not cabin_id:
+            messagebox.showerror("Ошибка", "Кабинка не найдена!")
+            return
+
+        # Запрос минут продления
+        minutes = tk.simpledialog.askinteger("Отложить", "Введите минуты для отложения:", minvalue=1, maxvalue=1440)
+        if not minutes:
+            return
+
+        # Парсим текущее время окончания
+        try:
+            current_start = datetime.datetime.strptime(current_start_str, "%Y-%m-%d %H:%M:%S")
+            current_end = datetime.datetime.strptime(current_end_str, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            messagebox.showerror("Ошибка", "Некорректный формат времени!")
+            return
+
+        new_start = current_start + datetime.timedelta(minutes=minutes)
+        new_end = current_end + datetime.timedelta(minutes=minutes)
+
+        # Проверка конфликта
+        if check_booking_conflict(cabin_id, new_start.strftime("%Y-%m-%d %H:%M:%S"), new_end.strftime("%Y-%m-%d %H:%M:%S"), exclude_booking_id=booking_id):
+            messagebox.showerror("Ошибка", "Время пересекается с другой бронью!")
+            return
+
+        # Обновление в базе данных
+        try:
+            update_booking_date(
+                booking_id,
+                
+                {   "start_date": new_start.strftime("%Y-%m-%d %H:%M:%S"),
+                    "end_date": new_end.strftime("%Y-%m-%d %H:%M:%S"),
+                 }
+            )
+            messagebox.showinfo("Успех", "Время бронирования продлено!")
+            load_bookings()
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при обновлении: {str(e)}")
+
     # Панель кнопок
     button_frame = tk.Frame(frame_main)
     button_frame.grid(row=10, column=0, pady=10, columnspan=2)
@@ -503,6 +524,8 @@ def create_booking_page(root):
     tb.Button(button_frame, text="Добавить бронирование", command=lambda:add_booking_modal()).grid(row=0, column=0, padx=5)
     tb.Button(button_frame, text="Подтвердить бронирование", command=confirm_booking).grid(row=0, column=1, padx=5)
     tb.Button(button_frame, text="Отменить бронирование", command=cancel_booking).grid(row=0, column=2, padx=5)
+    tb.Button(button_frame, text="Отложить бронирование", command=extend_booking).grid(row=0, column=3, padx=5)
+
 
     cabins_frame = tk.Frame(frame_main)
     cabins_frame.grid(row=11, column=0, pady=10, columnspan=2)
@@ -518,14 +541,10 @@ def create_booking_page(root):
             cabin_name = cabin.get("name", f"Кабинка {idx + 1}")
 
             # Создаем кнопку
-            cabin_button = tk.Button(
+            cabin_button = tb.Button(
                 cabins_frame,
                 text=cabin_name,
                 width=10,
-                height=5,
-                relief=tk.GROOVE,
-                bd=0.5,
-                highlightthickness=2,  # Толщина обводки
                 command=lambda c=cabin: handle_cabin_click(c)  # Передаем кабинку в обработчик
             )
 
@@ -539,7 +558,7 @@ def create_booking_page(root):
         if cabin_id is not None:
             add_booking_modal(selected_cabin=cabin_id)
         else:
-            tk.messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
+            messagebox.showerror("Ошибка", "Некорректные данные кабинки!")
 
         # Обновление интерфейса при изменении данных в базе
     def on_cabin_data_update():

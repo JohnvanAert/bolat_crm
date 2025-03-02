@@ -208,15 +208,14 @@ def create_statistics_page(root):
             
         date_picker = Toplevel()
         date_picker.title("Выбор диапазона дат")
-        date_picker.configure(bg="#e0f7fa")
         
         # Виджет для выбора начальной даты
-        Label(date_picker, text="Дата с:", bg="#e6f7ff", fg="black").pack(pady=5)
+        Label(date_picker, text="Дата с:").pack(pady=5)
         cal_start = TtkDateEntry(date_picker)
         cal_start.pack(pady=5)
 
         # Виджет для выбора конечной даты
-        Label(date_picker, text="Дата по:", bg="#e6f7ff", fg="black").pack(pady=5)
+        Label(date_picker, text="Дата по:").pack(pady=5)
         cal_end = TtkDateEntry(date_picker)
         cal_end.pack(pady=5)
 

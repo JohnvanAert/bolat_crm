@@ -13,7 +13,47 @@ import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 from ttkbootstrap.widgets import Meter
 from ttkbootstrap.dialogs import Messagebox
+import json
+import os
 
+CONFIG_FILE = "config.json"
+
+def load_theme():
+    """Загрузка темы из файла конфигурации."""
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as file:
+            config = json.load(file)
+            return config.get("theme", "flatly")  # По умолчанию "flatly"
+    return "flatly"
+
+def save_theme(theme_name):
+    """Сохранение выбранной темы в файл конфигурации."""
+    with open(CONFIG_FILE, "w") as file:
+        json.dump({"theme": theme_name}, file)
+
+def open_settings(root):
+    """Открывает окно настроек для выбора темы."""
+    settings_window = tb.Toplevel(root)
+    settings_window.title("Настройки")
+    settings_window.geometry("300x200")
+    settings_window.transient(root)
+    settings_window.grab_set()
+
+    tb.Label(settings_window, text="Выберите тему:", font=("Arial", 12)).pack(pady=10)
+    
+    theme_var = tb.StringVar(value=root.style.theme_use())  # Текущая тема
+    themes = ["flatly", "superhero", "minty", "darkly", "cosmo"]
+    
+    theme_menu = tb.Combobox(settings_window, values=themes, textvariable=theme_var)
+    theme_menu.pack(pady=5)
+    
+    def apply_theme():
+        selected_theme = theme_var.get()
+        root.style.theme_use(selected_theme)
+        save_theme(selected_theme)
+        settings_window.destroy()
+    
+    tb.Button(settings_window, text="Применить", command=apply_theme).pack(pady=10)
 
 def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
     nav_frame = tb.Frame(root)
@@ -33,7 +73,8 @@ occupied_cabins_page = 1
 page_size = 15  
 
 def main():
-    root = tb.Window(themename="flatly")
+    selected_theme = load_theme()
+    root = tb.Window(themename=selected_theme)
     root.title("3B CRM")
     root.geometry("1450x800")  # Устанавливаем начальный размер окна
     root.minsize(800, 600)     # Устанавливаем минимальный размер окна
@@ -45,10 +86,12 @@ def main():
         #print(f"New size: {event.width}x{event.height}")
 
         root.bind("<Configure>", resize_handler)
-
+    
+    
+    
 
     def show_main_page():
-        left_panel.pack(side='left', fill='y')
+        # left_panel.pack(side='left', fill='y')
         frame_products.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
@@ -59,7 +102,7 @@ def main():
         root.update_idletasks()
 
     def show_products_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
@@ -70,7 +113,7 @@ def main():
         root.update_idletasks()
 
     def show_gui_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_cabin.pack_forget()
@@ -81,7 +124,7 @@ def main():
         root.update_idletasks()
 
     def show_cabin_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -92,7 +135,7 @@ def main():
         root.update_idletasks()
 
     def show_expenses_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -103,7 +146,7 @@ def main():
         root.update_idletasks()
 
     def show_statistics_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -114,7 +157,7 @@ def main():
         root.update_idletasks()
 
     def show_booking_page():
-        left_panel.pack_forget()
+        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -361,22 +404,27 @@ def main():
     # Главная страница
     create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page)
     main_page = tk.Frame(root)
+
+
+    # Кнопка "Настройки" в левом нижнем углу
+    settings_button = tb.Button(root, text="Настройки", command=lambda: open_settings(root), bootstyle="primary")
+    settings_button.place(x=10, y=700)
     
     # Левая панель с навигационными кнопками
-    left_panel = tk.Frame(root, bg="#cfe2f3", width=200)
-    left_panel.pack(side='left', fill='y')
-    left_panel.pack_propagate(0)  # Фиксируем ширину
+    # left_panel = tk.Frame(root, bg="#cfe2f3", width=200)
+    # left_panel.pack(side='left', fill='y')
+    # left_panel.pack_propagate(0)  # Фиксируем ширину
     main_page.pack()
     # Кнопки навигации
-    nav_buttons = [
-        ("Кабинки", show_main_page),
-        ("Мужской зал", show_main_page),
-        ("Женский зал", show_main_page),
-    ]
+    # nav_buttons = [
+    #     ("Кабинки", show_main_page),
+    #     ("Мужской зал", show_main_page),
+    #     ("Женский зал", show_main_page),
+    # ]
 
-    for text, command in nav_buttons:
-        btn = ttk.Button(left_panel, text=text, command=command, style='TButton')
-        btn.pack(pady=5, padx=10, fill='x')
+    # for text, command in nav_buttons:
+    #     btn = ttk.Button(left_panel, text=text, command=command, style='TButton')
+    #     btn.pack(pady=5, padx=10, fill='x')
     
 
     # Создаем рамку для содержимого

@@ -230,10 +230,8 @@ def create_expenses_page(root):
         add_expense_modal.title("Добавить расход")
         add_expense_modal.geometry("400x300")
         add_expense_modal.grab_set()
-        add_expense_modal.configure(bg="#e6f7ff")
-        style = ttk.Style()
-        style.configure("Custom.TLabel", font=("Arial", 12), background="#e6f7ff", foreground="#333333")
-        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
+        
+        ttk.Label(add_expense_modal, text="Наименование:").grid(row=0, column=0, padx=5, pady=5)
         name_entry = ttk.Entry(add_expense_modal)
         name_entry.grid(row=0, column=1, padx=5, pady=5)
 
@@ -245,12 +243,12 @@ def create_expenses_page(root):
                 entry.delete(0, tk.END)
                 entry.insert(0, ''.join(filter(str.isdigit, value)))
 
-        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, text="Сумма:").grid(row=1, column=0, padx=5, pady=5)
         amount_entry = ttk.Entry(add_expense_modal)
         amount_entry.grid(row=1, column=1, padx=5, pady=5)
         amount_entry.bind("<KeyRelease>", validate_only_numbers)
         # Поле даты с TtkDateEntry
-        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Дата:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, text="Дата:").grid(row=2, column=0, padx=5, pady=5)
         date_entry = TtkDateEntry(
             add_expense_modal,
             bootstyle="primary",
@@ -259,7 +257,7 @@ def create_expenses_page(root):
         date_entry.grid(row=2, column=1, padx=5, pady=5)
 
         
-        ttk.Label(add_expense_modal, style="Custom.TLabel", text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
+        ttk.Label(add_expense_modal, text="Время (чч:мм:сс):").grid(row=4, column=0, padx=5, pady=5)
         time_entry = ttk.Entry(add_expense_modal)
         time_entry.grid(row=4, column=1, padx=5, pady=5)
         time_entry.insert(0, datetime.now().strftime("%H:%M:%S"))  # Предзаполнение текущим временем
