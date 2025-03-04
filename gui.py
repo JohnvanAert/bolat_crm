@@ -13,35 +13,42 @@ from ttkbootstrap.widgets import DateEntry as TtkDateEntry
 def create_gui_page(root):
     frame = tk.Frame(root)
 
+    show_filters_btn = ttk.Button(frame, text="Показать фильтры", command=lambda: toggle_filters())
+    show_filters_btn.grid(row=0, column=0, columnspan=2, pady=5)
+
+    filter_frame = tk.Frame(frame)
+    filter_frame.visible = False  # Инициализируем состояние
+    filter_frame.grid_forget()
+
     selected_cabin_id = tk.StringVar()
-    tk.Label(frame, text="Выберите кабинку").grid(row=0, column=0)
-    cabins_combo = ttk.Combobox(frame, textvariable=selected_cabin_id, state="readonly")
+    tk.Label(filter_frame, text="Выберите кабинку").grid(row=0, column=0)
+    cabins_combo = ttk.Combobox(filter_frame, textvariable=selected_cabin_id, state="readonly")
     cabins_combo.grid(row=0, column=1, pady=5)
     # Поля для поиска
-    tk.Label(frame, text="Поиск по имени").grid(row=1, column=0)
-    search_name_entry = ttk.Entry(frame)
+    tk.Label(filter_frame, text="Поиск по имени").grid(row=1, column=0)
+    search_name_entry = ttk.Entry(filter_frame)
     search_name_entry.grid(row=1, column=1,pady=5)
 
-    tk.Label(frame, text="Поиск по номеру").grid(row=2, column=0)
-    search_number_entry = ttk.Entry(frame)
+    tk.Label(filter_frame, text="Поиск по номеру").grid(row=2, column=0)
+    search_number_entry = ttk.Entry(filter_frame)
     search_number_entry.grid(row=2, column=1, pady=5)
 
     # Поля для выбора диапазона дат (модальное окно вместо DateEntry
-    tk.Label(frame, text="Дата с").grid(row=3, column=0)
+    tk.Label(filter_frame, text="Дата с").grid(row=3, column=0)
     start_date_entry = TtkDateEntry(
-        frame, 
+        filter_frame, 
         bootstyle="primary",
         dateformat="%Y-%m-%d"
     )
-    start_date_entry.grid(row=3, column=1)
+    start_date_entry.grid(row=3, column=1, pady=5)
 
-    tk.Label(frame, text="Дата по").grid(row=4, column=0)
+    tk.Label(filter_frame, text="Дата по").grid(row=4, column=0)
     end_date_entry = TtkDateEntry(
-        frame,
+        filter_frame,
         bootstyle="primary", 
         dateformat="%Y-%m-%d"
     )
-    end_date_entry.grid(row=4, column=1)
+    end_date_entry.grid(row=4, column=1, pady=5)
 
     tree = tb.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
     tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status")
@@ -69,9 +76,20 @@ def create_gui_page(root):
     current_page = tk.IntVar(value=1)
     records_per_page = tk.IntVar(value=10)
 
+    def toggle_filters():
+        if not hasattr(filter_frame, 'visible'):
+            filter_frame.visible = False
+        filter_frame.visible = not filter_frame.visible
+        if filter_frame.visible:
+            filter_frame.grid(row=1, column=0, columnspan=2)
+            show_filters_btn.config(text="Скрыть фильтры")
+        else:
+            filter_frame.grid_forget() 
+            show_filters_btn.config(text="Показать фильтры")
+
     tk.Label(frame, text="Записей на странице:").grid(row=5, column=0)
     records_per_page_combobox = ttk.Combobox(frame, textvariable=records_per_page, state="readonly", values=[10, 25, 50, 100])
-    records_per_page_combobox.grid(row=5, column=1)
+    records_per_page_combobox.grid(row=5, column=1, pady=5)
 
     pagination_frame = tk.Frame(frame)
     pagination_frame.grid(row=11, column=0, columnspan=2)
@@ -199,7 +217,7 @@ def create_gui_page(root):
 
         update_pagination_buttons(total_pages)
     # Кнопка для поиска
-        ttk.Button(frame, text="Поиск", command=display_sales_data).grid(row=6, column=0, columnspan=2, pady=5)
+        ttk.Button(filter_frame, text="Поиск", command=display_sales_data).grid(row=6, column=1, columnspan=2, pady=5)
 
         # Кнопка для очистки полей поиска и фильтров
         def clear_filters():
@@ -210,7 +228,7 @@ def create_gui_page(root):
             end_date_entry.entry.delete(0, tk.END)
             display_sales_data()
 
-        ttk.Button(frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=1, columnspan=1, pady=5)
+        ttk.Button(filter_frame, text="Очистить фильтр", command=clear_filters).grid(row=6, column=0, columnspan=1, pady=5)
 
     
     
@@ -248,6 +266,7 @@ def create_gui_page(root):
     selected_cabin_id.trace("w", lambda *args: display_sales_data())  # Обработчик для обновления данных при выборе кабинки
 
     display_sales_data()
+
 
     def on_item_double_click(event):
         item = tree.selection()[0]

@@ -6,6 +6,7 @@ from cabin_page import create_cabin_page  # Импорт новой страни
 from expenses_page import create_expenses_page
 from statistic_page import create_statistics_page
 from booking_page import create_booking_page
+from secondary_page import create_secondary_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products, get_renter_details, fetch_product_details
 from datetime import datetime
 from PIL import Image, ImageTk
@@ -16,7 +17,8 @@ from ttkbootstrap.dialogs import Messagebox
 import json
 import os
 import shutil
-
+from login_window import LoginWindow
+    
 CONFIG_FILE = "config.json"
 CACHE_DIRS = ["cache", "__pycache__"]
 
@@ -73,7 +75,7 @@ def open_settings(root):
     tb.Button(settings_window, text="Применить", command=apply_theme).pack(pady=10)
     tb.Button(settings_window, text="Очистить кэш", command=clear_cache, bootstyle="danger").pack(pady=10)
 
-def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page):
+def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page):
     nav_frame = tb.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
@@ -84,7 +86,7 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-
+    tb.Button(nav_frame, text="Профиль", command=show_auth_page).pack(side=tk.RIGHT, padx=20)
 current_page = 1
 restock_page = 1
 occupied_cabins_page = 1
@@ -93,10 +95,23 @@ page_size = 15
 def main():
     selected_theme = load_theme()
     root = tb.Window(themename=selected_theme)
-    root.title("3B CRM")
-    root.geometry("1450x800")  # Устанавливаем начальный размер окна
-    root.minsize(800, 600)     # Устанавливаем минимальный размер окна
-    root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
+
+    root.withdraw()  # Скрываем основное окно
+
+    def on_login_success(user):
+        root.deiconify()  # Показываем основное окно после авторизации
+        # Сохраняем данные пользователя (опционально)
+        root.current_user = user
+
+    # Показываем окно авторизации
+    login_window = LoginWindow(root, on_login_success)
+    root.wait_window(login_window)
+
+    if hasattr(root, 'current_user'):
+        root.title("3B CRM")
+        root.geometry("1450x800")  # Устанавливаем начальный размер окна
+        root.minsize(800, 600)     # Устанавливаем минимальный размер окна
+        root.maxsize(1920, 1080)   # Устанавливаем максимальный размер окна
     root.iconbitmap("icon.ico")
     # Создаем стиль
     def resize_handler(event):
@@ -115,6 +130,7 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
+        frame_auth.pack_forget()
         main_page.pack()
         frame_booking.pack_forget()
         root.update_idletasks()
@@ -126,6 +142,7 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_statistics.pack_forget()
+        frame_auth.pack_forget()
         frame_products.pack()
         frame_booking.pack_forget()
         root.update_idletasks()
@@ -136,6 +153,7 @@ def main():
         frame_products.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_auth.pack_forget()
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
         frame_gui.pack()
@@ -147,6 +165,7 @@ def main():
         frame_products.pack_forget()
         frame_gui.pack_forget()
         frame_expenses.pack_forget()
+        frame_auth.pack_forget()
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
         frame_cabin.pack()
@@ -159,6 +178,7 @@ def main():
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
         frame_statistics.pack_forget()
+        frame_auth.pack_forget()
         frame_booking.pack_forget()
         frame_expenses.pack()
         root.update_idletasks()
@@ -170,6 +190,7 @@ def main():
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_auth.pack_forget()
         frame_booking.pack_forget()
         frame_statistics.pack()
         root.update_idletasks()
@@ -181,7 +202,20 @@ def main():
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
+        frame_auth.pack_forget()
         frame_booking.pack()
+        frame_statistics.pack_forget()
+        root.update_idletasks()
+
+    def show_auth_page():
+        # left_panel.pack_forget()
+        main_page.pack_forget()
+        frame_products.pack_forget()
+        frame_gui.pack_forget()
+        frame_cabin.pack_forget()
+        frame_expenses.pack_forget()
+        frame_auth.pack()
+        frame_booking.pack_forget()
         frame_statistics.pack_forget()
         root.update_idletasks()
 
@@ -425,7 +459,7 @@ def main():
             prev_button.config(state=tk.NORMAL)
 
     # Главная страница
-    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page)
+    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page)
     main_page = tk.Frame(root)
 
 
@@ -555,6 +589,7 @@ def main():
     frame_expenses = create_expenses_page(root)
     frame_statistics = create_statistics_page(root)
     frame_booking = create_booking_page(root)
+    frame_auth = create_secondary_page(root)
      # Применяем стили к страницам
 
      
@@ -564,6 +599,7 @@ def main():
     frame_expenses.pack_forget()
     frame_statistics.pack_forget()
     frame_booking.pack_forget()
+    frame_auth.pack_forget()
     auto_update_sold_products()
     update_occupied_cabins()
     root.mainloop()

@@ -1660,3 +1660,5 @@ def update_booking_date(booking_id, data):
         cursor.execute(query, params)
     conn.commit()
     conn.close()
+
+    
