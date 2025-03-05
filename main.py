@@ -7,6 +7,7 @@ from expenses_page import create_expenses_page
 from statistic_page import create_statistics_page
 from booking_page import create_booking_page
 from secondary_page import create_secondary_page
+from profile_page import create_profile_page
 from database import get_occupied_cabins, get_sold_products, fetch_low_stock_products, get_renter_details, fetch_product_details
 from datetime import datetime
 from PIL import Image, ImageTk
@@ -75,7 +76,7 @@ def open_settings(root):
     tb.Button(settings_window, text="Применить", command=apply_theme).pack(pady=10)
     tb.Button(settings_window, text="Очистить кэш", command=clear_cache, bootstyle="danger").pack(pady=10)
 
-def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page):
+def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page, show_profile_page):
     nav_frame = tb.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
     
@@ -86,7 +87,8 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    tb.Button(nav_frame, text="Профиль", command=show_auth_page).pack(side=tk.RIGHT, padx=20)
+    tb.Button(nav_frame, text="Персонал", command=show_auth_page).pack(side=tk.LEFT, padx=5)
+    tb.Button(nav_frame, text="Профиль", command=show_profile_page).pack(side=tk.RIGHT, padx=20)
 current_page = 1
 restock_page = 1
 occupied_cabins_page = 1
@@ -132,6 +134,7 @@ def main():
         frame_statistics.pack_forget()
         frame_auth.pack_forget()
         main_page.pack()
+        frame_profile.pack_forget()
         frame_booking.pack_forget()
         root.update_idletasks()
 
@@ -144,6 +147,7 @@ def main():
         frame_statistics.pack_forget()
         frame_auth.pack_forget()
         frame_products.pack()
+        frame_profile.pack_forget()
         frame_booking.pack_forget()
         root.update_idletasks()
 
@@ -157,6 +161,7 @@ def main():
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
         frame_gui.pack()
+        frame_profile.pack_forget()
         root.update_idletasks()
 
     def show_cabin_page():
@@ -169,6 +174,7 @@ def main():
         frame_statistics.pack_forget()
         frame_booking.pack_forget()
         frame_cabin.pack()
+        frame_profile.pack_forget()
         root.update_idletasks()
 
     def show_expenses_page():
@@ -181,6 +187,7 @@ def main():
         frame_auth.pack_forget()
         frame_booking.pack_forget()
         frame_expenses.pack()
+        frame_profile.pack_forget()
         root.update_idletasks()
 
     def show_statistics_page():
@@ -193,6 +200,7 @@ def main():
         frame_auth.pack_forget()
         frame_booking.pack_forget()
         frame_statistics.pack()
+        frame_profile.pack_forget()
         root.update_idletasks()
 
     def show_booking_page():
@@ -203,6 +211,7 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_auth.pack_forget()
+        frame_profile.pack_forget()
         frame_booking.pack()
         frame_statistics.pack_forget()
         root.update_idletasks()
@@ -215,10 +224,23 @@ def main():
         frame_cabin.pack_forget()
         frame_expenses.pack_forget()
         frame_auth.pack()
+        frame_profile.pack_forget()
         frame_booking.pack_forget()
         frame_statistics.pack_forget()
         root.update_idletasks()
 
+    def show_profile_page():
+        main_page.pack_forget()
+        frame_products.pack_forget()
+        frame_gui.pack_forget()
+        frame_cabin.pack_forget()
+        frame_expenses.pack_forget()
+        frame_statistics.pack_forget()
+        frame_auth.pack_forget()
+        frame_booking.pack_forget()
+        frame_profile.pack()
+        root.update_idletasks()
+        
     # Функция для создания стильно оформленного Listbox
     def create_styled_listbox(parent, title, row=None, column=None, pack=False, width=50):
         # Заголовок
@@ -459,7 +481,7 @@ def main():
             prev_button.config(state=tk.NORMAL)
 
     # Главная страница
-    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page)
+    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page, show_profile_page)
     main_page = tk.Frame(root)
 
 
@@ -584,12 +606,13 @@ def main():
     
 
     frame_products = create_product_page(root)
-    frame_gui = create_gui_page(root)
+    frame_gui = create_gui_page(root, root.current_user)
     frame_cabin = create_cabin_page(root)  # Создаем новую страницу кабин
     frame_expenses = create_expenses_page(root)
     frame_statistics = create_statistics_page(root)
-    frame_booking = create_booking_page(root)
+    frame_booking = create_booking_page(root, root.current_user)
     frame_auth = create_secondary_page(root)
+    frame_profile = create_profile_page(root, root.current_user)
      # Применяем стили к страницам
 
      

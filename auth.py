@@ -35,17 +35,18 @@ def authenticate(username, password):
     conn = create_connection()
     cursor = conn.cursor()
 
-    # Запрашиваем хеш пароля из БД
-    cursor.execute("SELECT password_hash FROM users WHERE username = %s", (username,))
+    # Запрашиваем id и хеш пароля из БД
+    cursor.execute("SELECT id, password_hash FROM users WHERE username = %s", (username,))
     user = cursor.fetchone()
     conn.close()
 
     if user:
-        stored_hash = user[0]  # Достаем хэш из результата запроса
+        user_id, stored_hash = user  # user[0] - это id, user[1] - хэш пароля
         if bcrypt.checkpw(password.encode(), stored_hash.encode()):
-            return username  # Если пароль верный, возвращаем имя пользователя
+            return user_id  # Возвращаем id вместо хэша пароля
 
     return None
+
 
 def get_users():
     """Получает список всех пользователей"""
@@ -79,5 +80,33 @@ def update_user(user_id, name, role):
         conn.commit()
     except Exception as e:
         print(f"Ошибка при обновлении пользователя: {e}")
+    finally:
+        conn.close()
+
+
+def get_user_details(user_id):
+    """Получает детальную информацию о пользователе"""
+    conn = create_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            SELECT id, username, role, created_at 
+            FROM users 
+            WHERE id = %s
+        """, (user_id,))
+        user = cursor.fetchone()
+        
+        if user:
+            return {
+                "id": user[0],
+                "username": user[1],
+                "role": user[2],
+                "created_at": user[3].strftime("%Y-%m-%d %H:%M") if user[3] else "N/A"
+            }
+        return {}
+    except Exception as e:
+        print(f"Ошибка при получении данных пользователя: {e}")
+        return {}
     finally:
         conn.close()

@@ -23,7 +23,7 @@ def connect():
         port=DB_PORT
     )
 
-def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee):
+def insert_sales_data(user_id, name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee):
     """Функция для добавления новой записи о продажах."""
     try:
         # Устанавливаем соединение с базой данных
@@ -32,14 +32,14 @@ def insert_sales_data(name, number, cabins_id, total_sales, start_date, total_re
         
         # SQL-запрос для вставки данных и получения id новой записи
         query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (user_id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
         # Выполняем запрос
         default_payment_method = "Наличные"
-        cursor.execute(query, (name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee, default_payment_method))
+        cursor.execute(query, (user_id, name, number, cabins_id, total_sales, start_date, total_rental_price, end_date, people_count, extra_fee, default_payment_method))
         
         # Получаем id вставленной записи
         sale_id = cursor.fetchone()[0]
@@ -702,13 +702,14 @@ def confirm_booking_to_sale(booking_id):
             total_price, 
             start_date,
             end_date,
-            num_people
+            num_people,
+            user_id
         FROM bookings
         WHERE id = %s AND status = 'Ожидание';
     """
     insert_sale_query = """
-        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, payment_method)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sales (name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, payment_method, user_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id;
     """
     update_booking_status_query = """
@@ -738,7 +739,8 @@ def confirm_booking_to_sale(booking_id):
                     booking[3],   # cabin_price
                     booking[5],   # end_date
                     booking[6], #people_count
-                    default_payment_method
+                    default_payment_method,
+                    booking[7]
                 )
             )
             sale_id = cursor.fetchone()[0]
@@ -776,17 +778,17 @@ def update_booking_status(booking_id, new_status):
         conn.close()
 
 
-def add_booking(customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge):
+def add_booking(user_id, customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge):
     """Добавляет новое бронирование."""
     query = """
-        INSERT INTO bookings (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status, num_people, extra_charge)
-        VALUES (%s, %s, %s, %s, %s, %s, 'Ожидание', %s, %s)
+        INSERT INTO bookings (user_id, customer_name, customer_phone, cabin_id, start_date, end_date, total_price, status, num_people, extra_charge)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, 'Ожидание', %s, %s)
         RETURNING id;
     """
     try:
         conn = connect()
         with conn.cursor() as cursor:
-            cursor.execute(query, (customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge))
+            cursor.execute(query, (user_id, customer_name, customer_phone, cabin_id, start_date, end_date, total_price, num_people, extra_charge))
             booking_id = cursor.fetchone()[0]
             conn.commit()
             return booking_id

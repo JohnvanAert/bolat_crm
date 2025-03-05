@@ -11,12 +11,14 @@ from tkcalendar import DateEntry
 from ttkbootstrap.widgets import DateEntry as TtkDateEntry
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
+from auth import get_user_details
 
-def create_booking_page(root):
+def create_booking_page(root, user_id):
     frame_main = tk.Frame(root)
+    user_data = get_user_details(user_id)
     # Заголовок
     tb.Label(frame_main, text="Управление бронированиями", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
-
+    
 
     # Панель фильтров
     filter_frame = tk.Frame(frame_main)
@@ -277,7 +279,7 @@ def create_booking_page(root):
                     return
 
                 # Вызов функции добавления бронирования
-                booking_id = add_booking(name, phone, cabin_id, start, end, total_price, num_people, extra_charge)
+                booking_id = add_booking(user_id, name, phone, cabin_id, start, end, total_price, num_people, extra_charge)
                 if booking_id:
                     messagebox.showinfo("Успех", "Бронирование добавлено!")
                     modal.destroy()

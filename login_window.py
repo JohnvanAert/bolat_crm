@@ -27,12 +27,9 @@ class LoginWindow(tb.Toplevel):
         tb.Button(self, text="Войти", command=self.login).pack(pady=10)
 
     def login(self):
-        user = authenticate(
-            self.username_var.get(),
-            self.password_var.get()
-        )
-        if user:
-            self.on_success(user)
+        user_id = authenticate(self.username_var.get(), self.password_var.get())
+        if user_id:
+            self.on_success(user_id)  # Передаем ID
             self.destroy()
         else:
             tb.dialogs.Messagebox.show_error("Неверный логин или пароль")

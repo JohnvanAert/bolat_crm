@@ -9,9 +9,11 @@ from datetime import timedelta
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
 from ttkbootstrap.widgets import DateEntry as TtkDateEntry
+from auth import get_user_details
 
-def create_gui_page(root):
+def create_gui_page(root, user_id):
     frame = tk.Frame(root)
+    user_data = get_user_details(user_id)
 
     show_filters_btn = ttk.Button(frame, text="Показать фильтры", command=lambda: toggle_filters())
     show_filters_btn.grid(row=0, column=0, columnspan=2, pady=5)
@@ -50,8 +52,8 @@ def create_gui_page(root):
     )
     end_date_entry.grid(row=4, column=1, pady=5)
 
-    tree = tb.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status"), show="headings")
-    tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status")
+    tree = tb.Treeview(frame, columns=("id", "name", "number", "cabins_count", "total_sales", "date", "cabins_price", "end_date", "people_count", "extra_charge", "payment_method", "status", "user_name"), show="headings")
+    tree["displaycolumns"] = ("id", "name", "number", "cabins_count", "total_sales", "date", "end_date", "status", "user_name")
     tree.heading("id", text="ID")
     tree.heading("cabins_count", text="Кабина")
     tree.heading("total_sales", text="Общий чек")
@@ -61,16 +63,18 @@ def create_gui_page(root):
     tree.heading("cabins_price", text="Аренда кабинки")
     tree.heading("end_date", text="Дата окончания")
     tree.heading("status", text="Статус")
+    tree.heading("user_name", text="Кассир")
     tree.grid(row=7, column=0, columnspan=2)
 
     tree.column("id", width=50)
-    tree.column("name", width=200)
-    tree.column("number", width=200)
+    tree.column("name", width=100)
+    tree.column("number", width=100)
     tree.column("cabins_count", width=50)
     tree.column("total_sales", width=100)
     tree.column("date", width=150)
     tree.column("end_date", width=150)
     tree.column("status", width=100)
+    tree.column("user_name", width=70)
 
     # Переменные для пагинации
     current_page = tk.IntVar(value=1)
@@ -211,7 +215,10 @@ def create_gui_page(root):
         for row in paginated_data:
             id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, is_completed  = row
             status = "Завершен" if is_completed else "Ожидание"
-            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, status))
+            # Получаем имя пользователя по ID
+            user_details = get_user_details(user_id)
+            username = user_details.get('username', 'N/A')
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, status, username))
 
 
 
@@ -1543,7 +1550,7 @@ def create_gui_page(root):
                 start_date = datetime.datetime.now().replace(microsecond=0)
                 end_date = start_date + timedelta(hours=hours)
                 # Сохраняем продажу и получаем ID
-                sale_id = insert_sales_data(name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date, people_count, extra_fee)
+                sale_id = insert_sales_data(user_id, name, number, selected_cabin_id, total_price, start_date,  total_rental_price, end_date, people_count, extra_fee)
                 
                 # Сохраняем продукты, добавленные к заказу, в таблицу sales_products
                 for product_id, product_info in selected_products.items():
