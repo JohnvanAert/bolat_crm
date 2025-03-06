@@ -105,37 +105,35 @@ def create_booking_page(root, user_id):
 
         # Получение данных фильтров
         name = name_filter.get().strip()
-        raw_date = date_entry.entry.get()  # Теперь получаем выбранную дату при нажатии кнопки
-        if raw_date:
-            try:
-                formatted_date = datetime.datetime.strptime(raw_date, "%m/%d/%Y").strftime("%Y-%m-%d")
-            except ValueError:
-                formatted_date = ""  # Если формат некорректный
-        else:
-            formatted_date = ""
+        raw_date = date_entry.entry.get()
+        formatted_date = raw_date if raw_date else ""
         status = status_filter.get().strip()
         cabin_name = cabin_filter.get().strip()
-        # Получаем ID кабинки или None, если выбрано "Все"
-        cabin_id = None if cabin_name == "Все" else cabin_map.get(cabin_name)
+        cabin_id = cabin_map.get(cabin_name) if cabin_name != "Все" else None
 
-        # Запрос данных из базы
-        bookings, total_count = fetch_filtered_bookings(name, formatted_date, status, cabin_id, records_per_page, current_page)
+        # Проверка кабинки
+        if cabin_name != "Все" and cabin_id is None:
+            messagebox.showerror("Ошибка", "Кабинка не найдена!")
+            return
+
+        try:
+            bookings, total_count = fetch_filtered_bookings(
+                name, formatted_date, status, cabin_id, records_per_page, current_page
+            )
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка загрузки данных: {str(e)}")
+            return
+
+        # Обновление таблицы
         bookings_table.delete(*bookings_table.get_children())
-        # Добавление данных в таблицу
         for booking in bookings:
-            # Убедимся, что данные передаются в правильном порядке
             row = (
-                booking[0],  # ID
-                booking[1],  # Имя клиента
-                booking[2],  # Телефон
-                booking[3],  # Кабинка (название)
-                booking[4],  # Дата записи бронирования
-                booking[5],  # Начало брони
-                booking[6],  # Конец брони
-                booking[8]   # Статус
+                booking[0], booking[1], booking[2], booking[3],
+                booking[4], booking[5], booking[6], booking[8]
             )
             bookings_table.insert("", tk.END, values=row)
-            # Обновление параметров пагинации
+
+        # Пагинация
         total_pages = (total_count + records_per_page - 1) // records_per_page
         update_pagination_controls()
     

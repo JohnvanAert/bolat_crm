@@ -160,69 +160,52 @@ def create_gui_page(root, user_id):
     add_observer(update_cabins_combo)
 
     def display_sales_data():
+        # Очистка текущих данных
         for item in tree.get_children():
             tree.delete(item)
         
-        all_data = fetch_sales_data()
-
-        # Получение выбранного имени кабинки для фильтрации
+        # Получение параметров фильтрации
         selected_cabin = selected_cabin_id.get().split(" - ")[0] if selected_cabin_id.get() else None
+        cabins_data = get_cabins_data()
+        selected_cabin_id_value = next((c['id'] for c in cabins_data if c['name'] == selected_cabin), None) if selected_cabin else None
         
-        if selected_cabin:
-            cabins_data = get_cabins_data()
-            selected_cabin_id_value = next((cabin['id'] for cabin in cabins_data if cabin['name'] == selected_cabin), None)
-            
-            if selected_cabin_id_value is not None:
-                # Фильтрация данных по ID кабинки
-                all_data = [row for row in all_data if row[3] == selected_cabin_id_value]  # row[3] должен содержать ID кабинки
+        # Получение параметров пагинации
+        page = current_page.get()
+        per_page = records_per_page.get()
         
-         # Фильтрация по диапазону дат
-        try:
-            start_date_str = start_date_entry.entry.get()
-            end_date_str = end_date_entry.entry.get()
-
-            if start_date_str and end_date_str:
-                start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
-                end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
-                all_data = [row for row in all_data if start_date <= row[5].date() <= end_date]
-        except ValueError:
-            pass
-
-
-            # Фильтрация данных по имени и номеру
-        search_name = search_name_entry.get().lower()
-        search_number = search_number_entry.get()
-
-
-        if search_name:
-            all_data = [row for row in all_data if row[1] and search_name in row[1].lower()]
-
-        if search_number:
-            all_data = [row for row in all_data if row[2] and search_number in row[2]]
-
+        # Получение данных
+        data, total_records = fetch_sales_data(
+            page=page,
+            per_page=per_page,
+            cabin_id=selected_cabin_id_value,
+            start_date=start_date_entry.entry.get() or None,
+            end_date=end_date_entry.entry.get() or None,
+            search_name=search_name_entry.get().strip() or None,
+            search_number=search_number_entry.get().strip() or None
+        )
         
-        total_pages = (len(all_data) - 1) // records_per_page.get() + 1
-
-        if current_page.get() > total_pages:
-            current_page.set(total_pages)
-        elif current_page.get() < 1:
-            current_page.set(1)
-
-        start_index = (current_page.get() - 1) * records_per_page.get()
-        end_index = start_index + records_per_page.get()
-        paginated_data = all_data[start_index:end_index]
-
-        for row in paginated_data:
-            id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, is_completed  = row
+        # Заполнение таблицы
+        for row in data:
+            id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method, is_completed = row
             status = "Завершен" if is_completed else "Ожидание"
-            # Получаем имя пользователя по ID
             user_details = get_user_details(user_id)
             username = user_details.get('username', 'N/A')
-            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, end_date, cabin_price, people_count, extra_charge, payment_method, status, username))
-
-
-
+            tree.insert("", tk.END, values=(id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method, status, username))
+        
+        # Обновление пагинации
+        total_pages = max(1, (total_records - 1) // per_page + 1) if total_records > 0 else 1
+        current_page.set(min(max(1, page), total_pages))
         update_pagination_buttons(total_pages)
+
+        def refresh_data(event=None):
+            display_sales_data()
+
+        search_name_entry.bind("<KeyRelease>", refresh_data)
+        search_number_entry.bind("<KeyRelease>", refresh_data)
+        start_date_entry.bind("<<DateEntrySelected>>", refresh_data)
+        end_date_entry.bind("<<DateEntrySelected>>", refresh_data)
+        records_per_page_combobox.bind("<<ComboboxSelected>>", refresh_data)
+        
     # Кнопка для поиска
         ttk.Button(filter_frame, text="Поиск", command=display_sales_data).grid(row=6, column=1, columnspan=2, pady=5)
 
@@ -266,6 +249,8 @@ def create_gui_page(root, user_id):
             ttk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).grid(row=0, column=col + 1)
 
     def go_to_page(page_number):
+        # Гарантируем, что номер страницы не меньше 1
+        page_number = max(1, page_number)
         current_page.set(page_number)
         display_sales_data()
 

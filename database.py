@@ -58,20 +58,63 @@ def insert_sales_data(user_id, name, number, cabins_id, total_sales, start_date,
         print(f"Ошибка при вставке данных о продажах: {e}")
         return None
 
-def fetch_sales_data():
-    """Функция для получения всех данных о продажах из таблицы."""
+def fetch_sales_data(
+    page=1, 
+    per_page=10, 
+    cabin_id=None, 
+    start_date=None, 
+    end_date=None, 
+    search_name=None, 
+    search_number=None
+):
+    """Получает данные с пагинацией и фильтрацией на уровне SQL"""
+    offset = (page - 1) * per_page
+    query = """
+        SELECT id, name, number, cabins_id, total_sales, date, 
+               cabin_price, end_date, people_count, extra_charge, 
+               payment_method, is_completed 
+        FROM sales 
+        WHERE 1=1
+    """
+    params = []
+    
+    if cabin_id:
+        query += " AND cabins_id = %s"
+        params.append(cabin_id)
+    if start_date and end_date:
+        query += " AND date BETWEEN %s AND %s"
+        params.extend([start_date, end_date])
+    if search_name:
+        query += " AND LOWER(name) LIKE %s"
+        params.append(f"%{search_name.lower()}%")
+    if search_number:
+        query += " AND number LIKE %s"
+        params.append(f"%{search_number}%")
+        
+    query += " ORDER BY date DESC LIMIT %s OFFSET %s"
+    params.extend([per_page, offset])
+
     try:
         conn = connect()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, number, cabins_id, total_sales, date, cabin_price, end_date, people_count, extra_charge, payment_method, is_completed FROM sales ORDER BY date DESC")
+        
+        # Основной запрос данных
+        cursor.execute(query, params)
         sales_data = cursor.fetchall()
+        
+        # Запрос общего количества записей
+        count_query = "SELECT COUNT(*) FROM sales WHERE 1=1" + query.split("WHERE 1=1")[1].split("ORDER BY")[0]
+        cursor.execute(count_query, params[:-2])  # Исключаем LIMIT и OFFSET
+        total = cursor.fetchone()[0]
+        
         cursor.close()
         conn.close()
-        return sales_data
+        return sales_data, total
     except Exception as e:
-        print(f"Ошибка при получении данных о продажах: {e}")
-        return []
-
+        print(f"Ошибка при получении данных: {e}")
+        return [], 0
+    
+    
 def update_sales_data(sale_id, new_name, new_number, selected_cabin_id, new_total_sales, new_cabin_price, extension_minutes, service_charge_applied, discount_applied, people_count, extra_charge, payment_method):
     conn = connect()
     cursor = conn.cursor()
