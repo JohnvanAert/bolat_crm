@@ -283,16 +283,6 @@ def create_gui_page(root, user_id):
         is_completed = get_order_status(sale_id)
         service_state = get_service_state(sale_id)
         discount_state = get_discount_state(sale_id)
-        def validate_only_letters(event):
-            """Разрешает вводить только буквы и пробелы."""
-            entry = event.widget
-            value = entry.get()
-            # Фильтруем строку: оставляем только буквы и пробелы
-            filtered_value = ''.join(char for char in value if char.isalpha() or char.isspace())
-            
-            if value != filtered_value:
-                entry.delete(0, tk.END)
-                entry.insert(0, filtered_value)
 
         def validate_only_numbers(event):
             """Разрешает вводить только цифры."""

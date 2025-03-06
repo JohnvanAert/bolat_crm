@@ -1,8 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from tkinter import Button, Frame, Label
-from auth import get_users, update_user
+from auth import get_users, update_user, create_user, delete_user
 import ttkbootstrap as tb
+import bcrypt
 
 def create_secondary_page(root):
     frame = tk.Frame(root)
@@ -31,43 +32,97 @@ def create_secondary_page(root):
 
     load_users()  # Заполняем таблицу
 
-    # Форма для редактирования
-    tk.Label(main_area, text="Редактировать пользователя").pack(pady=5)
+    # Открытие модального окна редактирования
+    def open_edit_user_window(user_id, username, role):
+        modal = tk.Toplevel()
+        modal.title("Редактировать пользователя")
+        modal.geometry("300x200")
+        modal.transient()
+        modal.grab_set()
 
-    selected_id = tk.StringVar()
-    selected_name = tk.StringVar()
-    selected_role = tk.StringVar()
+        tk.Label(modal, text="Имя пользователя").pack(pady=5)
+        new_username = tk.StringVar(value=username)
+        new_username_entry = tk.Entry(modal, textvariable=new_username)
+        new_username_entry.pack()
 
-    tk.Label(main_area, text="ID").pack()
-    id_entry = tk.Entry(main_area, textvariable=selected_id, state="readonly")
-    id_entry.pack()
+        tk.Label(modal, text="Роль").pack(pady=5)
+        new_user_role = tk.StringVar(value=role)
+        new_role_combobox = ttk.Combobox(modal, textvariable=new_user_role, values=["admin", "user"], state="readonly")
+        new_role_combobox.pack()
 
-    tk.Label(main_area, text="Имя").pack()
-    name_entry = tk.Entry(main_area, textvariable=selected_name)
-    name_entry.pack()
+        def save_changes():
+            updated_name = new_username.get().strip()
+            updated_role = new_user_role.get().strip()
 
-    tk.Label(main_area, text="Роль").pack()
-    role_entry = tk.Entry(main_area, textvariable=selected_role)
-    role_entry.pack()
+            if not updated_name or not updated_role:
+                messagebox.showerror("Ошибка", "Все поля должны быть заполнены!", parent=modal)
+                return
 
-    def select_user(event):
+            update_user(user_id, updated_name, updated_role)
+            load_users()
+            messagebox.showinfo("Успех", "Данные пользователя обновлены!", parent=modal)
+            modal.destroy()
+
+        def delete_current_user():
+            confirm = messagebox.askyesno("Удаление", f"Вы уверены, что хотите удалить {username}?", parent=modal)
+            if confirm:
+                delete_user(user_id)
+                load_users()
+                messagebox.showinfo("Удалено", f"Пользователь {username} удален!", parent=modal)
+                modal.destroy()
+   
+
+        ttk.Button(modal, text="Сохранить", command=save_changes).pack(pady=10)
+        ttk.Button(modal, text="Удалить пользователя", command=delete_current_user, bootstyle="danger").pack(pady=5)
+
+    # Обработчик двойного клика по таблице
+    def on_double_click(event):
         selected = user_table.selection()
         if selected:
             values = user_table.item(selected[0], "values")
-            selected_id.set(values[0])
-            selected_name.set(values[1])
-            selected_role.set(values[2])
+            user_id, username, role = values
+            open_edit_user_window(user_id, username, role)
 
-    user_table.bind("<<TreeviewSelect>>", select_user)
+    user_table.bind("<Double-1>", on_double_click)
 
-    def save_changes():
-        user_id = selected_id.get()
-        new_name = selected_name.get()
-        new_role = selected_role.get()
-        if user_id and new_name and new_role:
-            update_user(user_id, new_name, new_role)
-            load_users()
+    ttk.Button(main_area, text="Добавить пользователя", command=lambda: open_add_user_window(load_users)).pack(pady=10)
 
-    ttk.Button(main_area, text="Сохранить изменения", command=save_changes).pack(pady=10)
+    def open_add_user_window(load_users_callback):
+        modal = tk.Toplevel()
+        modal.title("Добавить пользователя")
+        modal.geometry("300x250")
+        modal.transient()  # Сделать окно модальным
+
+        tk.Label(modal, text="Имя пользователя").pack(pady=5)
+        new_username = tk.StringVar()
+        new_username_entry = tk.Entry(modal, textvariable=new_username)
+        new_username_entry.pack()
+
+        tk.Label(modal, text="Пароль").pack(pady=5)
+        new_password = tk.StringVar()
+        new_password_entry = tk.Entry(modal, textvariable=new_password, show="*")
+        new_password_entry.pack()
+
+        tk.Label(modal, text="Роль").pack(pady=5)
+        new_user_role = tk.StringVar(value="user")
+        new_role_combobox = ttk.Combobox(modal, textvariable=new_user_role, values=["admin", "user"], state="readonly")
+        new_role_combobox.pack()
+
+        def create_new_user():
+            username = new_username.get().strip()
+            password = new_password.get().strip()
+            role = new_user_role.get().strip()
+
+            if not username or not password or not role:
+                messagebox.showerror("Ошибка", "Все поля должны быть заполнены!", parent=modal)
+                return
+
+            hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+            create_user(username, hashed_password, role)
+            load_users_callback()
+            messagebox.showinfo("Успех", f"Пользователь {username} успешно создан!", parent=modal)
+            modal.destroy()
+
+        ttk.Button(modal, text="Создать", command=create_new_user).pack(pady=10)
 
     return frame

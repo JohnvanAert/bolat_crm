@@ -19,6 +19,7 @@ import json
 import os
 import shutil
 from login_window import LoginWindow
+from auth import get_user_details
     
 CONFIG_FILE = "config.json"
 CACHE_DIRS = ["cache", "__pycache__"]
@@ -79,6 +80,9 @@ def open_settings(root):
 def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page, show_profile_page):
     nav_frame = tb.Frame(root)
     nav_frame.pack(side=tk.TOP, fill=tk.X)
+     # Получаем роль пользователя
+    user_data = get_user_details(root.current_user)
+    user_role = user_data.get("role")
     
     tb.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
     tb.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
@@ -87,7 +91,8 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
     tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    tb.Button(nav_frame, text="Персонал", command=show_auth_page).pack(side=tk.LEFT, padx=5)
+    if user_role == "admin":
+        tb.Button(nav_frame, text="Персонал", command=show_auth_page).pack(side=tk.LEFT, padx=5)
     tb.Button(nav_frame, text="Профиль", command=show_profile_page).pack(side=tk.RIGHT, padx=20)
 current_page = 1
 restock_page = 1
@@ -104,6 +109,8 @@ def main():
         root.deiconify()  # Показываем основное окно после авторизации
         # Сохраняем данные пользователя (опционально)
         root.current_user = user
+        user_data = get_user_details(user)
+        user_role = user_data.get("role")   # Достаем роль
 
     # Показываем окно авторизации
     login_window = LoginWindow(root, on_login_success)

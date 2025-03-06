@@ -21,14 +21,19 @@ def create_connection():
         port=DB_PORT
     )   
 
-def create_user(username, password):
+def create_user(username, password_hash, role):
+    """Создает нового пользователя с хешированным паролем."""
     conn = create_connection()
     cursor = conn.cursor()
-    password_hash = sha256(password.encode()).hexdigest()
-    cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)",
-        (username, password_hash))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s)",
+                       (username, password_hash, role))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при создании пользователя: {e}")
+    finally:
+        conn.close()
+
 
 def authenticate(username, password):
     """Проверяет логин и пароль пользователя."""
@@ -108,5 +113,20 @@ def get_user_details(user_id):
     except Exception as e:
         print(f"Ошибка при получении данных пользователя: {e}")
         return {}
+    finally:
+        conn.close()
+
+
+def delete_user(user_id):
+    """Удаляет пользователя по ID"""
+    query = "DELETE FROM users WHERE id = %s;"
+    
+    try:
+        conn = create_connection()
+        with conn.cursor() as cursor:
+            cursor.execute(query, (user_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при удалении пользователя: {e}")
     finally:
         conn.close()
