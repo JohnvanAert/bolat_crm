@@ -272,23 +272,29 @@ def is_product_in_sales(product_id):
     return count > 0  # Если продукт есть в продажах, возвращаем True
 
 # Функция для извлечения данных о продуктах
-def fetch_products():
+def fetch_products(limit, offset):
     try:
-        conn = connect()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, name, price, quantity, image_path FROM products ORDER BY id")
-        products = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        
-        # Преобразуем результаты в список словарей
+        with connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    SELECT id, name, price, quantity, image_path 
+                    FROM products 
+                    ORDER BY id 
+                    LIMIT %s OFFSET %s
+                """, (limit, offset))
+                products = cursor.fetchall()
+
+                # Подсчет общего количества товаров
+                cursor.execute("SELECT COUNT(*) FROM products")
+                total_products = cursor.fetchone()[0]
+
         return [
             {"id": row[0], "name": row[1], "price": row[2], "quantity": row[3], "image_path": row[4]}
             for row in products
-        ]
+        ], total_products
     except Exception as e:
         print("Ошибка при извлечении данных о продуктах:", e)
-        return []
+        return [], 0
 
 # database.py
 

@@ -200,59 +200,56 @@ def create_product_page(root):
     product_container.grid(row=2, column=0, columnspan=3, pady=10)
 
     def display_products():
+        """Отображение продуктов с учетом пагинации и оптимизации памяти."""
         # Очистка контейнера продуктов
         for widget in product_container.winfo_children():
             widget.destroy()
 
-        # Получение и отображение продуктов
-        products = fetch_products()
         items_per_page = items_per_page_var.get()
         current_page = current_page_var.get()
-        start_index = (current_page - 1) * items_per_page
-        end_index = start_index + items_per_page
+        offset = (current_page - 1) * items_per_page
 
-        total_products = len(products)
+        # Получаем только нужные товары из базы
+        products, total_products = fetch_products(items_per_page, offset)
         total_pages = (total_products + items_per_page - 1) // items_per_page
 
-        current_row = 0
-        current_col = 0
-        max_cols = 5
-
-        for product in products[start_index:end_index]:
+        # Отображение товаров в сетке
+        current_row, current_col, max_cols = 0, 0, 5
+        for product in products:
             create_product_card(product, current_row, current_col)
             current_col += 1
             if current_col >= max_cols:
                 current_col = 0
                 current_row += 1
 
-        # Очистка старых кнопок пагинации
+        # Обновление пагинации
+        update_pagination_controls(current_page, total_pages)
+
+    def update_pagination_controls(current_page, total_pages):
+        """Обновление панели пагинации без пересоздания кнопок."""
         for widget in pagination_frame.winfo_children():
             widget.destroy()
 
-        # Количество отображаемых кнопок страниц
         max_buttons_to_display = 5
         start_page = max(1, current_page - max_buttons_to_display // 2)
         end_page = min(total_pages, start_page + max_buttons_to_display - 1)
 
-        # Кнопка для перехода на первую страницу
-        if start_page > 1:
-            first_button = ttk.Button(pagination_frame, text="<<", command=lambda: [current_page_var.set(1), display_products()])
-            first_button.pack(side="left")
-            prev_button = ttk.Button(pagination_frame, text="<", command=lambda: [current_page_var.set(current_page - 1), display_products()])
-            prev_button.pack(side="left")
+        def go_to_page(page):
+            current_page_var.set(page)
+            display_products()
 
-        # Кнопки для страниц в пределах видимого диапазона
+        if start_page > 1:
+            ttk.Button(pagination_frame, text="<<", command=lambda: go_to_page(1)).pack(side="left")
+            ttk.Button(pagination_frame, text="<", command=lambda: go_to_page(max(1, current_page - 1))).pack(side="left")
+
         for page_num in range(start_page, end_page + 1):
             state = "disabled" if page_num == current_page else "normal"
-            page_button = ttk.Button(pagination_frame, text=str(page_num), state=state, command=lambda p=page_num: [current_page_var.set(p), display_products()])
-            page_button.pack(side="left")
+            ttk.Button(pagination_frame, text=str(page_num), state=state, command=lambda p=page_num: go_to_page(p)).pack(side="left")
 
-        # Кнопки для перехода на следующую и последнюю страницы
         if end_page < total_pages:
-            next_button = ttk.Button(pagination_frame, text=">", command=lambda: [current_page_var.set(current_page + 1), display_products()])
-            next_button.pack(side="left")
-            last_button = ttk.Button(pagination_frame, text=">>", command=lambda: [current_page_var.set(total_pages), display_products()])
-            last_button.pack(side="left")
+            ttk.Button(pagination_frame, text=">", command=lambda: go_to_page(min(total_pages, current_page + 1))).pack(side="left")
+            ttk.Button(pagination_frame, text=">>", command=lambda: go_to_page(total_pages)).pack(side="left")
+
 
     def create_product_card(product, row, col):
         card = ttk.Frame(product_container, borderwidth=2, relief="groove")
