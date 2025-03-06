@@ -615,7 +615,7 @@ def main():
     frame_products = create_product_page(root)
     frame_gui = create_gui_page(root, root.current_user)
     frame_cabin = create_cabin_page(root)  # Создаем новую страницу кабин
-    frame_expenses = create_expenses_page(root)
+    frame_expenses = create_expenses_page(root, root.current_user)
     frame_statistics = create_statistics_page(root)
     frame_booking = create_booking_page(root, root.current_user)
     frame_auth = create_secondary_page(root)

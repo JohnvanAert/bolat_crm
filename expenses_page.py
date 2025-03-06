@@ -7,9 +7,11 @@ from tkcalendar import Calendar
 from ttkbootstrap.widgets import DateEntry as TtkDateEntry
 import ttkbootstrap as tb
 from ttkbootstrap.constants import *
+from auth import get_user_details
 
-def create_expenses_page(root):
+def create_expenses_page(root, user_id):
     frame = tk.Frame(root)
+    user_data = get_user_details(user_id)
 
     tk.Label(frame, text="Расходы", font=("Arial", 20)).grid(row=0, column=0, columnspan=3, pady=10)
     # Search fields
@@ -226,6 +228,7 @@ def create_expenses_page(root):
     # Function to add a new expense
     # Function to add a new expense
     def open_add_expense_modal():
+        nonlocal user_id
         add_expense_modal = tk.Toplevel(frame)
         add_expense_modal.title("Добавить расход")
         add_expense_modal.geometry("400x300")
@@ -276,7 +279,9 @@ def create_expenses_page(root):
             try:
                 amount = float(amount)
                 datetime_combined = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M:%S")
-                add_expense(name, amount, datetime_combined)
+
+
+                add_expense(name, amount, user_id, datetime_combined)
                 messagebox.showinfo("Успех", "Расход добавлен успешно.")
                 add_expense_modal.destroy()
                 display_expenses_data()

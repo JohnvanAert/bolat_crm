@@ -375,15 +375,15 @@ def fetch_expenses_data(name=None, min_amount=None, max_amount=None, start_date=
     return rows
 
 # Function to add an expense entry
-def add_expense(name, amount, date=None):
+def add_expense(name, amount, user_id, date=None):
     if not date:
         date = datetime.now()  # Получаем текущую дату и время
 
     conn = connect()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO expenses (name, amount, date) VALUES (%s, %s, %s)",
-        (name, amount, date)
+        "INSERT INTO expenses (name, amount, user_id, date) VALUES (%s, %s, %s, %s)",
+        (name, amount, user_id, date)
     )
     conn.commit()
     cur.close()
