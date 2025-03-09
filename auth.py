@@ -130,3 +130,34 @@ def delete_user(user_id):
         print(f"Ошибка при удалении пользователя: {e}")
     finally:
         conn.close()
+
+
+def has_users():
+    conn = create_connection()  # Подключаемся к вашей БД
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")  # Проверяем количество пользователей
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count > 0  # Возвращает True, если пользователи есть
+
+def register_user(username, password, role="admin"):  # role="admin" по умолчанию
+    conn = create_connection()
+    cursor = conn.cursor()
+
+    # Проверяем существование пользователя
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    if cursor.fetchone():
+        conn.close()
+        return False
+
+    # Хешируем пароль
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # Создаём пользователя с ролью "admin" (если роль не указана явно)
+    cursor.execute(
+        "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+        (username, hashed_password, role)  # role будет "admin" по умолчанию
+    )
+    conn.commit()
+    conn.close()
+    return True

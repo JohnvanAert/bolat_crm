@@ -4,10 +4,12 @@ from tkinter import Button, Frame, Label
 from auth import get_users, update_user, create_user, delete_user
 import ttkbootstrap as tb
 import bcrypt
+from auth import get_user_details
 
-def create_secondary_page(root):
+def create_secondary_page(root, user_id):
     frame = tk.Frame(root)
     frame.pack(fill='both', expand=True)
+    user_data = get_user_details(user_id)
 
     main_area = tk.Frame(frame)
     main_area.pack(fill='both', expand=True)

@@ -19,7 +19,9 @@ import json
 import os
 import shutil
 from login_window import LoginWindow
-from auth import get_user_details
+from auth import get_user_details, has_users
+from register_window import RegisterWindow
+
     
 CONFIG_FILE = "config.json"
 CACHE_DIRS = ["cache", "__pycache__"]
@@ -86,12 +88,15 @@ def create_navigation(root, show_main_page,show_booking_page, show_products_page
     
     tb.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
     tb.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
-    tb.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
     tb.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT, padx=5)
-    tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-    tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
+      # Кнопка для кабин
+      # Кнопка для кабин
+   
     if user_role == "admin":
+        tb.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
+        tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)
+        tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)
+        tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
         tb.Button(nav_frame, text="Персонал", command=show_auth_page).pack(side=tk.LEFT, padx=5)
     tb.Button(nav_frame, text="Профиль", command=show_profile_page).pack(side=tk.RIGHT, padx=20)
 current_page = 1
@@ -109,8 +114,13 @@ def main():
         root.deiconify()  # Показываем основное окно после авторизации
         # Сохраняем данные пользователя (опционально)
         root.current_user = user
+
         user_data = get_user_details(user)
         user_role = user_data.get("role")   # Достаем роль
+
+    if not has_users():  # Проверяем, есть ли пользователи в БД
+        reg_window = RegisterWindow(root, on_success=lambda: LoginWindow(root, on_login_success))
+        root.wait_window(reg_window)
 
     # Показываем окно авторизации
     login_window = LoginWindow(root, on_login_success)
@@ -618,7 +628,7 @@ def main():
     frame_expenses = create_expenses_page(root, root.current_user)
     frame_statistics = create_statistics_page(root)
     frame_booking = create_booking_page(root, root.current_user)
-    frame_auth = create_secondary_page(root)
+    frame_auth = create_secondary_page(root, root.current_user)
     frame_profile = create_profile_page(root, root.current_user)
      # Применяем стили к страницам
 

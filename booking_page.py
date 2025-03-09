@@ -244,6 +244,12 @@ def create_booking_page(root, user_id):
                 from datetime import datetime
                 start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
                 end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")
+                today = datetime.now()
+
+                # Проверка, чтобы бронирование не было в прошлом
+                if start < today:
+                    messagebox.showerror("Ошибка", "Дата начала бронирования не может быть в прошлом!")
+                    return
 
                 # Проверка на порядок времени
                 if start >= end:
