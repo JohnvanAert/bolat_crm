@@ -37,7 +37,7 @@ def create_profile_page(parent, user_id):
     
     return frame
 
-def show_change_password_dialog(parent, user_id):
+def show_change_password_dialog(parent):
     dialog = tb.Toplevel(parent)
     dialog.title("Смена пароля")
     dialog.geometry("300x200")

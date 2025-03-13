@@ -41,7 +41,7 @@ def authenticate(username, password):
     cursor = conn.cursor()
 
     # Запрашиваем id и хеш пароля из БД
-    cursor.execute("SELECT id, password_hash FROM users WHERE username = %s", (username,))
+    cursor.execute("SELECT id, password_hash FROM users WHERE username = %s AND is_archived = FALSE", (username,))
     user = cursor.fetchone()
     conn.close()
 
@@ -54,20 +54,17 @@ def authenticate(username, password):
 
 
 def get_users():
-    """Получает список всех пользователей"""
-    query = "SELECT id, username, role FROM users ORDER BY id;"
-    
+    """Получает всех активных пользователей (не архивных)"""
+    conn = create_connection()
     try:
-        conn = create_connection()
         with conn.cursor() as cursor:
-            cursor.execute(query)
-            users = cursor.fetchall()
-        return users
+            cursor.execute("SELECT id, username, role FROM users WHERE is_archived = FALSE")
+            return cursor.fetchall()
     except Exception as e:
         print(f"Ошибка при получении пользователей: {e}")
-        return []
     finally:
         conn.close()
+    return []
 
 
 def update_user(user_id, name, role):
@@ -118,19 +115,28 @@ def get_user_details(user_id):
 
 
 def delete_user(user_id):
-    """Удаляет пользователя по ID"""
-    query = "DELETE FROM users WHERE id = %s;"
-    
+    """Удаляет пользователя по ID с проверкой последнего администратора"""
+    conn = create_connection()
     try:
-        conn = create_connection()
         with conn.cursor() as cursor:
-            cursor.execute(query, (user_id,))
-        conn.commit()
+            # Проверяем, не последний ли это администратор
+            cursor.execute("SELECT role FROM users WHERE id = %s", (user_id,))
+            role = cursor.fetchone()[0]
+            
+            if role == 'admin':
+                cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                admin_count = cursor.fetchone()[0]
+                if admin_count == 1:
+                    raise Exception("Нельзя удалить последнего администратора")
+
+            # Удаляем пользователя
+            cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            conn.commit()
     except Exception as e:
-        print(f"Ошибка при удалении пользователя: {e}")
+        conn.rollback()
+        raise e
     finally:
         conn.close()
-
 
 def has_users():
     conn = create_connection()  # Подключаемся к вашей БД
@@ -161,3 +167,43 @@ def register_user(username, password, role="admin"):  # role="admin" по умо
     conn.commit()
     conn.close()
     return True
+
+
+def archive_user(user_id):
+    """Перемещает пользователя в архив (is_archived=True)"""
+    conn = create_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE users SET is_archived = TRUE WHERE id = %s", (user_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при архивации пользователя: {e}")
+    finally:
+        conn.close()
+
+
+def get_archived_users():
+    """Получает список заархивированных пользователей"""
+    conn = create_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id, username, role FROM users WHERE is_archived = TRUE")
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Ошибка при получении архивированных пользователей: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def restore_user(user_id):
+    """Восстанавливает заархивированного пользователя"""
+    conn = create_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE users SET is_archived = FALSE WHERE id = %s", (user_id,))
+        conn.commit()
+    except Exception as e:
+        print(f"Ошибка при восстановлении пользователя: {e}")
+    finally:
+        conn.close()

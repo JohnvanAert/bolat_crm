@@ -21,10 +21,25 @@ import shutil
 from login_window import LoginWindow
 from auth import get_user_details, has_users
 from register_window import RegisterWindow
-
+from navigation import NavigationBar
     
 CONFIG_FILE = "config.json"
 CACHE_DIRS = ["cache", "__pycache__"]
+SESSION_FILE = "session.json"
+
+def save_session(user):
+    """Сохраняет текущего пользователя в файл"""
+    session_data = {"current_user": user}
+    with open(SESSION_FILE, "w") as f:
+        json.dump(session_data, f)
+
+def load_session():
+    """Загружает пользователя из сессии"""
+    if os.path.exists(SESSION_FILE):
+        with open(SESSION_FILE, "r") as f:
+            session_data = json.load(f)
+            return session_data.get("current_user")
+    return None
 
 def load_theme():
     """Загрузка темы из файла конфигурации."""
@@ -79,26 +94,7 @@ def open_settings(root):
     tb.Button(settings_window, text="Применить", command=apply_theme).pack(pady=10)
     tb.Button(settings_window, text="Очистить кэш", command=clear_cache, bootstyle="danger").pack(pady=10)
 
-def create_navigation(root, show_main_page,show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page, show_profile_page):
-    nav_frame = tb.Frame(root)
-    nav_frame.pack(side=tk.TOP, fill=tk.X)
-     # Получаем роль пользователя
-    user_data = get_user_details(root.current_user)
-    user_role = user_data.get("role")
-    
-    tb.Button(nav_frame, text="Главная", command=show_main_page).pack(side=tk.LEFT, padx=5)
-    tb.Button(nav_frame, text="Бронирование", command=show_booking_page).pack(side=tk.LEFT,padx=5)
-    tb.Button(nav_frame, text="Страница заказов", command=show_gui_page).pack(side=tk.LEFT, padx=5)
-      # Кнопка для кабин
-      # Кнопка для кабин
-   
-    if user_role == "admin":
-        tb.Button(nav_frame, text="Склад продуктов", command=show_products_page).pack(side=tk.LEFT, padx=5)
-        tb.Button(nav_frame, text="Кабинки", command=show_cabin_page).pack(side=tk.LEFT, padx=5)
-        tb.Button(nav_frame, text="Расходы", command=show_expenses_page).pack(side=tk.LEFT, padx=5)
-        tb.Button(nav_frame, text="Статистика", command=show_statistics_page).pack(side=tk.LEFT, padx=5)  # Кнопка для кабин
-        tb.Button(nav_frame, text="Персонал", command=show_auth_page).pack(side=tk.LEFT, padx=5)
-    tb.Button(nav_frame, text="Профиль", command=show_profile_page).pack(side=tk.RIGHT, padx=20)
+
 current_page = 1
 restock_page = 1
 occupied_cabins_page = 1
@@ -109,11 +105,14 @@ def main():
     root = tb.Window(themename=selected_theme)
 
     root.withdraw()  # Скрываем основное окно
+    root.current_user = load_session()
+    
 
     def on_login_success(user):
         root.deiconify()  # Показываем основное окно после авторизации
         # Сохраняем данные пользователя (опционально)
         root.current_user = user
+        save_session(user)
 
         user_data = get_user_details(user)
         user_role = user_data.get("role")   # Достаем роль
@@ -125,6 +124,10 @@ def main():
     # Показываем окно авторизации
     login_window = LoginWindow(root, on_login_success)
     root.wait_window(login_window)
+
+    if not hasattr(root, "current_user"):
+        root.destroy()
+        return
 
     if hasattr(root, 'current_user'):
         root.title("3B CRM")
@@ -139,11 +142,29 @@ def main():
 
         root.bind("<Configure>", resize_handler)
     
+    # Функция выхода из системы
+    def logout():
+        root.withdraw()  # Скрываем основное окно
+        save_session(None)
+        if hasattr(root, 'current_user'):
+            del root.current_user  # Удаляем данные пользователя
+
+        # Открываем окно входа заново
+        login_window = LoginWindow(root, on_login_success)
+        root.wait_window(login_window)
+
+        if hasattr(root, "nav_bar"):
+            root.nav_bar.destroy()
+
+        # Обновляем интерфейс после повторной авторизации
+        if hasattr(root, 'current_user'):
+            root.deiconify()
+            new_nav_bar = NavigationBar(root, show_pages, logout_handler=logout)
+            new_nav_bar.pack(side=tk.TOP, fill=tk.X)
     
     
 
     def show_main_page():
-        # left_panel.pack(side='left', fill='y')
         frame_products.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
@@ -156,7 +177,6 @@ def main():
         root.update_idletasks()
 
     def show_products_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_gui.pack_forget()
         frame_cabin.pack_forget()
@@ -169,7 +189,6 @@ def main():
         root.update_idletasks()
 
     def show_gui_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_cabin.pack_forget()
@@ -182,7 +201,6 @@ def main():
         root.update_idletasks()
 
     def show_cabin_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -195,7 +213,6 @@ def main():
         root.update_idletasks()
 
     def show_expenses_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -208,7 +225,6 @@ def main():
         root.update_idletasks()
 
     def show_statistics_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -221,7 +237,6 @@ def main():
         root.update_idletasks()
 
     def show_booking_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -234,7 +249,6 @@ def main():
         root.update_idletasks()
 
     def show_auth_page():
-        # left_panel.pack_forget()
         main_page.pack_forget()
         frame_products.pack_forget()
         frame_gui.pack_forget()
@@ -257,6 +271,30 @@ def main():
         frame_booking.pack_forget()
         frame_profile.pack()
         root.update_idletasks()
+
+    
+     # Создаем словарь для страниц
+    show_pages = {
+        "main": show_main_page,
+        "booking": show_booking_page,
+        "gui": show_gui_page,
+        "products": show_products_page,
+        "cabin": show_cabin_page,
+        "expenses": show_expenses_page,
+        "statistics": show_statistics_page,
+        "auth": show_auth_page,
+        "profile": show_profile_page
+    }
+
+
+    # Инициализация NavigationBar
+    if hasattr(root, "nav_bar"):
+        root.nav_bar.destroy()
+
+    # Создаём новый навбар
+    root.nav_bar = NavigationBar(root, show_pages, logout_handler=logout)
+    root.nav_bar.pack(side=tk.TOP, fill=tk.X)
+
         
     # Функция для создания стильно оформленного Listbox
     def create_styled_listbox(parent, title, row=None, column=None, pack=False, width=50):
@@ -498,7 +536,6 @@ def main():
             prev_button.config(state=tk.NORMAL)
 
     # Главная страница
-    create_navigation(root, show_main_page, show_booking_page, show_products_page, show_gui_page, show_cabin_page, show_expenses_page, show_statistics_page, show_auth_page, show_profile_page)
     main_page = tk.Frame(root)
 
 
@@ -506,22 +543,7 @@ def main():
     settings_button = tb.Button(root, text="Настройки", command=lambda: open_settings(root), bootstyle="primary")
     settings_button.place(x=10, y=700)
     
-    # Левая панель с навигационными кнопками
-    # left_panel = tk.Frame(root, bg="#cfe2f3", width=200)
-    # left_panel.pack(side='left', fill='y')
-    # left_panel.pack_propagate(0)  # Фиксируем ширину
     main_page.pack()
-    # Кнопки навигации
-    # nav_buttons = [
-    #     ("Кабинки", show_main_page),
-    #     ("Мужской зал", show_main_page),
-    #     ("Женский зал", show_main_page),
-    # ]
-
-    # for text, command in nav_buttons:
-    #     btn = ttk.Button(left_panel, text=text, command=command, style='TButton')
-    #     btn.pack(pady=5, padx=10, fill='x')
-    
 
     # Создаем рамку для содержимого
     content_frame = tk.Frame(main_page, bg="#7FC3BD")

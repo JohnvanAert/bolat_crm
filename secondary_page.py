@@ -1,10 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from tkinter import Button, Frame, Label
-from auth import get_users, update_user, create_user, delete_user
+from auth import get_users, update_user, create_user, delete_user, get_user_details, archive_user, get_archived_users, restore_user
 import ttkbootstrap as tb
 import bcrypt
-from auth import get_user_details
 
 def create_secondary_page(root, user_id):
     frame = tk.Frame(root)
@@ -24,21 +23,24 @@ def create_secondary_page(root, user_id):
         user_table.column(col, anchor="center")
 
     user_table.pack(fill="both", expand=True, padx=10, pady=5)
+    show_archived = tk.BooleanVar(value=False)
 
     # Загрузка пользователей из базы
     def load_users():
-        users = get_users()  # Получаем пользователей
+        """Загружает пользователей, активных или архивных"""
+        users = get_archived_users() if show_archived.get() else get_users()
         user_table.delete(*user_table.get_children())  # Очищаем таблицу
         for user in users:
             user_table.insert("", "end", values=user)
 
+
     load_users()  # Заполняем таблицу
 
     # Открытие модального окна редактирования
-    def open_edit_user_window(user_id, username, role):
+    def open_edit_user_window(user_id, username, role, is_archived=False):
         modal = tk.Toplevel()
         modal.title("Редактировать пользователя")
-        modal.geometry("300x200")
+        modal.geometry("300x250")
         modal.transient()
         modal.grab_set()
 
@@ -50,6 +52,8 @@ def create_secondary_page(root, user_id):
         tk.Label(modal, text="Роль").pack(pady=5)
         new_user_role = tk.StringVar(value=role)
         new_role_combobox = ttk.Combobox(modal, textvariable=new_user_role, values=["admin", "user"], state="readonly")
+        if int(user_id) == user_data["id"]:
+            new_role_combobox.config(state="disabled")  # <--- Блокируем Combobox
         new_role_combobox.pack()
 
         def save_changes():
@@ -65,29 +69,60 @@ def create_secondary_page(root, user_id):
             messagebox.showinfo("Успех", "Данные пользователя обновлены!", parent=modal)
             modal.destroy()
 
-        def delete_current_user():
-            confirm = messagebox.askyesno("Удаление", f"Вы уверены, что хотите удалить {username}?", parent=modal)
+        def archive_current_user():
+            if user_id == user_data["id"]:  # Проверяем, пытается ли пользователь удалить сам себя
+                messagebox.showerror("Ошибка", "Вы не можете архивировать самого себя!", parent=modal)
+                return
+            
+            confirm = messagebox.askyesno("Архивация", f"Вы уверены, что хотите переместить {username} в архив?", parent=modal)
+            
             if confirm:
-                delete_user(user_id)
+                archive_user(user_id)  # Вызываем функцию архивации
                 load_users()
-                messagebox.showinfo("Удалено", f"Пользователь {username} удален!", parent=modal)
+                messagebox.showinfo("Архивация", f"Пользователь {username} перемещен в архив!", parent=modal)
                 modal.destroy()
-   
+        
+        def restore_current_user():
+            """Восстанавливает пользователя"""
+            confirm = messagebox.askyesno("Восстановление", f"Вы уверены, что хотите восстановить {username}?", parent=modal)
+            if confirm:
+                restore_user(user_id)
+                load_users()
+                messagebox.showinfo("Восстановление", f"Пользователь {username} восстановлен!", parent=modal)
+                modal.destroy()
+
 
         ttk.Button(modal, text="Сохранить", command=save_changes).pack(pady=10)
-        ttk.Button(modal, text="Удалить пользователя", command=delete_current_user, bootstyle="danger").pack(pady=5)
 
+        if is_archived:
+            ttk.Button(modal, text="Восстановить", command=restore_current_user, bootstyle="success").pack(pady=5)
+        else:
+            archive_button = ttk.Button(modal, text="Удалить (в архив)", command=archive_current_user, bootstyle="danger")
+            if int(user_id) == user_data["id"]:
+                archive_button.config(state="disabled")
+            archive_button.pack(pady=5)
+
+        
     # Обработчик двойного клика по таблице
     def on_double_click(event):
         selected = user_table.selection()
         if selected:
             values = user_table.item(selected[0], "values")
             user_id, username, role = values
-            open_edit_user_window(user_id, username, role)
+            open_edit_user_window(user_id, username, role, is_archived=show_archived.get())
 
     user_table.bind("<Double-1>", on_double_click)
 
     ttk.Button(main_area, text="Добавить пользователя", command=lambda: open_add_user_window(load_users)).pack(pady=10)
+
+    def toggle_users():
+        show_archived.set(not show_archived.get())
+        load_users()
+        toggle_button_text = "Показать активных" if show_archived.get() else "Показать архив"
+        toggle_button.config(text=toggle_button_text)
+
+    toggle_button = ttk.Button(main_area, text="Показать архив", command=toggle_users)
+    toggle_button.pack(pady=5)
 
     def open_add_user_window(load_users_callback):
         modal = tk.Toplevel()
